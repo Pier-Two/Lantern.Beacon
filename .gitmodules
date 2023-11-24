@@ -1,3 +1,4 @@
 [submodule "src/Libp2p"]
 	path = src/Libp2p
 	url = https://github.com/NethermindEth/dotnet-libp2p.git
+	branch = main
