@@ -2,4 +2,6 @@
 
 public class Class1
 {
+    public bool IsTrue() => true;
 }
+
