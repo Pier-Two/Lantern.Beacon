@@ -4,40 +4,38 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <EnablePreviewFeatures>true</EnablePreviewFeatures>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="libsodium" Version="1.0.19" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-      <PackageReference Include="NUnit" Version="3.14.0" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+      <PackageReference Include="NUnit" Version="4.1.0" />
       <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multiaddress\src\Multiformats.Address\Multiformats.Address.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash.Benchmarks\Multiformats.Hash.Benchmarks.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash.CLI\Multiformats.Hash.CLI.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash\Multiformats.Hash.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core.Benchmarks\Libp2p.Core.Benchmarks.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Generators.Enums\Libp2p.Generators.Enums.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Generators.Protobuf\Libp2p.Generators.Protobuf.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Identify\Libp2p.Protocols.Identify.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.IpTcp\Libp2p.Protocols.IpTcp.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.MDns\Libp2p.Protocols.MDns.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.MultiaddrBasedSelector\Libp2p.Protocols.MultiaddrBasedSelector.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Multistream\Libp2p.Protocols.Multistream.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Noise\Libp2p.Protocols.Noise.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Ping\Libp2p.Protocols.Ping.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Plaintext\Libp2p.Protocols.Plaintext.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Pubsub\Libp2p.Protocols.Pubsub.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Quic\Libp2p.Protocols.Quic.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Yamux\Libp2p.Protocols.Yamux.csproj" />
+      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
       <ProjectReference Include="..\..\src\Lantern.Beacon.Core\Lantern.Beacon.Core.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\cs-multihash\src\Multiformats.Hash.Benchmarks\Multiformats.Hash.Benchmarks.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\cs-multihash\src\Multiformats.Hash.CLI\Multiformats.Hash.CLI.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\cs-multihash\src\Multiformats.Hash\Multiformats.Hash.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Core.TestsBase\Libp2p.Core.TestsBase.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Generators.Enums\Libp2p.Generators.Enums.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Generators.Protobuf\Libp2p.Generators.Protobuf.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Identify\Libp2p.Protocols.Identify.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.IpTcp\Libp2p.Protocols.IpTcp.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.MDns\Libp2p.Protocols.MDns.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.MultiaddrBasedSelector\Libp2p.Protocols.MultiaddrBasedSelector.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Multistream.Tests\Libp2p.Protocols.Multistream.Tests.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Multistream\Libp2p.Protocols.Multistream.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Noise.Tests\Libp2p.Protocols.Noise.Tests.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Noise\Libp2p.Protocols.Noise.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Ping\Libp2p.Protocols.Ping.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Plaintext\Libp2p.Protocols.Plaintext.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Pubsub.Tests\Libp2p.Protocols.Pubsub.Tests.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Pubsub\Libp2p.Protocols.Pubsub.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Quic.Tests\Libp2p.Protocols.Quic.Tests.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Quic\Libp2p.Protocols.Quic.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p.Protocols.Yamux\Libp2p.Protocols.Yamux.csproj" />
-      <ProjectReference Include="..\..\src\Libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
     </ItemGroup>
 
 </Project>
