@@ -39,10 +39,6 @@ internal static class Program
                         options.UseUtcTimestamp = true;
                     });
             })
-            .AddSingleton(new IdentifyProtocolSettings
-            {
-                
-            })
             .AddLibp2p(builder =>
             {
                 builder.AddAppLayerProtocol<PingProtocol>();
@@ -53,7 +49,7 @@ internal static class Program
         var serviceProvider = services.BuildServiceProvider();
         var peerFactory = serviceProvider.GetService<IPeerFactory>();
         var localPeer = peerFactory!.Create(new Identity());
-        var newAddress = localPeer.Address.ReplaceOrAdd<IP4>("0.0.0.0").ReplaceOrAdd<TCP>(0);
+        var newAddress = localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
         
         localPeer.Address = newAddress;
         
