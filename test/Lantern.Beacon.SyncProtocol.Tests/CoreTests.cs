@@ -1,10 +1,17 @@
-﻿using Lantern.Discv5.Enr;
+﻿using Lantern.Beacon.Networking.Discovery;
+using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
+using Lantern.Discv5.WireProtocol;
+using Lantern.Discv5.WireProtocol.Connection;
+using Lantern.Discv5.WireProtocol.Session;
+using Lantern.Discv5.WireProtocol.Table;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Multiformats.Address;
 using Multiformats.Address.Protocols;
+using Multiformats.Hash;
+
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Stack;
 using NUnit.Framework;
@@ -17,65 +24,89 @@ public class CoreTests
     [Test]
     public async Task Test1()
     {
-       var services = new ServiceCollection()
-            .AddLogging(builder => 
-            {
-                builder
-                    .AddConsole().SetMinimumLevel(LogLevel.Debug)
-                    .AddSimpleConsole(options =>
-                    {
-                        options.ColorBehavior = LoggerColorBehavior.Enabled;
-                        options.IncludeScopes = false;
-                        options.SingleLine = true;
-                        options.TimestampFormat = "[HH:mm:ss] ";
-                        options.UseUtcTimestamp = true;
-                    });
-            }).AddLibp2p(builder => builder);
-        
-        var serviceProvider = services.BuildServiceProvider();
-        var peerFactory = serviceProvider.GetService<IPeerFactory>();
-        var localPeer = peerFactory!.Create(new Identity());
-        localPeer.Address = localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
-        var beaconClient = new BeaconClientBuilder()
-            .WithBootstrapEnrs(["enr:-KG4QNTx85fjxABbSq_Rta9wy56nQ1fHK0PewJbGjLm1M4bMGx5-3Qq4ZX2-iFJ0pys_O90sVXNNOxp2E7afBsGsBrgDhGV0aDKQu6TalgMAAAD__________4JpZIJ2NIJpcIQEnfA2iXNlY3AyNTZrMaECGXWQ-rQ2KZKRH1aOW4IlPDBkY4XDphxg9pxKytFCkayDdGNwgiMog3VkcIIjKA", 
-                "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg"])
-            .Build();
-        
-        await beaconClient.Init();
-        var randomId = new byte[32];
-        Random.Shared.NextBytes(randomId);
-        
-        var peers = await beaconClient.Discv5Protocol.PerformLookupAsync(randomId);
-        var mutliAddressStrings = peers.Select(peer => ConvertToTCPMultiaddress(peer.Record)).ToList();
-        var remoteAddresses = mutliAddressStrings.Select(Multiaddress.Decode).ToList();
-
-        foreach (var address in mutliAddressStrings)
+       var bootstrapEnrs = new[]
         {
-          Console.WriteLine(address);  
-        }
-
-        foreach (var address in remoteAddresses)
+            "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg",
+            "enr:-Le4QPUXJS2BTORXxyx2Ia-9ae4YqA_JWX3ssj4E_J-3z1A-HmFGrU8BpvpqhNabayXeOZ2Nq_sbeDgtzMJpLLnXFgAChGV0aDKQtTA_KgEAAAAAIgEAAAAAAIJpZIJ2NIJpcISsaa0Zg2lwNpAkAIkHAAAAAPA8kv_-awoTiXNlY3AyNTZrMaEDHAD2JKYevx89W0CcFJFiskdcEzkH_Wdv9iW42qLK79ODdWRwgiMohHVkcDaCI4I"
+        };
+        var connectionOptions = new ConnectionOptions
         {
-            Console.WriteLine("Dialing peer with multiaddress: " + address);
-            var dialTask = localPeer.DialAsync(address);
-            var remotePeer = await dialTask;
-            
-            if(dialTask.IsCompletedSuccessfully)
-            {
-                Console.WriteLine("Dial task completed successfully");
-                Console.WriteLine("Peer responded " + address);
-            }
-            else
-            {
-                Console.WriteLine("Dial task failed");
-            }
-        }
-    }
-
-    private string ConvertToTCPMultiaddress(IEnr enr)
-    {
-        var ip = enr.GetEntry<EntryIp>(EnrEntryKey.Ip)?.Value;
-        var tcp = enr.GetEntry<EntryTcp>(EnrEntryKey.Tcp)?.Value;
-        return $"/ip4/{ip}/tcp/{tcp}/p2p/{enr.ToPeerId()}";
+            UdpPort = new Random().Next(1, 65535)
+        };
+        var sessionOptions = SessionOptions.Default;
+        var tableOptions = new TableOptions(bootstrapEnrs);
+        var enr = new EnrBuilder()
+            .WithIdentityScheme(sessionOptions.Verifier, sessionOptions.Signer)
+            .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
+            .WithEntry(EnrEntryKey.Secp256K1, new EntrySecp256K1(sessionOptions.Signer.PublicKey));
+        var services = new ServiceCollection();
+        // services.AddLogging(builder =>
+        //     {
+        //         builder.AddConsole().SetMinimumLevel(LogLevel.Debug)
+        //                 .AddSimpleConsole(options =>
+        //                 {
+        //                     options.ColorBehavior = LoggerColorBehavior.Default;
+        //                     options.IncludeScopes = false;
+        //                     options.SingleLine = true;
+        //                     options.TimestampFormat = "[HH:mm:ss] ";
+        //                     options.UseUtcTimestamp = true;
+        //                 });
+        //     })
+        //     .AddLibp2p(builder => builder)
+        //     .AddBeaconClient(builder =>
+        //     {
+        //         builder.WithDiscv5ProtocolBuilder(discv5Builder =>
+        //         {
+        //             discv5Builder.WithConnectionOptions(connectionOptions)
+        //                 .WithTableOptions(tableOptions)
+        //                 .WithEnrBuilder(enr)
+        //                 .WithSessionOptions(sessionOptions)
+        //                 .Build();
+        //         });
+        //     });
+        //     
+        // var serviceProvider = services.BuildServiceProvider();
+        // var peerFactory = serviceProvider.GetService<IPeerFactory>();
+        // var localPeer = peerFactory!.Create(new Identity());
+        //
+        // localPeer.Address = localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
+        //
+        // var discoveryProtocol = serviceProvider.GetRequiredService<DiscoveryProtocol>();
+        //
+        // await discoveryProtocol.StartAsync();
+        //
+        // var multiAddresses = await discoveryProtocol.DiscoverAsync();
+        //
+        // foreach (var address in multiAddresses)
+        // {
+        //     Console.WriteLine("Dialing peer with multiaddress: " + address);
+        //     var cts = new CancellationTokenSource();
+        //     cts.CancelAfter(TimeSpan.FromSeconds(5)); 
+        //
+        //     try
+        //     {
+        //         var dialTask = localPeer.DialAsync(address, cts.Token);
+        //         var completedTask = await Task.WhenAny(dialTask, Task.Delay(Timeout.Infinite, cts.Token));
+        //         if (completedTask == dialTask)
+        //         {
+        //             // Dial task completed within timeout
+        //             var remotePeer = await dialTask; // Ensure any exceptions are rethrown
+        //             Console.WriteLine("Dial task completed successfully");
+        //             Console.WriteLine("Peer responded " + address);
+        //         }
+        //         else
+        //         {
+        //             Console.WriteLine("Dial task timed out");
+        //         }
+        //     }
+        //     catch (OperationCanceledException)
+        //     {
+        //         Console.WriteLine("Dial task was canceled.");
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Console.WriteLine($"An error occurred: {ex.Message}");
+        //     }
+        // }
     }
 }

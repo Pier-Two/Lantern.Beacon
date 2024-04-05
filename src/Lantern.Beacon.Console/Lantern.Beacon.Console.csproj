@@ -10,8 +10,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multiaddress\src\Multiformats.Address\Multiformats.Address.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash.Benchmarks\Multiformats.Hash.Benchmarks.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash.CLI\Multiformats.Hash.CLI.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash\Multiformats.Hash.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core.Benchmarks\Libp2p.Core.Benchmarks.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
@@ -32,7 +30,6 @@
       <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.Enr\Lantern.Discv5.Enr.csproj" />
       <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.Rlp\Lantern.Discv5.Rlp.csproj" />
       <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.WireProtocol\Lantern.Discv5.WireProtocol.csproj" />
-      <ProjectReference Include="..\Lantern.Beacon.P2P\Lantern.Beacon.P2P.csproj" />
       <ProjectReference Include="..\Lantern.Beacon.SyncProtocol\Lantern.Beacon.SyncProtocol.csproj" />
       <ProjectReference Include="..\Lantern.Beacon\Lantern.Beacon.csproj" />
     </ItemGroup>
