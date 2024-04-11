@@ -19,8 +19,7 @@ public class MultiAddressEnrConverterTests
         
         var enr = new EnrFactory(enrRegistry).CreateFromString(enrString, new IdentityVerifierV4());
         var multiAddress = MultiAddressEnrConverter.ConvertToMultiAddress(enr);
-
-        Console.WriteLine(enr.GetEntry<EntryIp>(EnrEntryKey.Ip).Value);
+        
         Assert.That(multiAddress, Is.Not.Null);
         Assert.That(enr.GetEntry<EntryIp>(EnrEntryKey.Ip).Value, Is.EqualTo(multiAddress!.Get<IP>().Value));
         Assert.That(enr.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value, Is.EqualTo(multiAddress.Get<TCP>().Value));
