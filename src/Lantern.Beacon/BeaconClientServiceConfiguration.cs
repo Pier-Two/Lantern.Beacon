@@ -10,8 +10,6 @@ public static class BeaconClientServiceConfiguration
 {
     internal static IServiceCollection AddBeaconClient(this IServiceCollection services, IDiscv5Protocol discv5)
     {
-        Console.WriteLine("Configuring BeaconClientService...");
-        
         services.AddSingleton(discv5);
         services.AddSingleton<IDiscoveryProtocol, DiscoveryProtocol>();
         services.AddSingleton<IPeerManager, PeerManager>();

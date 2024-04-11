@@ -6,14 +6,6 @@ using Lantern.Discv5.WireProtocol.Connection;
 using Lantern.Discv5.WireProtocol.Session;
 using Lantern.Discv5.WireProtocol.Table;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Console;
-using Multiformats.Address;
-using Multiformats.Address.Protocols;
-using Multiformats.Hash;
-
-using Nethermind.Libp2p.Core;
-using Nethermind.Libp2p.Stack;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.SyncProtocol.Tests;
@@ -40,73 +32,5 @@ public class CoreTests
             .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
             .WithEntry(EnrEntryKey.Secp256K1, new EntrySecp256K1(sessionOptions.Signer.PublicKey));
         var services = new ServiceCollection();
-        // services.AddLogging(builder =>
-        //     {
-        //         builder.AddConsole().SetMinimumLevel(LogLevel.Debug)
-        //                 .AddSimpleConsole(options =>
-        //                 {
-        //                     options.ColorBehavior = LoggerColorBehavior.Default;
-        //                     options.IncludeScopes = false;
-        //                     options.SingleLine = true;
-        //                     options.TimestampFormat = "[HH:mm:ss] ";
-        //                     options.UseUtcTimestamp = true;
-        //                 });
-        //     })
-        //     .AddLibp2p(builder => builder)
-        //     .AddBeaconClient(builder =>
-        //     {
-        //         builder.WithDiscv5ProtocolBuilder(discv5Builder =>
-        //         {
-        //             discv5Builder.WithConnectionOptions(connectionOptions)
-        //                 .WithTableOptions(tableOptions)
-        //                 .WithEnrBuilder(enr)
-        //                 .WithSessionOptions(sessionOptions)
-        //                 .Build();
-        //         });
-        //     });
-        //     
-        // var serviceProvider = services.BuildServiceProvider();
-        // var peerFactory = serviceProvider.GetService<IPeerFactory>();
-        // var localPeer = peerFactory!.Create(new Identity());
-        //
-        // localPeer.Address = localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
-        //
-        // var discoveryProtocol = serviceProvider.GetRequiredService<DiscoveryProtocol>();
-        //
-        // await discoveryProtocol.StartAsync();
-        //
-        // var multiAddresses = await discoveryProtocol.DiscoverAsync();
-        //
-        // foreach (var address in multiAddresses)
-        // {
-        //     Console.WriteLine("Dialing peer with multiaddress: " + address);
-        //     var cts = new CancellationTokenSource();
-        //     cts.CancelAfter(TimeSpan.FromSeconds(5)); 
-        //
-        //     try
-        //     {
-        //         var dialTask = localPeer.DialAsync(address, cts.Token);
-        //         var completedTask = await Task.WhenAny(dialTask, Task.Delay(Timeout.Infinite, cts.Token));
-        //         if (completedTask == dialTask)
-        //         {
-        //             // Dial task completed within timeout
-        //             var remotePeer = await dialTask; // Ensure any exceptions are rethrown
-        //             Console.WriteLine("Dial task completed successfully");
-        //             Console.WriteLine("Peer responded " + address);
-        //         }
-        //         else
-        //         {
-        //             Console.WriteLine("Dial task timed out");
-        //         }
-        //     }
-        //     catch (OperationCanceledException)
-        //     {
-        //         Console.WriteLine("Dial task was canceled.");
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Console.WriteLine($"An error occurred: {ex.Message}");
-        //     }
-        // }
     }
 }

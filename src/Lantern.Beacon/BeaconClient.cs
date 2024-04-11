@@ -10,30 +10,24 @@ public class BeaconClient( IDiscoveryProtocol discoveryProtocol, IPeerManager pe
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
-    public async Task InitAsync()
+    public async Task InitAsync(CancellationToken token = default)
     {
         try
         {
-            await discoveryProtocol.InitAsync();
-            await peerManager.InitAsync();
+            await peerManager.InitAsync(token);
         }
         catch (Exception e)
         {
-            _logger.LogError(e, "Failed to start discovery protocol");
+            _logger.LogError(e, "Failed to start peer manager");
             throw;
         }
     }
     
-    public async Task StartAsync()
+    public async Task StartAsync(CancellationToken token = default)
     {
         try
         {
-           var nodes = await discoveryProtocol.DiscoverAsync();
-
-           foreach (var node in nodes)
-           {
-               Console.WriteLine($"Discovered node: {node}");
-           }
+           await peerManager.StartAsync(token);
         }
         catch (Exception e)
         {

@@ -10,8 +10,6 @@ public static class ServiceProviderExtensions
 {
     public static IServiceCollection AddBeaconClient(this IServiceCollection services, Action<IBeaconClientServiceBuilder> configureBeaconClientService)
     {
-        Console.WriteLine("Configuring BeaconClientServiceBuilder...");
-        
         var beaconClientServiceBuilder = new BeaconClientServiceBuilder(services);
         
         configureBeaconClientService(beaconClientServiceBuilder);

@@ -5,13 +5,13 @@ namespace Lantern.Beacon.Networking.Discovery;
 
 public interface IDiscoveryProtocol
 {
-    IEnr SelfEnr { get; }
+    IEnr? SelfEnr { get; }
     
     IEnumerable<IEnr> ActiveNodes { get; }
     
-    Task InitAsync();
+    Task<bool> InitAsync();
     
     Task StopAsync();
     
-    Task<IEnumerable<Multiaddress?>> DiscoverAsync(CancellationToken token = default);
+    Task<IEnumerable<Multiaddress?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default);
 }

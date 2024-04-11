@@ -1,0 +1,85 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches: 
+      - "*"
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup .NET for Testing
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "8.0.x"
+          
+      - name: Checkout branch 
+        uses: actions/checkout@v3
+      
+      - name: Build Project_Beacon
+        run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj
+
+      - name: Build Project_Beacon_SimpleSerialize
+        run: dotnet build src/Lantern.Beacon.SimpleSerialize/Lantern.Beacon.SimpleSerialize.csproj
+      
+      - name: Build Project_Beacon_Sync_Protocol
+        run: dotnet build src/Lantern.Beacon.SyncProtocol/Lantern.Beacon.SyncProtocol.csproj
+
+      - name: Run tests for the Projects
+        run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"
+
+  # sonar:
+  #   name: Build and analyze SonarCloud
+  #   runs-on: windows-latest
+  #   needs: build-and-test
+  #   steps:
+  #     - name: Setup .NET for SonarCloud
+  #       uses: actions/setup-dotnet@v3
+  #       with:
+  #         dotnet-version: '8.0.x'
+
+  #     - name: Set up JDK 17
+  #       uses: actions/setup-java@v3
+  #       with:
+  #         java-version: 17
+  #         distribution: 'zulu' # Alternative distribution options are available.
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+  #     - name: Cache SonarCloud packages
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: ~\sonar\cache
+  #         key: ${{ runner.os }}-sonar
+  #         restore-keys: ${{ runner.os }}-sonar
+  #     - name: Cache SonarCloud scanner
+  #       id: cache-sonar-scanner
+  #       uses: actions/cache@v3
+  #       with:
+  #         path: .\.sonar\scanner
+  #         key: ${{ runner.os }}-sonar-scanner
+  #         restore-keys: ${{ runner.os }}-sonar-scanner
+  #     - name: Install SonarCloud scanner
+  #       if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+  #       shell: powershell
+  #       run: |
+  #         New-Item -Path .\.sonar\scanner -ItemType Directory
+  #         dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
+  #     - name: Build and analyze
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       shell: powershell
+  #       run: |
+  #         .\.sonar\scanner\dotnet-sonarscanner begin /k:"Pier-Two_Lantern.Discv5" /o:"pier-two" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+  #         dotnet build
+  #         dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+  #         .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
