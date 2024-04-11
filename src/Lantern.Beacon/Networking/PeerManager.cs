@@ -39,7 +39,6 @@ public class PeerManager(IDiscoveryProtocol discoveryProtocol, IPeerFactory peer
             LocalPeer.Address = LocalPeer.Address.ReplaceOrAdd<IP4>(ip).ReplaceOrAdd<TCP>(tcpPort);
             
             _logger.LogInformation("Peer manager started with address {Address}", LocalPeer.Address);
-            
         }
         catch (Exception e)
         {
