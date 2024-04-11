@@ -23,6 +23,8 @@ jobs:
           
       - name: Checkout branch 
         uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
       
       - name: Build Project_Beacon
         run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj

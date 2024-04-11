@@ -1,12 +1,11 @@
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
-using Lantern.Discv5.WireProtocol;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient( IDiscoveryProtocol discoveryProtocol, IPeerManager peerManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager peerManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
