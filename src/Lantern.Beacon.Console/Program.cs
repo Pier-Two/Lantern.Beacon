@@ -7,6 +7,7 @@ using Lantern.Discv5.WireProtocol.Table;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Nethermind.Libp2p.Protocols;
 
 namespace Lantern.Beacon.Console;
 
@@ -41,6 +42,9 @@ internal static class Program
                     options.TimestampFormat = "[HH:mm:ss] ";
                     options.UseUtcTimestamp = true;
                 });
+            }).AddSingleton(new IdentifyProtocolSettings
+            {
+                // Initialize the settings as needed
             })
             .AddBeaconClient(beaconClientBuilder =>
             {
