@@ -1,7 +1,6 @@
 [submodule "lib/dotnet-libp2p"]
 	path = lib/dotnet-libp2p
 	url = https://github.com/NethermindEth/dotnet-libp2p.git
-	branch = main
 [submodule "lib/Lantern.Discv5"]
 	path = lib/Lantern.Discv5
 	url = https://github.com/Pier-Two/Lantern.Discv5.git
