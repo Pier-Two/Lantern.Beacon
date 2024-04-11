@@ -42,9 +42,6 @@ internal static class Program
                     options.TimestampFormat = "[HH:mm:ss] ";
                     options.UseUtcTimestamp = true;
                 });
-            }).AddSingleton(new IdentifyProtocolSettings
-            {
-                // Initialize the settings as needed
             })
             .AddBeaconClient(beaconClientBuilder =>
             {
