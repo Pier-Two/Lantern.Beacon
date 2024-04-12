@@ -19,7 +19,7 @@ Lantern.Beacon is a .NET library that allows connecting with Ethereum's consensu
 3. Change to the `Lantern.Beacon` directory:
 
    ```bash
-   cd Lantern.Discv5
+   cd Lantern.Beacon
    ```
 
 4. Build the project:
