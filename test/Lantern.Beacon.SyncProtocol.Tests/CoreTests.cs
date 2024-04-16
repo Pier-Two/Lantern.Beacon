@@ -75,7 +75,7 @@ public class CoreTests
         var newAddress =  localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
         localPeer.Address = newAddress;
         
-        var remoteAddress = Multiaddress.Decode("/ip4/49.12.148.225/tcp/9000/p2p/16Uiu2HAm7RcBodhBdPc6bsetPRqdrMewMafdwFAD8nE93ysCjyK6");
+        var remoteAddress = Multiaddress.Decode("/ip4/167.235.117.215/tcp/9000/p2p/16Uiu2HAmHcm7WxUx9Pi6wv8b391XNw4qbsccUzocCermGSQTc1WC");
         
         Console.WriteLine("My peer's multiaddress is: " + localPeer.Address);
         Console.WriteLine("Dialing peer with multiaddress: " + remoteAddress);
