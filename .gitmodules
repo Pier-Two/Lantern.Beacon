@@ -4,3 +4,6 @@
 [submodule "lib/Lantern.Discv5"]
 	path = lib/Lantern.Discv5
 	url = https://github.com/Pier-Two/Lantern.Discv5.git
+[submodule "lib/nethermind"]
+	path = lib/nethermind
+	url = https://github.com/NethermindEth/nethermind.git

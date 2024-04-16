@@ -27,6 +27,8 @@ nuget.config
 # JetBrains Rider settings
 .idea/
 
+.cursorignore
 .DS_Store
 test.yml
 sonar-project copy.properties
+

@@ -7,8 +7,13 @@ namespace Lantern.Beacon.Utility;
 
 public static class MultiAddressEnrConverter
 {
-    public static Multiaddress? ConvertToMultiAddress(IEnr enr)
+    public static Multiaddress? ConvertToMultiAddress(IEnr? enr)
     {
+        if (enr == null)
+        {
+            return null;
+        }
+        
         if (TryGetIpAndPort(enr, EnrEntryKey.Ip, EnrEntryKey.Tcp, out var ip, out var port))
         {
             return Multiaddress.Decode($"ip4/{ip}/tcp/{port}/p2p/{enr.ToPeerId()}");

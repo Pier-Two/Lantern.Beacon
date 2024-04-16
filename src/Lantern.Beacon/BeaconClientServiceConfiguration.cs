@@ -8,13 +8,14 @@ namespace Lantern.Beacon;
 
 public static class BeaconClientServiceConfiguration
 {
-    internal static IServiceCollection AddBeaconClient(this IServiceCollection services, IDiscv5Protocol discv5)
+    internal static IServiceCollection AddBeaconClient(this IServiceCollection services, IDiscv5Protocol discv5, BeaconClientOptions options)
     {
         services.AddSingleton(discv5);
+        services.AddSingleton(options);
         services.AddSingleton<IDiscoveryProtocol, DiscoveryProtocol>();
         services.AddSingleton<IPeerManager, PeerManager>();
         services.AddSingleton<IBeaconClient, BeaconClient>();
-
+        
         return services;
     }
 

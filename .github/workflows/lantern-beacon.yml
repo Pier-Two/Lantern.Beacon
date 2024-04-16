@@ -29,9 +29,6 @@ jobs:
       - name: Build Project_Beacon
         run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj
 
-      - name: Build Project_Beacon_SimpleSerialize
-        run: dotnet build src/Lantern.Beacon.SimpleSerialize/Lantern.Beacon.SimpleSerialize.csproj
-      
       - name: Build Project_Beacon_Sync_Protocol
         run: dotnet build src/Lantern.Beacon.SyncProtocol/Lantern.Beacon.SyncProtocol.csproj
 

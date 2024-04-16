@@ -24,24 +24,41 @@ public class DiscoveryProtocolTests
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(Mock.Of<ILogger<DiscoveryProtocol>>());
 
-        _discoveryProtocol = new DiscoveryProtocol(_mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        _discoveryProtocol = new DiscoveryProtocol(new BeaconClientOptions() ,_mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 
     [Test]
     public async Task InitAsync_ShouldReturnTrue_WhenDiscv5ProtocolInitializesSuccessfully()
     {
         var mockEnr = new Mock<IEnr>();
-        // Use a specific string key instead of It.IsAny<string>()
-        mockEnr.Setup(e => e.GetEntry(It.IsAny<string>(), It.IsAny<EntryUdp>())).Returns(new EntryUdp(30303));
+        mockEnr.Setup(e => e.GetEntry(EnrEntryKey.Udp, It.IsAny<EntryUdp>())).Returns(new EntryUdp(30303));
+        
         _mockIdentityManager.Setup(m => m.Record).Returns(mockEnr.Object);
-
         _mockDiscv5Protocol.Setup(p => p.SelfEnr).Returns(mockEnr.Object);
         _mockDiscv5Protocol.Setup(p => p.InitAsync()).ReturnsAsync(true);
 
         var result = await _discoveryProtocol.InitAsync();
 
         Assert.That(result, Is.True);
+        
         _mockIdentityManager.Verify(m => m.Record.UpdateEntry(It.IsAny<EntryTcp>()), Times.Once);
+    }
+    
+    [Test]
+    public async Task InitAsync_ShouldReturnFalse_WhenDiscv5ProtocolFailsToInitializeSuccessfully()
+    {
+        var mockEnr = new Mock<IEnr>();
+        mockEnr.Setup(e => e.GetEntry(EnrEntryKey.Udp, It.IsAny<EntryUdp>())).Returns(new EntryUdp(30303));
+        
+        _mockIdentityManager.Setup(m => m.Record).Returns(mockEnr.Object);
+        _mockDiscv5Protocol.Setup(p => p.SelfEnr).Returns(mockEnr.Object);
+        _mockDiscv5Protocol.Setup(p => p.InitAsync()).ReturnsAsync(false);
+
+        var result = await _discoveryProtocol.InitAsync();
+
+        Assert.That(result, Is.False);
+        
+        _mockIdentityManager.Verify(m => m.Record.UpdateEntry(It.IsAny<EntryTcp>()), Times.Never);
     }
     
     [Test]
