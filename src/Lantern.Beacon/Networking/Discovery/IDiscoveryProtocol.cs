@@ -13,5 +13,5 @@ public interface IDiscoveryProtocol
     
     Task StopAsync();
     
-    Task<IEnumerable<Multiaddress?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default);
+    Task<IEnumerable<Node?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default);
 }

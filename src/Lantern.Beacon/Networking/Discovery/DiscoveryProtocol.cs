@@ -8,7 +8,7 @@ using Multiformats.Address;
 
 namespace Lantern.Beacon.Networking.Discovery;
 
-public class DiscoveryProtocol(IDiscv5Protocol discv5Protocol, IIdentityManager identityManager, ILoggerFactory loggerFactory) : IDiscoveryProtocol
+public class DiscoveryProtocol(BeaconClientOptions options, IDiscv5Protocol discv5Protocol, IIdentityManager identityManager, ILoggerFactory loggerFactory) : IDiscoveryProtocol
 {
     private readonly ILogger<DiscoveryProtocol> _logger = loggerFactory.CreateLogger<DiscoveryProtocol>();
     public IEnr? SelfEnr => discv5Protocol.SelfEnr;
@@ -23,8 +23,7 @@ public class DiscoveryProtocol(IDiscv5Protocol discv5Protocol, IIdentityManager 
             return false;
         }
         
-        var tcpPort = discv5Protocol.SelfEnr.GetEntry<EntryUdp>(EnrEntryKey.Udp).Value + 1;
-        identityManager.Record.UpdateEntry(new EntryTcp(tcpPort));
+        identityManager.Record.UpdateEntry(new EntryTcp(options.TcpPort));
         
         _logger.LogInformation("Self ENR updated => {Enr}", identityManager.Record);
         
@@ -36,12 +35,10 @@ public class DiscoveryProtocol(IDiscv5Protocol discv5Protocol, IIdentityManager 
         await discv5Protocol.StopAsync();
     }
     
-    public async Task<IEnumerable<Multiaddress?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default)
+    public async Task<IEnumerable<Node?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default)
     {
         var peers = await discv5Protocol.DiscoverAsync(nodeId);
         
-        return peers == null ? Enumerable.Empty<Multiaddress>() : peers.Select(MultiAddressEnrConverter.ConvertToMultiAddress);
+        return peers == null ? Enumerable.Empty<Node>() : peers.Select(p => new Node(p));
     }
-
-
 }

@@ -10,6 +10,10 @@ public interface IBeaconClientServiceBuilder
 
     IBeaconClientServiceBuilder AddLibp2pProtocol(
         Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup);
+    
+    IBeaconClientServiceBuilder WithBeaconClientOptions(Action<BeaconClientOptions> configure);
+    
+    IBeaconClientServiceBuilder WithBeaconClientOptions(BeaconClientOptions options);
 
     IBeaconClient Build();
 }

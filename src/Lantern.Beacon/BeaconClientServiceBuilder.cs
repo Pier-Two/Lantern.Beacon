@@ -9,6 +9,7 @@ namespace Lantern.Beacon;
 public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconClientServiceBuilder
 {
     private IDiscv5ProtocolBuilder? _discv5ProtocolBuilder = new Discv5ProtocolBuilder(services);
+    private BeaconClientOptions _beaconClientOptions = new BeaconClientOptions();
     private IServiceProvider? _serviceProvider;
     
     public IBeaconClientServiceBuilder AddDiscoveryProtocol(Action<IDiscv5ProtocolBuilder> configure)
@@ -28,9 +29,16 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
         return this;
     }
     
-    public IServiceProvider GetServiceProvider()
+    public IBeaconClientServiceBuilder WithBeaconClientOptions(Action<BeaconClientOptions> configure)
     {
-        return _serviceProvider ?? throw new InvalidOperationException("Build() must be called before accessing the service provider.");
+        configure(_beaconClientOptions);
+        return this;
+    }
+    
+    public IBeaconClientServiceBuilder WithBeaconClientOptions(BeaconClientOptions options)
+    {
+        _beaconClientOptions = options ?? throw new ArgumentNullException(nameof(options));
+        return this;
     }
     
     public IBeaconClient Build()
@@ -40,7 +48,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
             throw new ArgumentNullException(nameof(_discv5ProtocolBuilder));
         }
         
-        services.AddBeaconClient(_discv5ProtocolBuilder.Build());
+        services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions);
         _serviceProvider = services.BuildServiceProvider();
         
         return _serviceProvider.GetRequiredService<IBeaconClient>();

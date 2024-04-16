@@ -32,7 +32,7 @@ public class PeerManagerTests
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<PeerManager>>();
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
-        _peerManager = new PeerManager(_mockDiscoveryProtocol.Object, _mockPeerFactory.Object, _mockLoggerFactory.Object);
+        _peerManager = new PeerManager(new BeaconClientOptions(), _mockDiscoveryProtocol.Object, _mockPeerFactory.Object, _mockLoggerFactory.Object);
     }
 
     [Test]

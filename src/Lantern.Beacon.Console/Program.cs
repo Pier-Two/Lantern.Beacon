@@ -20,9 +20,9 @@ internal static class Program
             "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg",
             "enr:-Le4QPUXJS2BTORXxyx2Ia-9ae4YqA_JWX3ssj4E_J-3z1A-HmFGrU8BpvpqhNabayXeOZ2Nq_sbeDgtzMJpLLnXFgAChGV0aDKQtTA_KgEAAAAAIgEAAAAAAIJpZIJ2NIJpcISsaa0Zg2lwNpAkAIkHAAAAAPA8kv_-awoTiXNlY3AyNTZrMaEDHAD2JKYevx89W0CcFJFiskdcEzkH_Wdv9iW42qLK79ODdWRwgiMohHVkcDaCI4I"
         };
-        var connectionOptions = new ConnectionOptions
+        var connectionOptions = new ConnectionOptions()
         {
-            UdpPort = new Random().Next(1, 65535)
+            UdpPort = 4555
         };
         var sessionOptions = SessionOptions.Default;
         var tableOptions = new TableOptions(bootstrapEnrs);
@@ -53,7 +53,9 @@ internal static class Program
                         .WithSessionOptions(sessionOptions);
                 });
 
+                beaconClientBuilder.WithBeaconClientOptions(options => options.TcpPort = 30303);
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
+                
             });
         
         var serviceProvider = services.BuildServiceProvider();
