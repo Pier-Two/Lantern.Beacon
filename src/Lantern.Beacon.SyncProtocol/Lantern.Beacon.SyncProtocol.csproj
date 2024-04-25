@@ -6,4 +6,19 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\lib\cortex\src\Cortex.Containers\Cortex.Containers.csproj" />
+      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Merkleization\Nethermind.Merkleization.csproj" />
+      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Serialization.Ssz\Nethermind.Serialization.Ssz.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Nethermind.Numerics.Int256" Version="1.2.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Config\" />
+      <Folder Include="Presets\" />
+    </ItemGroup>
+
 </Project>
