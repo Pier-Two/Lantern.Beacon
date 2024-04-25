@@ -53,7 +53,7 @@ public class CoreTests
             localPeer = peerFactory.Create(myIdentity);
         }
 
-        var newAddress =  localPeer.Address.Replace<IP4>("0.0.0.0").Replace<TCP>(0);
+        var newAddress =  localPeer.Address.ReplaceOrAdd<IP4>("0.0.0.0").ReplaceOrAdd<TCP>(0);
         localPeer.Address = newAddress;
         
         var remoteAddress = Multiaddress.Decode("/ip4/49.12.174.22/tcp/9000/p2p/16Uiu2HAmTUmUjvL9mts7C3iKcv8vtmrwWyXp2AWBhLcjuwxGdTWk");
