@@ -5,35 +5,21 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <EnablePreviewFeatures>true</EnablePreviewFeatures>
-        <RootNamespace>Lantern.Beacon.Core.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="libsodium" Version="1.0.19" />
-      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-      <PackageReference Include="NUnit" Version="4.1.0" />
-      <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Merkleization\Nethermind.Merkleization.csproj" />
+      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Serialization.Ssz\Nethermind.Serialization.Ssz.csproj" />
+      <ProjectReference Include="..\..\src\Lantern.Beacon.SyncProtocol\Lantern.Beacon.SyncProtocol.csproj" />
+      <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multiaddress\src\Multiformats.Address\Multiformats.Address.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\cs-multihash\src\Multiformats.Hash\Multiformats.Hash.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core.Benchmarks\Libp2p.Core.Benchmarks.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Generators.Enums\Libp2p.Generators.Enums.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Generators.Protobuf\Libp2p.Generators.Protobuf.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Identify\Libp2p.Protocols.Identify.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.IpTcp\Libp2p.Protocols.IpTcp.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.MDns\Libp2p.Protocols.MDns.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Multistream\Libp2p.Protocols.Multistream.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Noise\Libp2p.Protocols.Noise.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Ping\Libp2p.Protocols.Ping.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Plaintext\Libp2p.Protocols.Plaintext.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Pubsub\Libp2p.Protocols.Pubsub.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Quic\Libp2p.Protocols.Quic.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Yamux\Libp2p.Protocols.Yamux.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
-      <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
+      <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+      <PackageReference Include="NUnit" Version="4.1.0" />
+      <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+      <PackageReference Include="YamlDotNet" Version="15.1.2" />
     </ItemGroup>
 
 </Project>
