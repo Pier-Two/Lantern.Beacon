@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <Folder Include="Config\" />
+      <Folder Include="Merkleize\" />
       <Folder Include="Presets\" />
     </ItemGroup>
 

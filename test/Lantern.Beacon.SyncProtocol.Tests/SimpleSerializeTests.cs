@@ -1,10 +1,13 @@
 using System.Collections;
 using NUnit.Framework;
 using Cortex.Containers;
+using Lantern.Beacon.SyncProtocol.SimpleSerialize;
 using Lantern.Beacon.SyncProtocol.Types;
-using Nethermind.Core.Extensions;
+using Lantern.Beacon.SyncProtocol.Types.Altair;
+using Lantern.Beacon.SyncProtocol.Types.Bellatrix;
+using Lantern.Beacon.SyncProtocol.Types.Capella;
+using Lantern.Beacon.SyncProtocol.Types.Phase0;
 using Nethermind.Int256;
-using BeaconBlockHeader = Lantern.Beacon.SyncProtocol.Types.BeaconBlockHeader;
 
 namespace Lantern.Beacon.SyncProtocol.Tests;
 
@@ -33,8 +36,8 @@ public class SimpleSerializeTests : YamlFixtureBase
         var parentRoot = TestUtility.HexToBytes32((string)yamlData["parent_root"]);
         var stateRoot = TestUtility.HexToBytes32((string)yamlData["state_root"]);
         var bodyRoot = TestUtility.HexToBytes32((string)yamlData["body_root"]);
-        var header = new BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
-        var deserializedHeader = BeaconBlockHeader.Serializer.Deserialize(BeaconBlockHeader.Serializer.Serialize(header).AsSpan());
+        var header = new Phase0BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
+        var deserializedHeader = Deserializers.DecodePhase0BeaconBlockHeader(Serializers.Encode(header).AsSpan());
         
         Assert.That((ulong)deserializedHeader.Slot, Is.EqualTo(ulong.Parse((string)yamlData["slot"])));
         Assert.That((ulong)deserializedHeader.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["proposer_index"])));
@@ -55,15 +58,17 @@ public class SimpleSerializeTests : YamlFixtureBase
         var parentRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["parent_root"]);
         var stateRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["state_root"]);
         var bodyRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["body_root"]);
-        var header = new BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
-        var deserializedHeader = BeaconBlockHeader.Serializer.Deserialize(BeaconBlockHeader.Serializer.Serialize(header));
+        var header = new Phase0BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
+        var lightClientHeader = new AltairLightClientHeader(header);
+        var deserializedHeader = Deserializers.DecodeAltairLightClientHeader(Serializers.Encode(lightClientHeader));
         
-        Console.WriteLine(Convert.ToHexString(deserializedHeader.ParentRoot.AsSpan()).ToLower());
-        Assert.That((ulong)deserializedHeader.Slot, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["slot"])));
-        Assert.That((ulong)deserializedHeader.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["proposer_index"])));
-        Assert.That(Convert.ToHexString(deserializedHeader.ParentRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["parent_root"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedHeader.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["state_root"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedHeader.BodyRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["body_root"].Remove(0, 2)));
+
+        Console.WriteLine(Convert.ToHexString(deserializedHeader.Beacon.ParentRoot.AsSpan()).ToLower());
+        Assert.That((ulong)deserializedHeader.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["slot"])));
+        Assert.That((ulong)deserializedHeader.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["proposer_index"])));
+        Assert.That(Convert.ToHexString(deserializedHeader.Beacon.ParentRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["parent_root"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedHeader.Beacon.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["state_root"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedHeader.Beacon.BodyRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["body_root"].Remove(0, 2)));
     }
 
     [Test]
@@ -82,8 +87,8 @@ public class SimpleSerializeTests : YamlFixtureBase
         }
         
         var aggregatePubKey = new BlsPublicKey(TestUtility.HexToByteArray((string)yamlData["aggregate_pubkey"]));
-        var syncCommittee = new SyncCommittee(pubKeysArray, aggregatePubKey);
-        var deserializedSyncCommittee = SyncCommittee.Serializer.Deserialize(SyncCommittee.Serializer.Serialize(syncCommittee));
+        var syncCommittee = new AltairSyncCommittee(pubKeysArray, aggregatePubKey);
+        var deserializedSyncCommittee = Deserializers.DecodeAltairSyncCommittee( Serializers.Encode(syncCommittee));
         
         for (var i = 0; i < Constants.SyncCommitteeSize; i++)
         {
@@ -102,8 +107,8 @@ public class SimpleSerializeTests : YamlFixtureBase
         var yamlData = _yamlData;
         var syncCommitteeBits = new BitArray(TestUtility.HexToByteArray((string)yamlData["sync_committee_bits"]));
         var syncCommitteeSignature = new BlsSignature(TestUtility.HexToByteArray((string)yamlData["sync_committee_signature"]));
-        var syncAggregate = new SyncAggregate(syncCommitteeBits, syncCommitteeSignature);
-        var deserializedSyncAggregate = SyncAggregate.Serializer.Deserialize(SyncAggregate.Serializer.Serialize(syncAggregate));
+        var syncAggregate = new AltairSyncAggregate(syncCommitteeBits, syncCommitteeSignature);
+        var deserializedSyncAggregate = Deserializers.DecodeAltairSyncAggregate(Serializers.Encode(syncAggregate));
         
         Assert.That(syncCommitteeBits, Is.EqualTo(deserializedSyncAggregate.SyncCommitteeBits));
         Assert.That(Convert.ToHexString(deserializedSyncAggregate.SyncCommitteeSignature.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(syncCommitteeSignature.AsSpan()).ToLower()));
@@ -137,10 +142,10 @@ public class SimpleSerializeTests : YamlFixtureBase
             branch[i] = new Bytes32(TestUtility.HexToByteArray((string)yamlData["current_sync_committee_branch"][i]));
         }
         
-        var header = new LightClientHeader(new BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot));
-        var syncCommittee = new SyncCommittee(pubKeysArray, aggregatePubKey);
-        var lightClientBootstrap = new LightClientBootstrap(header, syncCommittee, branch);
-        var deserializedLightClientBootstrap = LightClientBootstrap.Serializer.Deserialize(LightClientBootstrap.Serializer.Serialize(lightClientBootstrap));
+        var header = new AltairLightClientHeader(new Phase0BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot));
+        var syncCommittee = new AltairSyncCommittee(pubKeysArray, aggregatePubKey);
+        var lightClientBootstrap = new AltairLightClientBootstrap(header, syncCommittee, branch);
+        var deserializedLightClientBootstrap = Deserializers.DecodeAltairLightClientBootstrap(Serializers.Encode(lightClientBootstrap));
         
         Assert.That((ulong)deserializedLightClientBootstrap.Header.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["header"]["beacon"]["slot"])));
         Assert.That((ulong)deserializedLightClientBootstrap.Header.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["header"]["beacon"]["proposer_index"])));
@@ -150,10 +155,10 @@ public class SimpleSerializeTests : YamlFixtureBase
         
         for (var i = 0; i < Constants.SyncCommitteeSize; i++)
         {
-            Assert.That(Convert.ToHexString(deserializedLightClientBootstrap.CurrentSyncCommittee.PubKeys[i].AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(pubKeysArray[i].AsSpan()).ToLower()));
+            Assert.That(Convert.ToHexString(deserializedLightClientBootstrap.CurrentAltairSyncCommittee.PubKeys[i].AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(pubKeysArray[i].AsSpan()).ToLower()));
         }
         
-        Assert.That(Convert.ToHexString(deserializedLightClientBootstrap.CurrentSyncCommittee.AggregatePubKey.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(aggregatePubKey.AsSpan()).ToLower()));
+        Assert.That(Convert.ToHexString(deserializedLightClientBootstrap.CurrentAltairSyncCommittee.AggregatePubKey.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(aggregatePubKey.AsSpan()).ToLower()));
         
         for (var i = 0; i < Constants.CurrentSyncCommitteeBranchDepth; i++)
         {
@@ -203,13 +208,13 @@ public class SimpleSerializeTests : YamlFixtureBase
         var syncCommitteeBits = new BitArray(TestUtility.HexToByteArray((string)yamlData["sync_aggregate"]["sync_committee_bits"]));
         var syncCommitteeSignature = new BlsSignature(TestUtility.HexToByteArray((string)yamlData["sync_aggregate"]["sync_committee_signature"]));
         var signatureSlot = new Slot(ulong.Parse((string)yamlData["signature_slot"]));
-        var attestedHeader = new LightClientHeader(new BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot, attestedBodyRoot));
+        var attestedHeader = new AltairLightClientHeader(new Phase0BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot, attestedBodyRoot));
         var aggregatePubKey = new BlsPublicKey(TestUtility.HexToByteArray((string)yamlData["next_sync_committee"]["aggregate_pubkey"]));
-        var nextSyncCommittee = new SyncCommittee(pubKeysArray, aggregatePubKey);
-        var finalizedHeader = new LightClientHeader(new BeaconBlockHeader(finalizedSlot, finalizedProposerIndex, finalizedParentRoot, finalizedStateRoot, finalizedBodyRoot));
-        var syncAggregate = new SyncAggregate(syncCommitteeBits, syncCommitteeSignature);
-        var lightClientUpdate = new LightClientUpdate(attestedHeader, nextSyncCommittee, nextSyncCommitteebranch, finalizedHeader, finalizedBranch, syncAggregate, signatureSlot);
-        var deserializedLightClientUpdate = LightClientUpdate.Serializer.Deserialize(LightClientUpdate.Serializer.Serialize(lightClientUpdate));
+        var nextSyncCommittee = new AltairSyncCommittee(pubKeysArray, aggregatePubKey);
+        var finalizedHeader = new AltairLightClientHeader(new Phase0BeaconBlockHeader(finalizedSlot, finalizedProposerIndex, finalizedParentRoot, finalizedStateRoot, finalizedBodyRoot));
+        var syncAggregate = new AltairSyncAggregate(syncCommitteeBits, syncCommitteeSignature);
+        var lightClientUpdate = new AltairLightClientUpdate(attestedHeader, nextSyncCommittee, nextSyncCommitteebranch, finalizedHeader, finalizedBranch, syncAggregate, signatureSlot);
+        var deserializedLightClientUpdate = Deserializers.DecodeAltairLightClientUpdate(Serializers.Encode(lightClientUpdate));
         
         Assert.That((ulong)deserializedLightClientUpdate.AttestedHeader.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["slot"])));
         Assert.That((ulong)deserializedLightClientUpdate.AttestedHeader.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["proposer_index"])));
@@ -219,10 +224,10 @@ public class SimpleSerializeTests : YamlFixtureBase
         
         for (var i = 0; i < Constants.SyncCommitteeSize; i++)
         {
-            Assert.That(Convert.ToHexString(deserializedLightClientUpdate.NextSyncCommittee.PubKeys[i].AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(pubKeysArray[i].AsSpan()).ToLower()));
+            Assert.That(Convert.ToHexString(deserializedLightClientUpdate.NextAltairSyncCommittee.PubKeys[i].AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(pubKeysArray[i].AsSpan()).ToLower()));
         }
         
-        Assert.That(Convert.ToHexString(deserializedLightClientUpdate.NextSyncCommittee.AggregatePubKey.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(aggregatePubKey.AsSpan()).ToLower()));
+        Assert.That(Convert.ToHexString(deserializedLightClientUpdate.NextAltairSyncCommittee.AggregatePubKey.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(aggregatePubKey.AsSpan()).ToLower()));
         
         for (var i = 0; i < Constants.NextSyncCommitteeBranchDepth; i++)
         {
@@ -256,18 +261,18 @@ public class SimpleSerializeTests : YamlFixtureBase
         var syncCommitteeBits = new BitArray(TestUtility.HexToByteArray((string)yamlData["sync_aggregate"]["sync_committee_bits"]));
         var syncCommitteeSignature = new BlsSignature(TestUtility.HexToByteArray((string)yamlData["sync_aggregate"]["sync_committee_signature"]));
         var signatureSlot = new Slot(ulong.Parse((string)yamlData["signature_slot"]));
-        var attestedHeader = new LightClientHeader(new BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot, attestedBodyRoot));
-        var syncAggregate = new SyncAggregate(syncCommitteeBits, syncCommitteeSignature);
-        var optimisticUpdate = new LightClientOptimisticUpdate(attestedHeader, syncAggregate, signatureSlot);
-        var deserializedOptimisticUpdate = LightClientOptimisticUpdate.Serializer.Deserialize(LightClientOptimisticUpdate.Serializer.Serialize(optimisticUpdate));
+        var attestedHeader = new AltairLightClientHeader(new Phase0BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot, attestedBodyRoot));
+        var syncAggregate = new AltairSyncAggregate(syncCommitteeBits, syncCommitteeSignature);
+        var optimisticUpdate = new AltairLightClientOptimisticUpdate(attestedHeader, syncAggregate, signatureSlot);
+        var deserializedOptimisticUpdate = Deserializers.DecodeAltairLightClientOptimisticUpdate(Serializers.Encode(optimisticUpdate));
         
         Assert.That((ulong)deserializedOptimisticUpdate.AttestedHeader.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["slot"])));
         Assert.That((ulong)deserializedOptimisticUpdate.AttestedHeader.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["proposer_index"])));
         Assert.That(Convert.ToHexString(deserializedOptimisticUpdate.AttestedHeader.Beacon.ParentRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["attested_header"]["beacon"]["parent_root"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedOptimisticUpdate.AttestedHeader.Beacon.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["attested_header"]["beacon"]["state_root"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedOptimisticUpdate.AttestedHeader.Beacon.BodyRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["attested_header"]["beacon"]["body_root"].Remove(0, 2)));
-        Assert.That(syncCommitteeBits, Is.EqualTo(deserializedOptimisticUpdate.SyncAggregate.SyncCommitteeBits));
-        Assert.That(Convert.ToHexString(deserializedOptimisticUpdate.SyncAggregate.SyncCommitteeSignature.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(syncCommitteeSignature.AsSpan()).ToLower()));
+        Assert.That(syncCommitteeBits, Is.EqualTo(deserializedOptimisticUpdate.AltairSyncAggregate.SyncCommitteeBits));
+        Assert.That(Convert.ToHexString(deserializedOptimisticUpdate.AltairSyncAggregate.SyncCommitteeSignature.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(syncCommitteeSignature.AsSpan()).ToLower()));
         Assert.That((ulong)deserializedOptimisticUpdate.SignatureSlot, Is.EqualTo(ulong.Parse((string)yamlData["signature_slot"])));
     }
 
@@ -303,14 +308,14 @@ public class SimpleSerializeTests : YamlFixtureBase
             new BlsSignature(
                 TestUtility.HexToByteArray((string)yamlData["sync_aggregate"]["sync_committee_signature"]));
         var signatureSlot = new Slot(ulong.Parse((string)yamlData["signature_slot"]));
-        var attestedHeader = new LightClientHeader(
-            new BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot,
+        var attestedHeader = new Types.Altair.AltairLightClientHeader(
+            new Phase0BeaconBlockHeader(attestedSlot, attestedProposerIndex, attestedParentRoot, attestedStateRoot,
                 attestedBodyRoot));
-        var finalizedHeader = new LightClientHeader(new BeaconBlockHeader(finalizedSlot, finalizedProposerIndex, finalizedParentRoot,
+        var finalizedHeader = new AltairLightClientHeader(new Phase0BeaconBlockHeader(finalizedSlot, finalizedProposerIndex, finalizedParentRoot,
             finalizedStateRoot, finalizedBodyRoot));
-        var syncAggregate = new SyncAggregate(syncCommitteeBits, syncCommitteeSignature);
-        var lightClientFinalityUpdate = new LightClientFinalityUpdate(attestedHeader, finalizedHeader, finalizedBranch, syncAggregate, signatureSlot);
-        var deserializedLightClientFinalityUpdate = LightClientFinalityUpdate.Serializer.Deserialize(LightClientFinalityUpdate.Serializer.Serialize(lightClientFinalityUpdate));
+        var syncAggregate = new AltairSyncAggregate(syncCommitteeBits, syncCommitteeSignature);
+        var lightClientFinalityUpdate = new AltairLightClientFinalityUpdate(attestedHeader, finalizedHeader, finalizedBranch, syncAggregate, signatureSlot);
+        var deserializedLightClientFinalityUpdate = Deserializers.DecodeAltairLightClientFinalityUpdate(Serializers.Encode(lightClientFinalityUpdate));
         
         Assert.That((ulong)deserializedLightClientFinalityUpdate.AttestedHeader.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["slot"])));
         Assert.That((ulong)deserializedLightClientFinalityUpdate.AttestedHeader.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["attested_header"]["beacon"]["proposer_index"])));
@@ -328,8 +333,8 @@ public class SimpleSerializeTests : YamlFixtureBase
             Assert.That(Convert.ToHexString(deserializedLightClientFinalityUpdate.FinalityBranch[i].AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(finalizedBranch[i].AsSpan()).ToLower()));
         }
         
-        Assert.That(syncCommitteeBits, Is.EqualTo(deserializedLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits));
-        Assert.That(Convert.ToHexString(deserializedLightClientFinalityUpdate.SyncAggregate.SyncCommitteeSignature.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(syncCommitteeSignature.AsSpan()).ToLower()));
+        Assert.That(syncCommitteeBits, Is.EqualTo(deserializedLightClientFinalityUpdate.AltairSyncAggregate.SyncCommitteeBits));
+        Assert.That(Convert.ToHexString(deserializedLightClientFinalityUpdate.AltairSyncAggregate.SyncCommitteeSignature.AsSpan()).ToLower(), Is.EqualTo(Convert.ToHexString(syncCommitteeSignature.AsSpan()).ToLower()));
         Assert.That((ulong)deserializedLightClientFinalityUpdate.SignatureSlot, Is.EqualTo(ulong.Parse((string)yamlData["signature_slot"])));
     }
 
@@ -354,8 +359,8 @@ public class SimpleSerializeTests : YamlFixtureBase
         var baseFeePerGas = UInt256.Parse((string)yamlData["base_fee_per_gas"]);
         var blockHash = new Hash32(TestUtility.HexToByteArray((string)yamlData["block_hash"]));
         var transactionsRoot = TestUtility.HexToBytes32((string)yamlData["transactions_root"]); 
-        var header = new ExecutionPayloadHeader(parentHash, feeRecipient, stateRoot, receiptsRoot, logsBloom, prevRandao, blockNumber, gasLimit, gasUsed, timestamp, extraData, baseFeePerGas, blockHash, transactionsRoot); 
-        var deserializedHeader = ExecutionPayloadHeader.Serializer.Deserialize(ExecutionPayloadHeader.Serializer.Serialize(header));
+        var header = new BellatrixExecutionPayloadHeader(parentHash, feeRecipient, stateRoot, receiptsRoot, logsBloom, prevRandao, blockNumber, gasLimit, gasUsed, timestamp, extraData, baseFeePerGas, blockHash, transactionsRoot); 
+        var deserializedHeader = Deserializers.DecodeBellatrixExecutionPayloadHeader(Serializers.Encode(header));
         
         Assert.That(Convert.ToHexString(deserializedHeader.ParentHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["parent_hash"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedHeader.FeeRecipientAddress.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["fee_recipient"].Remove(0, 2)));
@@ -396,7 +401,7 @@ public class SimpleSerializeTests : YamlFixtureBase
         var transactionsRoot = TestUtility.HexToBytes32((string)yamlData["transactions_root"]); 
         var withdrawalsRoot = TestUtility.HexToBytes32((string)yamlData["withdrawals_root"]);
         var header = new CapellaExecutionPayloadHeader(parentHash, feeRecipient, stateRoot, receiptsRoot, logsBloom, prevRandao, blockNumber, gasLimit, gasUsed, timestamp, extraData, baseFeePerGas, blockHash, transactionsRoot, withdrawalsRoot); 
-        var deserializedHeader = CapellaExecutionPayloadHeader.Serializer.Deserialize(CapellaExecutionPayloadHeader.Serializer.Serialize(header));
+        var deserializedHeader =  Deserializers.DecodeCapellaExecutionPayloadHeader(Serializers.Encode(header));
         
         Assert.That(Convert.ToHexString(deserializedHeader.ParentHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["parent_hash"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedHeader.FeeRecipientAddress.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["fee_recipient"].Remove(0, 2)));
@@ -427,7 +432,7 @@ public class SimpleSerializeTests : YamlFixtureBase
         var parentRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["parent_root"]);
         var stateRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["state_root"]); 
         var bodyRoot = TestUtility.HexToBytes32((string)yamlData["beacon"]["body_root"]);
-        var beacon = new BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
+        var beacon = new Phase0BeaconBlockHeader(slot, proposerIndex, parentRoot, stateRoot, bodyRoot);
         var parentHash = new Hash32(TestUtility.HexToByteArray((string)yamlData["execution"]["parent_hash"]));
         var feeRecipient = new Bytes20(TestUtility.HexToByteArray((string)yamlData["execution"]["fee_recipient"]));
         var executionStateRoot = TestUtility.HexToBytes32((string)yamlData["execution"]["state_root"]);
@@ -452,27 +457,27 @@ public class SimpleSerializeTests : YamlFixtureBase
         }
         
         var lightClientHeader = new CapellaLightClientHeader(beacon, execution, executionBranch);
-        var deserializedLightClientHeader = CapellaLightClientHeader.Serializer.Deserialize(CapellaLightClientHeader.Serializer.Serialize(lightClientHeader));
+        var deserializedLightClientHeader = Deserializers.DecodeCapellaLightClientHeader(Serializers.Encode(lightClientHeader));
         
         Assert.That((ulong)deserializedLightClientHeader.Beacon.Slot, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["slot"])));
         Assert.That((ulong)deserializedLightClientHeader.Beacon.ProposerIndex, Is.EqualTo(ulong.Parse((string)yamlData["beacon"]["proposer_index"])));
         Assert.That(Convert.ToHexString(deserializedLightClientHeader.Beacon.ParentRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["parent_root"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedLightClientHeader.Beacon.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["state_root"].Remove(0, 2)));
         Assert.That(Convert.ToHexString(deserializedLightClientHeader.Beacon.BodyRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["beacon"]["body_root"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.ParentHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["parent_hash"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.FeeRecipientAddress.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["fee_recipient"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["state_root"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.ReceiptsRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["receipts_root"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.LogsBloom).ToLower(), Is.EqualTo((string)yamlData["execution"]["logs_bloom"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.PrevRandoa.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["prev_randao"].Remove(0, 2)));
-        Assert.That(deserializedLightClientHeader.Execution.BlockNumber, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["block_number"])));
-        Assert.That(deserializedLightClientHeader.Execution.GasLimit, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["gas_limit"])));
-        Assert.That(deserializedLightClientHeader.Execution.GasUsed, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["gas_used"])));
-        Assert.That(deserializedLightClientHeader.Execution.Timestamp, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["timestamp"])));
-        Assert.That(deserializedLightClientHeader.Execution.ExtraData, Is.EqualTo(execution.ExtraData));
-        Assert.That(deserializedLightClientHeader.Execution.BaseFeePerGas, Is.EqualTo(UInt256.Parse((string)yamlData["execution"]["base_fee_per_gas"])));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.BlockHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["block_hash"].Remove(0, 2)));
-        Assert.That(Convert.ToHexString(deserializedLightClientHeader.Execution.TransactionsRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["transactions_root"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.ParentHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["parent_hash"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.FeeRecipientAddress.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["fee_recipient"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.StateRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["state_root"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.ReceiptsRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["receipts_root"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.LogsBloom).ToLower(), Is.EqualTo((string)yamlData["execution"]["logs_bloom"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.PrevRandoa.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["prev_randao"].Remove(0, 2)));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.BlockNumber, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["block_number"])));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.GasLimit, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["gas_limit"])));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.GasUsed, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["gas_used"])));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.Timestamp, Is.EqualTo(ulong.Parse((string)yamlData["execution"]["timestamp"])));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.ExtraData, Is.EqualTo(execution.ExtraData));
+        Assert.That(deserializedLightClientHeader.BellatrixExecution.BaseFeePerGas, Is.EqualTo(UInt256.Parse((string)yamlData["execution"]["base_fee_per_gas"])));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.BlockHash.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["block_hash"].Remove(0, 2)));
+        Assert.That(Convert.ToHexString(deserializedLightClientHeader.BellatrixExecution.TransactionsRoot.AsSpan()).ToLower(), Is.EqualTo((string)yamlData["execution"]["transactions_root"].Remove(0, 2)));
         
         for (var i = 0; i < Constants.ExecutionBranchDepth; i++)
         {
