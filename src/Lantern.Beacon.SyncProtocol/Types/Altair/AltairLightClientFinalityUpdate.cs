@@ -1,24 +1,24 @@
 using Cortex.Containers;
-using Lantern.Beacon.SyncProtocol.SimpleSerialize;
-using Nethermind.Serialization.Ssz;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
 
-public class AltairLightClientFinalityUpdate(AltairLightClientHeader attestedHeader,
-    AltairLightClientHeader finalizedHeader,
-    Bytes32[] finalityBranch, 
-    AltairSyncAggregate altairSyncAggregate,
-    Slot signatureSlot) : IEquatable<AltairLightClientFinalityUpdate>
+public class AltairLightClientFinalityUpdate : IEquatable<AltairLightClientFinalityUpdate>
 {
-    public AltairLightClientHeader AttestedHeader { get; init; } = attestedHeader;
+    [SszElement(0, "Container")]
+    public AltairLightClientHeader AttestedHeader { get; protected init; }
     
-    public AltairLightClientHeader FinalizedHeader { get; init; } = finalizedHeader;
+    [SszElement(1, "Container")]
+    public AltairLightClientHeader FinalizedHeader { get; protected init; } 
     
-    public Bytes32[] FinalityBranch { get; init; } = finalityBranch;
+    [SszElement(2, "Vector[Vector[uint8, 32], 6]")]
+    public byte[][] FinalityBranch { get; protected init; } 
     
-    public AltairSyncAggregate AltairSyncAggregate { get; init; } = altairSyncAggregate;
+    [SszElement(3, "Container")]
+    public AltairSyncAggregate AltairSyncAggregate { get; protected init; } 
     
-    public Slot SignatureSlot { get; init; } = signatureSlot;
+    [SszElement(4, "uint64")]
+    public ulong SignatureSlot { get; protected init; } 
     
     public bool Equals(AltairLightClientFinalityUpdate? other)
     {
@@ -40,10 +40,49 @@ public class AltairLightClientFinalityUpdate(AltairLightClientHeader attestedHea
         return HashCode.Combine(AttestedHeader, FinalizedHeader, FinalityBranch, AltairSyncAggregate, SignatureSlot);
     }
     
+    public static AltairLightClientFinalityUpdate CreateFrom(
+        AltairLightClientHeader altairLightClientHeader, 
+        AltairLightClientHeader finalizedHeader, 
+        byte[][] finalityBranch, 
+        AltairSyncAggregate altairSyncAggregate, 
+        ulong signatureSlot)
+    {
+        if (finalityBranch.Length != Constants.FinalityBranchDepth)
+        {
+            throw new ArgumentException($"Finalized branch length must be {Constants.FinalityBranchDepth}");
+        }
+        
+        return new AltairLightClientFinalityUpdate
+        {
+            AttestedHeader = altairLightClientHeader,
+            FinalizedHeader = finalizedHeader,
+            FinalityBranch = finalityBranch,
+            AltairSyncAggregate = altairSyncAggregate,
+            SignatureSlot = signatureSlot
+        };
+    }
+
+    
     public static AltairLightClientFinalityUpdate CreateDefault()
     {
-        return new AltairLightClientFinalityUpdate(AltairLightClientHeader.CreateDefault(), AltairLightClientHeader.CreateDefault(), new Bytes32[Constants.FinalizedRootGIndex], AltairSyncAggregate.CreateDefault(), Slot.Zero);
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairLightClientHeader.CreateDefault(), new byte[Constants.FinalityBranchDepth][], AltairSyncAggregate.CreateDefault(), 0);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairLightClientHeader.BytesLength + Constants.FinalityBranchDepth * Bytes32.Length + AltairSyncAggregate.BytesLength + sizeof(ulong);
+    
+    public static byte[] Serialize(AltairLightClientFinalityUpdate altairLightClientFinalityUpdateUpdate)
+    {
+        var container = SszContainer.GetContainer<AltairLightClientFinalityUpdate>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(altairLightClientFinalityUpdateUpdate)];
+        
+        container.Serialize(altairLightClientFinalityUpdateUpdate, bytes.AsSpan());
+        
+        return bytes;
+    }
+    
+    public static AltairLightClientFinalityUpdate Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<AltairLightClientFinalityUpdate>(data, SizePreset.MainnetPreset);
+        return result.Item1;
+    }
 }

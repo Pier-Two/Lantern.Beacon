@@ -1,14 +1,17 @@
 using System.Collections;
 using Cortex.Containers;
 using Nethermind.Serialization.Ssz;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
 
-public class AltairSyncAggregate(BitArray syncCommitteeBits, BlsSignature syncCommitteeSignature) : IEquatable<AltairSyncAggregate>
+public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
 {
-    public BitArray SyncCommitteeBits { get; init; } = syncCommitteeBits;
+    [SszElement(0, "Bitvector[SYNC_COMMITTEE_SIZE]")]
+    public List<bool> SyncCommitteeBits { get; protected init; }
     
-    public BlsSignature SyncCommitteeSignature { get; init; } = syncCommitteeSignature;
+    [SszElement(1, "Vector[uint8, 96]")]
+    public byte[] SyncCommitteeSignature { get; protected init; } 
     
     public bool Equals(AltairSyncAggregate? other)
     {
@@ -30,10 +33,35 @@ public class AltairSyncAggregate(BitArray syncCommitteeBits, BlsSignature syncCo
         return HashCode.Combine(SyncCommitteeBits, SyncCommitteeSignature);
     }
     
+    public static AltairSyncAggregate CreateFrom(List<bool> syncCommitteeBits, byte[] syncCommitteeSignature)
+    {
+        return new AltairSyncAggregate
+        {
+            SyncCommitteeBits = syncCommitteeBits,
+            SyncCommitteeSignature = syncCommitteeSignature
+        };
+    }
+    
     public static AltairSyncAggregate CreateDefault()
     {
-        return new AltairSyncAggregate(new BitArray(Constants.SyncCommitteeSize), new BlsSignature());
+        return CreateFrom(Enumerable.Repeat(false, Constants.SyncCommitteeSize).ToList(),new byte[96]);
     }
     
     public static int BytesLength => Constants.SyncCommitteeSize + BlsSignature.Length;
+    
+    public static byte[] Serialize(AltairSyncAggregate altairSyncAggregate)
+    {
+        var container = SszContainer.GetContainer<AltairSyncAggregate>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(altairSyncAggregate)];
+        
+        container.Serialize(altairSyncAggregate, bytes);
+
+        return bytes;
+    }
+    
+    public static AltairSyncAggregate Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<AltairSyncAggregate>(data, SizePreset.MainnetPreset);
+        return result.Item1;
+    }
 }

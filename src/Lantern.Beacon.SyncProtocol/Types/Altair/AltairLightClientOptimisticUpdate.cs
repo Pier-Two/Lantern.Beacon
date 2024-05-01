@@ -1,18 +1,18 @@
 using Cortex.Containers;
-using Lantern.Beacon.SyncProtocol.SimpleSerialize;
-using Nethermind.Serialization.Ssz;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
 
-public class AltairLightClientOptimisticUpdate(AltairLightClientHeader attestedHeader, 
-    AltairSyncAggregate altairSyncAggregate,
-    Slot signatureSlot) : IEquatable<AltairLightClientOptimisticUpdate>
+public class AltairLightClientOptimisticUpdate : IEquatable<AltairLightClientOptimisticUpdate>
 {
-    public AltairLightClientHeader AttestedHeader { get; init; } = attestedHeader;
+    [SszElement(0, "Container")]
+    public AltairLightClientHeader AttestedHeader { get; protected init; } 
     
-    public AltairSyncAggregate AltairSyncAggregate { get; init; } = altairSyncAggregate;
+    [SszElement(1, "Container")]
+    public AltairSyncAggregate AltairSyncAggregate { get; protected init; } 
     
-    public Slot SignatureSlot { get; init; } = signatureSlot;
+    [SszElement(2, "uint64")]
+    public ulong SignatureSlot { get; protected init; } 
     
     public bool Equals(AltairLightClientOptimisticUpdate? other)
     {
@@ -34,10 +34,39 @@ public class AltairLightClientOptimisticUpdate(AltairLightClientHeader attestedH
         return HashCode.Combine(AttestedHeader, AltairSyncAggregate, SignatureSlot);
     }
     
+    public static AltairLightClientOptimisticUpdate CreateFrom(
+        AltairLightClientHeader altairLightClientHeader, 
+        AltairSyncAggregate altairSyncAggregate, 
+        ulong signatureSlot)
+    {
+        return new AltairLightClientOptimisticUpdate
+        {
+            AttestedHeader = altairLightClientHeader,
+            AltairSyncAggregate = altairSyncAggregate,
+            SignatureSlot = signatureSlot
+        };
+    }
+    
     public static AltairLightClientOptimisticUpdate CreateDefault()
     {
-        return new AltairLightClientOptimisticUpdate(AltairLightClientHeader.CreateDefault(), AltairSyncAggregate.CreateDefault(), Slot.Zero);
+        return AltairLightClientOptimisticUpdate.CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncAggregate.CreateDefault(), 0);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairSyncAggregate.BytesLength + sizeof(ulong);
+    
+    public static byte[] Serialize(AltairLightClientOptimisticUpdate altairLightClientOptimisticUpdate)
+    {
+        var container = SszContainer.GetContainer<AltairLightClientOptimisticUpdate>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(altairLightClientOptimisticUpdate)];
+        
+        container.Serialize(altairLightClientOptimisticUpdate, bytes.AsSpan());
+        
+        return bytes;
+    }
+    
+    public static AltairLightClientOptimisticUpdate Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<AltairLightClientOptimisticUpdate>(data, SizePreset.MainnetPreset);
+        return result.Item1;
+    }
 }

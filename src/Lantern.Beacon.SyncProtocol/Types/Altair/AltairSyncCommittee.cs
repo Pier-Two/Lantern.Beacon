@@ -1,13 +1,15 @@
 using Cortex.Containers;
-using Nethermind.Serialization.Ssz;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
 
-public class AltairSyncCommittee(BlsPublicKey[] pubKeys, BlsPublicKey aggregatePubKey) : IEquatable<AltairSyncCommittee>
+public class AltairSyncCommittee : IEquatable<AltairSyncCommittee>
 {
-    public BlsPublicKey[] PubKeys { get; init; } = pubKeys;
+    [SszElement(0, "Vector[Vector[uint8,48], SYNC_COMMITTEE_SIZE]")]
+    public byte[][] PubKeys { get; protected init; }
     
-    public BlsPublicKey AggregatePubKey { get; init; } = aggregatePubKey;
+    [SszElement(1, "Vector[uint8,48]")]
+    public byte[] AggregatePubKey { get; protected init; } 
     
     public bool Equals(AltairSyncCommittee? other)
     {
@@ -54,17 +56,42 @@ public class AltairSyncCommittee(BlsPublicKey[] pubKeys, BlsPublicKey aggregateP
         return hash;
     }
     
+    public static AltairSyncCommittee CreateFrom(byte[][] pubKeys, byte[] aggregatePubKey)
+    {
+        if (pubKeys.Length != Constants.SyncCommitteeSize)
+        {
+            throw new ArgumentException("PubKeys length must be equal to SyncCommitteeSize");
+        }
+        
+        var altairSyncCommittee = new AltairSyncCommittee
+        {
+            PubKeys = pubKeys,
+            AggregatePubKey = aggregatePubKey
+        };
+        
+        return altairSyncCommittee;
+    }
+    
     public static AltairSyncCommittee CreateDefault()
     {
-        return new AltairSyncCommittee(new BlsPublicKey[Constants.SyncCommitteeSize], new BlsPublicKey());
+        return CreateFrom(new byte[Constants.SyncCommitteeSize][], new byte[48]);
     }
     
     public static int BytesLength => Constants.SyncCommitteeSize * BlsPublicKey.Length + BlsPublicKey.Length;
     
-    public static class Serializer
+    public static byte[] Serialize(AltairSyncCommittee altairSyncCommittee)
     {
-   
+        var container = SszContainer.GetContainer<AltairSyncCommittee>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(altairSyncCommittee)];
         
-   
+        container.Serialize(altairSyncCommittee, bytes.AsSpan());
+        
+        return bytes;
+    }
+    
+    public static AltairSyncCommittee Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<AltairSyncCommittee>(data, SizePreset.MainnetPreset);
+        return result.Item1;
     }
 }
