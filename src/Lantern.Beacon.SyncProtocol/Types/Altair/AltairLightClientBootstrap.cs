@@ -1,18 +1,18 @@
 using Cortex.Containers;
-using Lantern.Beacon.SyncProtocol.SimpleSerialize;
-using Nethermind.Serialization.Ssz;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
 
-public class AltairLightClientBootstrap(AltairLightClientHeader header, 
-    AltairSyncCommittee currentAltairSyncCommittee,
-    Bytes32[] currentSyncCommitteeBranch) : IEquatable<AltairLightClientBootstrap>
+public class AltairLightClientBootstrap : IEquatable<AltairLightClientBootstrap>
 {
-    public AltairLightClientHeader Header { get; init; } = header;
+    [SszElement(0, "Container")]
+    public AltairLightClientHeader Header { get; protected init; }
     
-    public AltairSyncCommittee CurrentAltairSyncCommittee { get; init; } = currentAltairSyncCommittee;
+    [SszElement(1, "Container")]
+    public AltairSyncCommittee CurrentAltairSyncCommittee { get; protected init; } 
     
-    public Bytes32[] CurrentSyncCommitteeBranch { get; init; } = currentSyncCommitteeBranch;
+    [SszElement(2, "Vector[Vector[uint8, 32], 5]")]
+    public byte[][] CurrentSyncCommitteeBranch { get; protected init; } 
     
     public bool Equals(AltairLightClientBootstrap? other)
     {
@@ -33,11 +33,37 @@ public class AltairLightClientBootstrap(AltairLightClientHeader header,
     {
         return HashCode.Combine(Header, CurrentAltairSyncCommittee, CurrentSyncCommitteeBranch);
     }
+
+    public static AltairLightClientBootstrap CreateFrom(AltairLightClientHeader altairLightClientHeader, AltairSyncCommittee currentAltairSyncCommittee, byte[][] currentSyncCommitteeBranch)
+    {
+        return new AltairLightClientBootstrap
+        {
+            Header = altairLightClientHeader,
+            CurrentAltairSyncCommittee = currentAltairSyncCommittee,
+            CurrentSyncCommitteeBranch = currentSyncCommitteeBranch
+        };
+    }
     
     public static AltairLightClientBootstrap CreateDefault()
     {
-        return new AltairLightClientBootstrap(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), new Bytes32[Constants.CurrentSyncCommitteeGIndex]);
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), new byte[Constants.CurrentSyncCommitteeBranchDepth][]);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairSyncCommittee.BytesLength + Constants.CurrentSyncCommitteeBranchDepth * Bytes32.Length;
+    
+    public static byte[] Serialize(AltairLightClientBootstrap altairLightClientBootstrap)
+    {
+        var container = SszContainer.GetContainer<AltairLightClientBootstrap>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(altairLightClientBootstrap)];
+        
+        container.Serialize(altairLightClientBootstrap, bytes.AsSpan());
+        
+        return bytes;
+    }
+    
+    public static AltairLightClientBootstrap Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<AltairLightClientBootstrap>(data, SizePreset.MainnetPreset);
+        return result.Item1;
+    }
 }

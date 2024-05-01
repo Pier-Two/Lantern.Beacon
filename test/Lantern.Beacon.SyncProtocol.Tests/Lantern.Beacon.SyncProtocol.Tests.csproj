@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Merkleization\Nethermind.Merkleization.csproj" />
       <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Serialization.Ssz\Nethermind.Serialization.Ssz.csproj" />
       <ProjectReference Include="..\..\src\Lantern.Beacon.SyncProtocol\Lantern.Beacon.SyncProtocol.csproj" />
       <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
@@ -17,6 +16,7 @@
     <ItemGroup>
       <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+      <PackageReference Include="Nethereum.Merkle" Version="4.20.0" />
       <PackageReference Include="NUnit" Version="4.1.0" />
       <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
       <PackageReference Include="YamlDotNet" Version="15.1.2" />

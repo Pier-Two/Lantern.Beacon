@@ -1,26 +1,14 @@
+using System.Numerics;
 using Cortex.Containers;
-using Nethermind.Int256;
-using Nethermind.Serialization.Ssz;
+using Lantern.Beacon.SyncProtocol.Types.Bellatrix;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Capella;
 
-public class CapellaExecutionPayloadHeader(Hash32 parentHash,
-    Bytes20 feeRecipientFeeRecipientAddress,
-    Bytes32 stateRoot,
-    Bytes32 receiptRoot,
-    byte[] logsBloom,
-    Bytes32 prevRandao,
-    ulong blockNumber,
-    ulong gasLimit,
-    ulong gasUsed,
-    ulong timestamp,
-    List<byte> extraData,
-    UInt256 baseFeePerGas,
-    Hash32 blockHash,
-    Bytes32 transactionsRoot,
-    Bytes32 withdrawalsRoot) : Bellatrix.BellatrixExecutionPayloadHeader(parentHash, feeRecipientFeeRecipientAddress, stateRoot, receiptRoot, logsBloom, prevRandao, blockNumber, gasLimit, gasUsed, timestamp, extraData, baseFeePerGas, blockHash, transactionsRoot)
+public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
 {
-    public Bytes32 WithdrawalsRoot { get; init; } = withdrawalsRoot;
+    [SszElement(14, "Vector[uint8, 32]")]
+    public byte[] WithdrawalsRoot { get; protected init; }
     
     public bool Equals(CapellaExecutionPayloadHeader? other)
     {
@@ -65,16 +53,78 @@ public class CapellaExecutionPayloadHeader(Hash32 parentHash,
         return hash.ToHashCode();
     }
     
+    public static CapellaExecutionPayloadHeader CreateFrom(
+        byte[] parentHash, 
+        byte[] feeRecipientAddress, 
+        byte[] stateRoot, 
+        byte[] receiptsRoot, 
+        byte[] logsBloom, 
+        byte[] prevRandoa, 
+        ulong blockNumber, 
+        ulong gasLimit, 
+        ulong gasUsed, 
+        ulong timestamp, 
+        byte[] extraData, 
+        BigInteger baseFeePerGas, 
+        byte[] blockHash, 
+        byte[] transactionsRoot, 
+        byte[] withdrawalsRoot)
+    {
+        return new CapellaExecutionPayloadHeader
+        {
+            ParentHash = parentHash,
+            FeeRecipientAddress = feeRecipientAddress,
+            StateRoot = stateRoot,
+            ReceiptsRoot = receiptsRoot,
+            LogsBloom = logsBloom,
+            PrevRandoa = prevRandoa,
+            BlockNumber = blockNumber,
+            GasLimit = gasLimit,
+            GasUsed = gasUsed,
+            Timestamp = timestamp,
+            ExtraData = extraData,
+            BaseFeePerGas = baseFeePerGas,
+            BlockHash = blockHash,
+            TransactionsRoot = transactionsRoot,
+            WithdrawalsRoot = withdrawalsRoot
+        };
+    }
+    
     public new static CapellaExecutionPayloadHeader CreateDefault()
     {
-        return new CapellaExecutionPayloadHeader(Hash32.Zero, new Bytes20(), new Bytes32(), new Bytes32(), new byte[Constants.BytesPerLogsBloom], new Bytes32(), 0, 0, 0, 0,
-            [], UInt256.Zero, Hash32.Zero, new Bytes32(), new Bytes32());
+        return CreateFrom(
+            new byte[Bytes32.Length], 
+            new byte[Bytes20.Length], 
+            new byte[Bytes32.Length], 
+            new byte[Bytes32.Length], 
+            new byte[2048], 
+            new byte[Bytes32.Length], 
+            0, 
+            0, 
+            0, 
+            0, 
+            new byte[Constants.MaxExtraDataBytes], 
+            BigInteger.Zero, 
+            new byte[Bytes32.Length], 
+            new byte[Bytes32.Length], 
+            new byte[Bytes32.Length]);
     }
     
     public static int BytesLength => Bellatrix.BellatrixExecutionPayloadHeader.BytesLength + Bytes32.Length;
     
-    public new static class Serializer
+    public static byte[] Serialize(CapellaExecutionPayloadHeader capellaExecutionPayloadHeader)
     {
+        var container = SszContainer.GetContainer<CapellaExecutionPayloadHeader>(SizePreset.MainnetPreset);
+        var bytes = new byte[container.Length(capellaExecutionPayloadHeader)];
         
+        container.Serialize(capellaExecutionPayloadHeader, bytes.AsSpan());
+        
+        return bytes;
     }
+    
+    public new static CapellaExecutionPayloadHeader Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<CapellaExecutionPayloadHeader>(data, SizePreset.MainnetPreset);
+        return result.Item1;
+    } 
 }

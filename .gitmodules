@@ -10,3 +10,6 @@
 [submodule "lib/cortex"]
 	path = lib/cortex
 	url = https://github.com/Pier-Two/cortex.git
+[submodule "lib/SszSharp"]
+	path = lib/SszSharp
+	url = https://github.com/Pier-Two/SszSharp.git

@@ -1,23 +1,24 @@
 using Cortex.Containers;
+using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Phase0;
 
-public class Phase0BeaconBlockHeader(Slot slot,
-    ValidatorIndex proposerIndex,
-    Bytes32 parentRoot,
-    Bytes32 stateRoot,
-    Bytes32 bodyRoot) : IEquatable<Phase0BeaconBlockHeader>
+public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
 {
+    [SszElement(0, "uint64")]
+    public ulong Slot { get; private init; }
     
-    public Slot Slot { get; } = slot;
+    [SszElement(1, "uint64")]
+    public ulong ProposerIndex { get; private init; } 
     
-    public ValidatorIndex ProposerIndex { get; } = proposerIndex;
+    [SszElement(2, "Vector[uint8, 32]")] 
+    public byte[] ParentRoot { get; private init; } 
     
-    public Bytes32 ParentRoot { get; } = parentRoot;
+    [SszElement(3, "Vector[uint8, 32]")] 
+    public byte[] StateRoot { get; private init; } 
     
-    public Bytes32 StateRoot { get; } = stateRoot;
-    
-    public Bytes32 BodyRoot { get; } = bodyRoot;
+    [SszElement(4, "Vector[uint8, 32]")]
+    public byte[] BodyRoot { get; private init; } 
     
     public bool Equals(Phase0BeaconBlockHeader? other)
     {
@@ -41,8 +42,31 @@ public class Phase0BeaconBlockHeader(Slot slot,
     
     public static int BytesLength => 2 * sizeof(ulong) + 3 * Bytes32.Length;
     
+    public static Phase0BeaconBlockHeader CreateFrom(ulong slot, ulong proposerIndex, byte[] parentRoot, byte[] stateRoot, byte[] bodyRoot)
+    {
+        return new Phase0BeaconBlockHeader
+        {
+            Slot = slot,
+            ProposerIndex = proposerIndex,
+            ParentRoot = parentRoot,
+            StateRoot = stateRoot,
+            BodyRoot = bodyRoot
+        };
+    }
+    
     public static Phase0BeaconBlockHeader CreateDefault()
     {
-        return new Phase0BeaconBlockHeader(Slot.Zero, new ValidatorIndex(0), new Bytes32(), new Bytes32(), new Bytes32());
+        return CreateFrom(0, 0, new byte[32], new byte[32], new byte[32]);
     }
+    
+    public static byte[] Serialize(Phase0BeaconBlockHeader beaconBlockHeader)
+    {
+        return SszContainer.Serialize(beaconBlockHeader);
+    }
+    
+    public static Phase0BeaconBlockHeader Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<Phase0BeaconBlockHeader>(data, SizePreset.DefaultPreset);
+        return result.Item1;
+    } 
 }
