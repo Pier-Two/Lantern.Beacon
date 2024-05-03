@@ -1,3 +1,6 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
 name: .NET
 
 on:
@@ -16,7 +19,7 @@ jobs:
       - name: Setup .NET for Testing
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "3.1.x"
+          dotnet-version: '8.0.x'
           
       - name: Checkout branch 
         uses: actions/checkout@v3
@@ -29,50 +32,53 @@ jobs:
       - name: Build Project_Beacon_Sync_Protocol
         run: dotnet build src/Lantern.Beacon.SyncProtocol/Lantern.Beacon.SyncProtocol.csproj
 
-      - name: Run tests with coverage
-        run: |
-          dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput='./TestResults/Coverage/'
-          ls -la ./TestResults/Coverage/  # List coverage files for debugging
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: coverage-report
-          path: TestResults/Coverage/*.xml
+      - name: Run tests for the Projects
+        run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"
 
   sonar:
     name: Build and analyze SonarCloud
     runs-on: windows-latest
     needs: build-and-test
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-          submodules: 'recursive'
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: coverage-report
-          path: TestResults/Coverage
-
       - name: Setup .NET for SonarCloud
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: "3.1.x"
-
+          dotnet-version: '8.0.x'
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: 17
-          distribution: 'zulu'
-
+          distribution: 'zulu' # Alternative distribution options are available.
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          submodules: 'recursive'
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~\sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache SonarCloud scanner
+        id: cache-sonar-scanner
+        uses: actions/cache@v3
+        with:
+          path: .\.sonar\scanner
+          key: ${{ runner.os }}-sonar-scanner
+          restore-keys: ${{ runner.os }}-sonar-scanner
       - name: Install SonarCloud scanner
-        run: dotnet tool install --global dotnet-sonarscanner
-
+        if: steps.cache-sonar-scanner.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          New-Item -Path .\.sonar\scanner -ItemType Directory
+          dotnet tool update dotnet-sonarscanner --tool-path .\.sonar\scanner
       - name: Build and analyze
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: powershell
         run: |
-          dotnet sonarscanner begin /k:"Pier-Two_Lantern.Beacon" /o:"pier-two" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="TestResults/Coverage/*.xml"
+          .\.sonar\scanner\dotnet-sonarscanner begin /k:"Pier-Two_Lantern.Beacon" /o:"pier-two" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           dotnet build
-          dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+          .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"

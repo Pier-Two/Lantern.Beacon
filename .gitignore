@@ -31,4 +31,4 @@ nuget.config
 .DS_Store
 test.yml
 sonar-project copy.properties
-*.yml_2
+*.yml_2*
