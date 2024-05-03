@@ -31,7 +31,8 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          dotnet test src/Lantern.Beacon.Tests --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput='./TestResults/Coverage/'
+          dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput='./TestResults/Coverage/'
+          ls -la ./TestResults/Coverage/  # List coverage files for debugging
 
       - uses: actions/upload-artifact@v3
         with:
