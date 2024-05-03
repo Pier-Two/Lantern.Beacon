@@ -65,7 +65,14 @@ public class AltairLightClientFinalityUpdate : IEquatable<AltairLightClientFinal
     
     public static AltairLightClientFinalityUpdate CreateDefault()
     {
-        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairLightClientHeader.CreateDefault(), new byte[Constants.FinalityBranchDepth][], AltairSyncAggregate.CreateDefault(), 0);
+        var finalityBranch = new byte[Constants.FinalityBranchDepth][];
+
+        for (var i = 0; i < finalityBranch.Length; i++)
+        {
+            finalityBranch[i] = new byte[Bytes32.Length];
+        }
+        
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairLightClientHeader.CreateDefault(), finalityBranch, AltairSyncAggregate.CreateDefault(), 0);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairLightClientHeader.BytesLength + Constants.FinalityBranchDepth * Bytes32.Length + AltairSyncAggregate.BytesLength + sizeof(ulong);

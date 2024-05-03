@@ -46,7 +46,14 @@ public class AltairLightClientBootstrap : IEquatable<AltairLightClientBootstrap>
     
     public static AltairLightClientBootstrap CreateDefault()
     {
-        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), new byte[Constants.CurrentSyncCommitteeBranchDepth][]);
+        var currentSyncCommitteeBranch = new byte[Constants.CurrentSyncCommitteeBranchDepth][];
+        
+        for (var i = 0; i < currentSyncCommitteeBranch.Length; i++)
+        {
+            currentSyncCommitteeBranch[i] = new byte[Bytes32.Length];
+        }
+        
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), currentSyncCommitteeBranch);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairSyncCommittee.BytesLength + Constants.CurrentSyncCommitteeBranchDepth * Bytes32.Length;

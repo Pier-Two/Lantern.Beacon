@@ -1,6 +1,5 @@
 using Cortex.Containers;
 using Lantern.Beacon.SyncProtocol.Types.Phase0;
-using Nethermind.Core.Extensions;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.SyncProtocol.Tests;

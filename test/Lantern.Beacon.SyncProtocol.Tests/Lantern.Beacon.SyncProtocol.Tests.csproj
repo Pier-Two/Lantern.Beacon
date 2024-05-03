@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\lib\nethermind\src\Nethermind\Nethermind.Serialization.Ssz\Nethermind.Serialization.Ssz.csproj" />
       <ProjectReference Include="..\..\src\Lantern.Beacon.SyncProtocol\Lantern.Beacon.SyncProtocol.csproj" />
       <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
     </ItemGroup>
@@ -20,6 +19,10 @@
       <PackageReference Include="NUnit" Version="4.1.0" />
       <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
       <PackageReference Include="YamlDotNet" Version="15.1.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="MockData\mainnet\deneb\ssz_static\ExecutionPayloadHeader\" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,5 @@
 using System.Numerics;
 using Cortex.Containers;
-using Nethermind.Core.Crypto;
 using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Bellatrix;
@@ -51,13 +50,13 @@ public class BellatrixExecutionPayloadHeader : IEquatable<BellatrixExecutionPayl
 
     public bool Equals(BellatrixExecutionPayloadHeader? other)
     {
-        return other != null && ParentHash.Equals(other.ParentHash) && FeeRecipientAddress.Equals(other.FeeRecipientAddress) &&
-               StateRoot.Equals(other.StateRoot) && ReceiptsRoot.Equals(other.ReceiptsRoot) &&
-               LogsBloom.SequenceEqual(other.LogsBloom) && PrevRandoa.Equals(other.PrevRandoa) &&
+        return other != null && ParentHash.SequenceEqual(other.ParentHash) && FeeRecipientAddress.SequenceEqual(other.FeeRecipientAddress) &&
+               StateRoot.SequenceEqual(other.StateRoot) && ReceiptsRoot.SequenceEqual(other.ReceiptsRoot) &&
+               LogsBloom.SequenceEqual(other.LogsBloom) && PrevRandoa.SequenceEqual(other.PrevRandoa) &&
                BlockNumber == other.BlockNumber && GasLimit == other.GasLimit && GasUsed == other.GasUsed &&
                Timestamp == other.Timestamp && ExtraData.SequenceEqual(other.ExtraData) &&
-               BaseFeePerGas.Equals(other.BaseFeePerGas) && BlockHash.Equals(other.BlockHash) &&
-               TransactionsRoot.Equals(other.TransactionsRoot);
+               BaseFeePerGas.Equals(other.BaseFeePerGas) && BlockHash.SequenceEqual(other.BlockHash) &&
+               TransactionsRoot.SequenceEqual(other.TransactionsRoot);
     }
 
     public override bool Equals(object? obj)
@@ -141,11 +140,8 @@ public class BellatrixExecutionPayloadHeader : IEquatable<BellatrixExecutionPayl
     {
         return CreateFrom(new byte[32], new byte[20], new byte[32], new byte[32], new byte[Constants.BytesPerLogsBloom],
             new byte[32], 0, 0, 0, 0,
-            new byte[Constants.MaxExtraDataBytes], BigInteger.Zero, new byte[32], new byte[32]);
+            [], BigInteger.Zero, new byte[32], new byte[32]);
     }
-    
-    public static int BytesLength => Hash32.Length + Bytes20.Length + Bytes32.Length + Bytes32.Length + Constants.BytesPerLogsBloom + Bytes32.Length + 
-                                     sizeof(ulong) * 4 + Constants.BytesPerLengthOffset + Bytes32.Length + Hash32.Length + Root.Length;
     
     public static byte[] Serialize(BellatrixExecutionPayloadHeader bellatrixExecutionPayloadHeader)
     {

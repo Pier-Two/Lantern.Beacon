@@ -22,7 +22,7 @@ public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
     
     public bool Equals(Phase0BeaconBlockHeader? other)
     {
-        return other != null && Slot.Equals(other.Slot) && ParentRoot.Equals(other.ParentRoot) && StateRoot.Equals(other.StateRoot) && BodyRoot.Equals(other.BodyRoot);
+        return other != null && Slot.Equals(other.Slot) && ProposerIndex.Equals(other.ProposerIndex) && ParentRoot.SequenceEqual(other.ParentRoot) && StateRoot.SequenceEqual(other.StateRoot) && BodyRoot.SequenceEqual(other.BodyRoot);
     }
     
     public override bool Equals(object? obj)

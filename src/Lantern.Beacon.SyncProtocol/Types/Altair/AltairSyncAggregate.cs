@@ -1,6 +1,5 @@
 using System.Collections;
 using Cortex.Containers;
-using Nethermind.Serialization.Ssz;
 using SszSharp;
 
 namespace Lantern.Beacon.SyncProtocol.Types.Altair;
@@ -15,7 +14,7 @@ public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
     
     public bool Equals(AltairSyncAggregate? other)
     {
-        return other != null && SyncCommitteeBits.Equals(other.SyncCommitteeBits) && SyncCommitteeSignature.Equals(other.SyncCommitteeSignature);
+        return other != null && SyncCommitteeBits.SequenceEqual(other.SyncCommitteeBits) && SyncCommitteeSignature.SequenceEqual(other.SyncCommitteeSignature);
     }
     
     public override bool Equals(object? obj)
@@ -30,7 +29,25 @@ public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
     
     public override int GetHashCode()
     {
-        return HashCode.Combine(SyncCommitteeBits, SyncCommitteeSignature);
+        var hash = new HashCode();
+
+        if (SyncCommitteeBits != null)
+        {
+            foreach (var bit in SyncCommitteeBits)
+            {
+                hash.Add(bit);
+            }
+        }
+
+        if (SyncCommitteeSignature != null)
+        {
+            foreach (var byteValue in SyncCommitteeSignature)
+            {
+                hash.Add(byteValue);
+            }
+        }
+
+        return hash.ToHashCode();
     }
     
     public static AltairSyncAggregate CreateFrom(List<bool> syncCommitteeBits, byte[] syncCommitteeSignature)

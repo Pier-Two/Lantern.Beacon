@@ -1,23 +1,25 @@
 using System.Numerics;
-using Cortex.Containers;
-using Lantern.Beacon.SyncProtocol.Types.Bellatrix;
+using Lantern.Beacon.SyncProtocol.Types.Capella;
 using SszSharp;
 
-namespace Lantern.Beacon.SyncProtocol.Types.Capella;
+namespace Lantern.Beacon.SyncProtocol.Types.Deneb;
 
-public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
+public class DenebExecutionPayloadHeader : CapellaExecutionPayloadHeader
 {
-    [SszElement(14, "Vector[uint8, 32]")]
-    public byte[] WithdrawalsRoot { get; protected init; }
+    [SszElement(15, "uint64")]
+    public ulong BlobGasUsed { get; protected init; } 
     
-    public bool Equals(CapellaExecutionPayloadHeader? other)
+    [SszElement(16, "uint64")]
+    public ulong ExcessBlobGas { get; protected init; } 
+    
+    public bool Equals(DenebExecutionPayloadHeader? other)
     {
-        return other != null && ParentHash.Equals(other.ParentHash) && FeeRecipientAddress.Equals(other.FeeRecipientAddress) && StateRoot.Equals(other.StateRoot) && ReceiptsRoot.Equals(other.ReceiptsRoot) && LogsBloom.SequenceEqual(other.LogsBloom) && PrevRandoa.Equals(other.PrevRandoa) && BlockNumber.Equals(other.BlockNumber) && GasLimit.Equals(other.GasLimit) && GasUsed.Equals(other.GasUsed) && Timestamp.Equals(other.Timestamp) && ExtraData.SequenceEqual(other.ExtraData) && BaseFeePerGas.Equals(other.BaseFeePerGas) && BlockHash.Equals(other.BlockHash) && TransactionsRoot.Equals(other.TransactionsRoot) && WithdrawalsRoot.Equals(other.WithdrawalsRoot);
+        return other != null && ParentHash.Equals(other.ParentHash) && FeeRecipientAddress.Equals(other.FeeRecipientAddress) && StateRoot.Equals(other.StateRoot) && ReceiptsRoot.Equals(other.ReceiptsRoot) && LogsBloom.SequenceEqual(other.LogsBloom) && PrevRandoa.Equals(other.PrevRandoa) && BlockNumber.Equals(other.BlockNumber) && GasLimit.Equals(other.GasLimit) && GasUsed.Equals(other.GasUsed) && Timestamp.Equals(other.Timestamp) && ExtraData.SequenceEqual(other.ExtraData) && BaseFeePerGas.Equals(other.BaseFeePerGas) && BlockHash.Equals(other.BlockHash) && TransactionsRoot.Equals(other.TransactionsRoot) && WithdrawalsRoot.Equals(other.WithdrawalsRoot) && BlobGasUsed.Equals(other.BlobGasUsed) && ExcessBlobGas.Equals(other.ExcessBlobGas);
     }
     
     public override bool Equals(object? obj)
     {
-        if (obj is CapellaExecutionPayloadHeader other)
+        if (obj is DenebExecutionPayloadHeader other)
         {
             return Equals(other);
         }
@@ -49,11 +51,13 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
         hash.Add(BlockHash);
         hash.Add(TransactionsRoot);
         hash.Add(WithdrawalsRoot);
+        hash.Add(BlobGasUsed);
+        hash.Add(ExcessBlobGas);
 
         return hash.ToHashCode();
     }
     
-    public static CapellaExecutionPayloadHeader CreateFrom(
+    public static DenebExecutionPayloadHeader CreateFrom(
         byte[] parentHash, 
         byte[] feeRecipientAddress, 
         byte[] stateRoot, 
@@ -68,9 +72,11 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
         BigInteger baseFeePerGas, 
         byte[] blockHash, 
         byte[] transactionsRoot, 
-        byte[] withdrawalsRoot)
+        byte[] withdrawalsRoot,
+        ulong blobGasUsed,
+        ulong excessBlobUsed)
     {
-        return new CapellaExecutionPayloadHeader
+        return new DenebExecutionPayloadHeader
         {
             ParentHash = parentHash,
             FeeRecipientAddress = feeRecipientAddress,
@@ -86,20 +92,22 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
             BaseFeePerGas = baseFeePerGas,
             BlockHash = blockHash,
             TransactionsRoot = transactionsRoot,
-            WithdrawalsRoot = withdrawalsRoot
+            WithdrawalsRoot = withdrawalsRoot,
+            BlobGasUsed = blobGasUsed,
+            ExcessBlobGas = excessBlobUsed
         };
     }
     
-    public static CapellaExecutionPayloadHeader CreateDefault()
+    public static DenebExecutionPayloadHeader CreateDefault()
     {
         return CreateFrom(new byte[32], new byte[20], new byte[32], new byte[32], new byte[Constants.BytesPerLogsBloom],
             new byte[32], 0, 0, 0, 0,
-            [], BigInteger.Zero, new byte[32], new byte[32], new byte[32]);
+            [], BigInteger.Zero, new byte[32], new byte[32], new byte[32], 0, 0);
     }
     
-    public static byte[] Serialize(CapellaExecutionPayloadHeader capellaExecutionPayloadHeader)
+    public static byte[] Serialize(DenebExecutionPayloadHeader capellaExecutionPayloadHeader)
     {
-        var container = SszContainer.GetContainer<CapellaExecutionPayloadHeader>(SizePreset.MainnetPreset);
+        var container = SszContainer.GetContainer<DenebExecutionPayloadHeader>(SizePreset.MainnetPreset);
         var bytes = new byte[container.Length(capellaExecutionPayloadHeader)];
         
         container.Serialize(capellaExecutionPayloadHeader, bytes.AsSpan());
@@ -107,9 +115,9 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
         return bytes;
     }
     
-    public new static CapellaExecutionPayloadHeader Deserialize(byte[] data)
+    public new static DenebExecutionPayloadHeader Deserialize(byte[] data)
     {
-        var result = SszContainer.Deserialize<CapellaExecutionPayloadHeader>(data, SizePreset.MainnetPreset);
+        var result = SszContainer.Deserialize<DenebExecutionPayloadHeader>(data, SizePreset.MainnetPreset);
         return result.Item1;
     } 
 }

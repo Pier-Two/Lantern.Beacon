@@ -79,7 +79,20 @@ public class AltairLightClientUpdate : IEquatable<AltairLightClientUpdate>
     
     public static AltairLightClientUpdate CreateDefault()
     {
-        return AltairLightClientUpdate.CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), new byte[Constants.NextSyncCommitteeBranchDepth][], AltairLightClientHeader.CreateDefault(), new byte[Constants.FinalityBranchDepth][], AltairSyncAggregate.CreateDefault(), 0);
+        var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
+        var finalityBranch = new byte[Constants.FinalityBranchDepth][];
+
+        for (var i = 0; i < nextSyncCommitteeBranch.Length; i++)
+        {
+            nextSyncCommitteeBranch[i] = new byte[Bytes32.Length];
+        }
+        
+        for (var i = 0; i < finalityBranch.Length; i++)
+        {
+            finalityBranch[i] = new byte[Bytes32.Length];
+        }
+        
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), nextSyncCommitteeBranch, AltairLightClientHeader.CreateDefault(), finalityBranch, AltairSyncAggregate.CreateDefault(), 0);
     }
     
     public static int BytesLength => AltairLightClientHeader.BytesLength + AltairSyncCommittee.BytesLength + Constants.NextSyncCommitteeBranchDepth * Bytes32.Length + AltairLightClientHeader.BytesLength + Constants.FinalityBranchDepth * Bytes32.Length + AltairSyncAggregate.BytesLength + sizeof(ulong);

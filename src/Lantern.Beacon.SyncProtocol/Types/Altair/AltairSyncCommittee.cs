@@ -25,13 +25,13 @@ public class AltairSyncCommittee : IEquatable<AltairSyncCommittee>
         
         for (var i = 0; i < PubKeys.Length; i++)
         {
-            if (!PubKeys[i].Equals(other.PubKeys[i]))
+            if (!PubKeys[i].SequenceEqual(other.PubKeys[i]))
             {
                 return false;
             }
         }
         
-        return AggregatePubKey.Equals(other.AggregatePubKey);
+        return AggregatePubKey.SequenceEqual(other.AggregatePubKey);
     }
     
     public override bool Equals(object? obj)
@@ -44,16 +44,33 @@ public class AltairSyncCommittee : IEquatable<AltairSyncCommittee>
         return false;
     }
     
+
     public override int GetHashCode()
     {
-        var hash = HashCode.Combine(AggregatePubKey);
-        
-        foreach (var pubKey in PubKeys)
+        var hash = new HashCode();
+        if (AggregatePubKey != null)
         {
-            hash = HashCode.Combine(hash, pubKey);
+            foreach (var byteValue in AggregatePubKey)
+            {
+                hash.Add(byteValue);
+            }
         }
-        
-        return hash;
+
+        if (PubKeys != null)
+        {
+            foreach (var pubKey in PubKeys)
+            {
+                if (pubKey != null)
+                {
+                    foreach (var byteValue in pubKey)
+                    {
+                        hash.Add(byteValue);
+                    }
+                }
+            }
+        }
+
+        return hash.ToHashCode();
     }
     
     public static AltairSyncCommittee CreateFrom(byte[][] pubKeys, byte[] aggregatePubKey)
@@ -74,7 +91,14 @@ public class AltairSyncCommittee : IEquatable<AltairSyncCommittee>
     
     public static AltairSyncCommittee CreateDefault()
     {
-        return CreateFrom(new byte[Constants.SyncCommitteeSize][], new byte[48]);
+        var pubKeys = new byte[Constants.SyncCommitteeSize][];
+        
+        for (var i = 0; i < Constants.SyncCommitteeSize; i++)
+        {
+            pubKeys[i] = new byte[48];
+        }
+        
+        return CreateFrom(pubKeys, new byte[48]);
     }
     
     public static int BytesLength => Constants.SyncCommitteeSize * BlsPublicKey.Length + BlsPublicKey.Length;
