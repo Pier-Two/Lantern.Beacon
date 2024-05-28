@@ -33,7 +33,8 @@ jobs:
         run: dotnet build src/Lantern.Beacon.Sync/Lantern.Beacon.Sync.csproj
 
       - name: Run tests for the Projects
-        run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"
+        run: |
+          echo "LD_DEBUG=libs dotnet test --verbosity detailed --collect:'XPlat Code Coverage'"
 
   sonar:
     name: Build and analyze SonarCloud

@@ -4,7 +4,6 @@ using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Types.Altair;
 using Lantern.Beacon.Sync.Types.Capella;
 using Microsoft.Extensions.Logging;
-using Nethereum.Hex.HexConvertors.Extensions;
 using Planetarium.Cryptography.BLS12_381;
 
 namespace Lantern.Beacon.Sync.Processors;

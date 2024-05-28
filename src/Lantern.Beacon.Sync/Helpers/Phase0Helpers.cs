@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using Nethereum.Hex.HexConvertors.Extensions;
 using SszSharp;
 using Cortex.Containers;
 using Lantern.Beacon.Sync.Presets;

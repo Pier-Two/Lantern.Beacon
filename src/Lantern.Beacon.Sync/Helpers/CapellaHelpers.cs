@@ -1,6 +1,5 @@
 using Lantern.Beacon.Sync.Types.Altair;
 using Lantern.Beacon.Sync.Types.Capella;
-using Nethereum.Hex.HexConvertors.Extensions;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Helpers;
