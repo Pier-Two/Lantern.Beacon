@@ -32,9 +32,11 @@ jobs:
       - name: Build Project_Beacon_Sync
         run: dotnet build src/Lantern.Beacon.Sync/Lantern.Beacon.Sync.csproj
 
+      - name: Set LD_DEBUG environment variable
+        run: echo "LD_DEBUG=libs" >> $GITHUB_ENV
+
       - name: Run tests for the Projects
-        run: |
-          echo "LD_DEBUG=libs dotnet test --verbosity detailed --collect:'XPlat Code Coverage'"
+        run: dotnet test --verbosity detailed --collect:"XPlat Code Coverage"
 
   sonar:
     name: Build and analyze SonarCloud
