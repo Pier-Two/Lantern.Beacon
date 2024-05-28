@@ -43,9 +43,6 @@ jobs:
       - name: Verify Environment Variables
         run: printenv
 
-      - name: Inspect library dependencies of bls384_256
-        run: ldd /home/runner/work/Lantern.Beacon/Lantern.Beacon/test/Lantern.Beacon.Sync.Tests/bin/Debug/net8.0/runtimes/linux-x64/native/libbls384_256.1.10.so
-
       - name: Build Project_Beacon
         run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj
 
