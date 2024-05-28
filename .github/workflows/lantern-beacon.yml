@@ -30,7 +30,7 @@ jobs:
         run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj
 
       - name: Build Project_Beacon_Sync
-        run: dotnet build src/Lantern.Beacon.Sync/Lantern.Beacon.SyncProtocol.csproj
+        run: dotnet build src/Lantern.Beacon.Sync/Lantern.Beacon.Sync.csproj
 
       - name: Run tests for the Projects
         run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"
