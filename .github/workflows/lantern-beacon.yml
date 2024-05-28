@@ -24,10 +24,17 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y libc6-dev
         
+      - name: List shared libraries directory for verification
+        run: |
+          ls -alh /lib/x86_64-linux-gnu
+          
       - name: Set LD_LIBRARY_PATH
         run: |
-          echo "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/local/lib:/lib/x86_64-linux-gnu" >> $GITHUB_ENV      
-
+          echo "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/local/lib:/lib/x86_64-linux-gnu" >> $GITHUB_ENV
+          
+      - name: Inspect Environment Variables
+        run: printenv
+        
       - name: Checkout branch 
         uses: actions/checkout@v3
         with:
