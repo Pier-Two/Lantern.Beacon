@@ -27,6 +27,10 @@ public class DiscoveryProtocol(BeaconClientOptions options, IDiscv5Protocol disc
         
         _logger.LogInformation("Self ENR updated => {Enr}", identityManager.Record);
         
+        var randomId = new byte[32];
+        Random.Shared.NextBytes(randomId);
+        await discv5Protocol.DiscoverAsync(randomId);
+        
         return true;
     }
 
@@ -35,10 +39,27 @@ public class DiscoveryProtocol(BeaconClientOptions options, IDiscv5Protocol disc
         await discv5Protocol.StopAsync();
     }
     
-    public async Task<IEnumerable<Node?>> DiscoverAsync(byte[] nodeId,CancellationToken token = default)
+    public async Task<IEnumerable<Node?>> DiscoverAsync(byte[] nodeId, CancellationToken token = default)
     {
-        var peers = await discv5Protocol.DiscoverAsync(nodeId);
+        var nodes = discv5Protocol.GetActiveNodes;
+        List<Node>? peers = [];
+      
+        _logger.LogInformation("Discovering light client peers...");
         
-        return peers == null ? Enumerable.Empty<Node>() : peers.Select(p => new Node(p));
+        foreach (var node in nodes)
+        {
+            var discoveredPeers = await discv5Protocol.SendFindNodeAsync(node, nodeId);
+            
+            if (discoveredPeers == null)
+            {
+                continue;
+            }
+            
+            peers.AddRange(discoveredPeers
+                .Where(p => p.HasKey(EnrEntryKey.Tcp) || p.HasKey(EnrEntryKey.Tcp6))
+                .Select(p => new Node(p)));
+        }
+
+        return peers == null ? Enumerable.Empty<Node>() : peers;
     }
 }

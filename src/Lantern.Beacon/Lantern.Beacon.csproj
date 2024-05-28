@@ -17,6 +17,7 @@
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Pubsub\Libp2p.Protocols.Pubsub.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
       <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.WireProtocol\Lantern.Discv5.WireProtocol.csproj" />
+      <ProjectReference Include="..\Lantern.Beacon.Sync\Lantern.Beacon.Sync.csproj" />
     </ItemGroup>
 
 </Project>

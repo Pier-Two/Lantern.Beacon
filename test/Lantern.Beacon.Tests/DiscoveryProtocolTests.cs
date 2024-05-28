@@ -74,7 +74,7 @@ public class DiscoveryProtocolTests
         var nodeId = new byte[32];
         _mockDiscv5Protocol.Setup(p => p.DiscoverAsync(nodeId)).ReturnsAsync(new List<IEnr> { Mock.Of<IEnr>() });
 
-        var result = await _discoveryProtocol.DiscoverAsync(nodeId);
+        var result = _discoveryProtocol.DiscoverAsync(nodeId);
         
         Assert.That(result, Is.Not.Null);
     }

@@ -9,4 +9,6 @@ public interface IPeerManager
     Task InitAsync(CancellationToken token = default);
     
     Task StartAsync(CancellationToken token = default);
+    
+    Task StopAsync();
 }

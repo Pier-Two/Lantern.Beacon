@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <EnablePreviewFeatures>true</EnablePreviewFeatures>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Lantern.Beacon.Sync\Lantern.Beacon.Sync.csproj" />
+      <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="coverlet.collector" Version="3.2.0">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="IronSnappy" Version="1.3.1" />
+      <PackageReference Include="JetBrains.Annotations" Version="2023.3.0" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+      <PackageReference Include="Moq" Version="4.20.70" />
+      <PackageReference Include="Nethereum.Merkle" Version="4.20.0" />
+      <PackageReference Include="NUnit" Version="4.1.0" />
+      <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+      <PackageReference Include="YamlDotNet" Version="15.1.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="MockData\mainnet\deneb\ssz_static\ExecutionPayloadHeader\" />
+      <Folder Include="MockData\minimal\altair\" />
+      <Folder Include="MockData\minimal\bellatrix\" />
+      <Folder Include="MockData\minimal\capella\" />
+      <Folder Include="MockData\minimal\deneb\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="MockData\minimal\altair\sync\.DS_Store" />
+      <Content Include="MockData\minimal\bellatrix\sync\.DS_Store" />
+    </ItemGroup>
+
+</Project>
