@@ -36,7 +36,7 @@ jobs:
         run: echo "LD_DEBUG=libs" >> $GITHUB_ENV
 
       - name: Run tests for the Projects
-        run: dotnet test --verbosity detailed --collect:"XPlat Code Coverage"
+        run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"
 
   sonar:
     name: Build and analyze SonarCloud
