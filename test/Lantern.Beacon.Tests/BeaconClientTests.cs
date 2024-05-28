@@ -1,5 +1,6 @@
 ﻿using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Moq;
@@ -14,6 +15,7 @@ public class BeaconClientTests
     private Mock<IPeerManager> _mockPeerManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
     private Mock<ILogger<BeaconClient>> _mockLogger;
+    private Mock<ISyncProtocol> _mockSyncProtocol;
     private Mock<IServiceProvider> _mockServiceProvider;
     private BeaconClient _beaconClient;
     
@@ -25,6 +27,7 @@ public class BeaconClientTests
         _mockPeerManager = new Mock<IPeerManager>();
         _mockLogger = new Mock<ILogger<BeaconClient>>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
+        _mockSyncProtocol = new Mock<ISyncProtocol>();
         _mockServiceProvider = new Mock<IServiceProvider>();
 
         // Setup the LoggerFactory to return the Logger mock
@@ -40,7 +43,7 @@ public class BeaconClientTests
         }
 
         // Create BeaconClient with initialized mocks
-        _beaconClient = new BeaconClient(_mockDiscoveryProtocol.Object, _mockPeerManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(_mockDiscoveryProtocol.Object, _mockPeerManager.Object, _mockSyncProtocol.Object, _mockServiceProvider.Object);
     }
 
     [Test]
@@ -76,7 +79,7 @@ public class BeaconClientTests
         await _beaconClient.StopAsync();
 
         // Assert
-        _mockDiscoveryProtocol.Verify(dp => dp.StopAsync(), Times.Once);
+        _mockPeerManager.Verify(dp => dp.StopAsync(), Times.Once);
     }
     
     [Test]

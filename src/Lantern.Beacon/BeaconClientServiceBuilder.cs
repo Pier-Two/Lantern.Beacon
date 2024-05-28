@@ -1,3 +1,4 @@
+using Lantern.Beacon.Sync;
 using Lantern.Discv5.WireProtocol;
 using Microsoft.Extensions.DependencyInjection;
 using Nethermind.Libp2p.Core;
@@ -9,7 +10,8 @@ namespace Lantern.Beacon;
 public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconClientServiceBuilder
 {
     private IDiscv5ProtocolBuilder? _discv5ProtocolBuilder = new Discv5ProtocolBuilder(services);
-    private BeaconClientOptions _beaconClientOptions = new BeaconClientOptions();
+    private SyncProtocolOptions _syncProtocolOptions = new();
+    private BeaconClientOptions _beaconClientOptions = new();
     private IServiceProvider? _serviceProvider;
     
     public IBeaconClientServiceBuilder AddDiscoveryProtocol(Action<IDiscv5ProtocolBuilder> configure)
@@ -26,6 +28,18 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
             .AddScoped(sp => sp.GetService<IPeerFactoryBuilder>()!.Build())
             .AddScoped<PubsubRouter>();
         
+        return this;
+    }
+    
+    public IBeaconClientServiceBuilder WithSyncProtocolOptions(Action<SyncProtocolOptions> configure)
+    {
+        configure(_syncProtocolOptions);
+        return this;
+    }
+    
+    public IBeaconClientServiceBuilder WithSyncProtocolOptions(SyncProtocolOptions options)
+    {
+        _syncProtocolOptions = options ?? throw new ArgumentNullException(nameof(options));
         return this;
     }
     
@@ -48,7 +62,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
             throw new ArgumentNullException(nameof(_discv5ProtocolBuilder));
         }
         
-        services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions);
+        services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions, _syncProtocolOptions);
         _serviceProvider = services.BuildServiceProvider();
         
         return _serviceProvider.GetRequiredService<IBeaconClient>();

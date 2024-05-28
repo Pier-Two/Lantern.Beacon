@@ -1,4 +1,5 @@
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Sync.Config;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Microsoft.Extensions.Logging;
@@ -57,6 +58,17 @@ public class PeerManager(BeaconClientOptions clientOptions, IDiscoveryProtocol d
         }
     }
     
+    public async Task StopAsync()
+    {
+        if (LocalPeer == null)
+        {
+            _logger.LogError("Local peer is null. Cannot stop peer manager");
+            return;
+        }
+        
+        await discoveryProtocol.StopAsync();
+    }
+    
     private async Task PeerRefreshAsync(CancellationToken token = default)
     {
         if(discoveryProtocol.SelfEnr == null)
@@ -67,22 +79,10 @@ public class PeerManager(BeaconClientOptions clientOptions, IDiscoveryProtocol d
 
         var randomId = new byte[32];
         Random.Shared.NextBytes(randomId);
-
+        
         var nodes = await discoveryProtocol.DiscoverAsync(randomId, token);
         var dialTasks = nodes.OfType<Node>().Select(node => DialDiscoveredNode(node, token)).ToList();
-
         await Task.WhenAll(dialTasks);
-    }
-    
-    public void UpdateMultiAddress(Multiaddress newAddress)
-    {
-        if(LocalPeer == null)
-        {
-            _logger.LogError("Local peer is null. Cannot update address");
-            return;
-        }
-        
-        LocalPeer.Address = newAddress;
     }
     
     private async Task DialDiscoveredNode(Node node, CancellationToken token = default)
@@ -107,13 +107,15 @@ public class PeerManager(BeaconClientOptions clientOptions, IDiscoveryProtocol d
         try
         {
             var dialTask = LocalPeer.DialAsync(node.Address, token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeout), token);
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(Config.TimeToFirstByteTimeout), token);
             var completedTask = await Task.WhenAny(dialTask, timeoutTask);
 
             if (completedTask != timeoutTask)
             {
                 _logger.LogInformation("Dial operation completed for node: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
-                // Handle dial success ~ store its address in a cache list
+                // Handle dial success
+                // ~ store its address in a cache list 
+                // Use Discv5 to discover more peers using this node
             }
             else
             {

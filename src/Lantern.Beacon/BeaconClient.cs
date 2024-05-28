@@ -1,11 +1,12 @@
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Sync;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager peerManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager peerManager, ISyncProtocol syncProtocol, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -13,6 +14,7 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
     {
         try
         {
+            await syncProtocol.InitAsync();
             await peerManager.InitAsync(token);
         }
         catch (Exception e)
@@ -25,8 +27,10 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
     public async Task StartAsync(CancellationToken token = default)
     {
         try
-        {
-           await peerManager.StartAsync(token);
+        { 
+            var syncTask = syncProtocol.StartAsync(token); 
+            await peerManager.StartAsync(token); 
+            await syncTask; 
         }
         catch (Exception e)
         {
@@ -37,6 +41,7 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
     
     public async Task StopAsync()
     {
-        await discoveryProtocol.StopAsync();
+        await syncProtocol.StopAsync();
+        await peerManager.StopAsync();
     }
 }

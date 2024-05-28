@@ -4,9 +4,15 @@ using Multiformats.Address;
 
 namespace Lantern.Beacon.Networking.Discovery;
 
-public class Node(IEnr enr)
+public class Node
 {
-    public Multiaddress? Address { get; set; } = MultiAddressEnrConverter.ConvertToMultiAddress(enr);
+    public Multiaddress? Address { get; set; }
 
-    public IEnr Enr { get; set; } = enr;
+    public IEnr Enr { get; set; } 
+    
+    public Node(IEnr enr)
+    {
+        Enr = enr;
+        Address = MultiAddressEnrConverter.ConvertToMultiAddress(enr);
+    }
 }

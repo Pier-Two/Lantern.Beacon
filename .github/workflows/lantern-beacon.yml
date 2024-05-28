@@ -20,17 +20,31 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: "8.0.x"
-          
+
       - name: Checkout branch 
         uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libc6-dev  
+
+      - name: Create symbolic link for libdl.so
+        run: |
+          sudo ln -s /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so
+
+      - name: Verify libdl.so link
+        run: |
+          ls -alh /lib/x86_64-linux-gnu
+
+      - name: Set LD_LIBRARY_PATH
+        run: echo "LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/local/lib:/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH" >> $GITHUB_ENV    
+
       - name: Build Project_Beacon
         run: dotnet build src/Lantern.Beacon/Lantern.Beacon.csproj
 
-      - name: Build Project_Beacon_Sync_Protocol
-        run: dotnet build src/Lantern.Beacon.SyncProtocol/Lantern.Beacon.SyncProtocol.csproj
+      - name: Build Project_Beacon_Sync
+        run: dotnet build src/Lantern.Beacon.Sync/Lantern.Beacon.Sync.csproj
 
       - name: Run tests for the Projects
         run: dotnet test --verbosity normal --collect:"XPlat Code Coverage"

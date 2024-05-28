@@ -1,4 +1,5 @@
 ﻿using Lantern.Beacon.Networking;
+using Lantern.Beacon.Sync;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Connection;
@@ -7,7 +8,7 @@ using Lantern.Discv5.WireProtocol.Table;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
-using Nethermind.Libp2p.Protocols;
+using SszSharp;
 
 namespace Lantern.Beacon.Console;
 
@@ -20,12 +21,16 @@ internal static class Program
             "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg",
             "enr:-Le4QPUXJS2BTORXxyx2Ia-9ae4YqA_JWX3ssj4E_J-3z1A-HmFGrU8BpvpqhNabayXeOZ2Nq_sbeDgtzMJpLLnXFgAChGV0aDKQtTA_KgEAAAAAIgEAAAAAAIJpZIJ2NIJpcISsaa0Zg2lwNpAkAIkHAAAAAPA8kv_-awoTiXNlY3AyNTZrMaEDHAD2JKYevx89W0CcFJFiskdcEzkH_Wdv9iW42qLK79ODdWRwgiMohHVkcDaCI4I"
         };
-        var connectionOptions = new ConnectionOptions()
+        var connectionOptions = new ConnectionOptions
         {
             UdpPort = 4555
         };
         var sessionOptions = SessionOptions.Default;
-        var tableOptions = new TableOptions(bootstrapEnrs);
+        var tableOptions = new TableOptions(bootstrapEnrs)
+        {
+            MaxNodesCount = 16
+        };
+        
         var enr = new EnrBuilder()
             .WithIdentityScheme(sessionOptions.Verifier, sessionOptions.Signer)
             .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
@@ -54,6 +59,7 @@ internal static class Program
                 });
 
                 beaconClientBuilder.WithBeaconClientOptions(options => options.TcpPort = 30303);
+                beaconClientBuilder.WithSyncProtocolOptions(syncProtocol => syncProtocol.Preset = SizePreset.MainnetPreset);
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 
             });
@@ -64,7 +70,5 @@ internal static class Program
         
         await beaconClient.InitAsync();
         await beaconClient.StartAsync();
-        
-        var localPeer = peerManager.LocalPeer;
     }
 }
