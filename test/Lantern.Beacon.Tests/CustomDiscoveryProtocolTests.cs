@@ -1,20 +1,22 @@
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Sync;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol;
 using Lantern.Discv5.WireProtocol.Identity;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Multiformats.Address;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.Tests;
 
-public class DiscoveryProtocolTests
+public class CustomDiscoveryProtocolTests
 {
     private Mock<IDiscv5Protocol> _mockDiscv5Protocol;
     private Mock<IIdentityManager> _mockIdentityManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
-    private DiscoveryProtocol _discoveryProtocol;
+    private CustomDiscoveryProtocol _customDiscoveryProtocol;
 
     [SetUp]
     public void Setup()
@@ -22,9 +24,8 @@ public class DiscoveryProtocolTests
         _mockDiscv5Protocol = new Mock<IDiscv5Protocol>();
         _mockIdentityManager = new Mock<IIdentityManager>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
-        _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(Mock.Of<ILogger<DiscoveryProtocol>>());
-
-        _discoveryProtocol = new DiscoveryProtocol(new BeaconClientOptions() ,_mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(Mock.Of<ILogger<CustomDiscoveryProtocol>>());
+        _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), new SyncProtocolOptions(), _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 
     [Test]
@@ -37,7 +38,7 @@ public class DiscoveryProtocolTests
         _mockDiscv5Protocol.Setup(p => p.SelfEnr).Returns(mockEnr.Object);
         _mockDiscv5Protocol.Setup(p => p.InitAsync()).ReturnsAsync(true);
 
-        var result = await _discoveryProtocol.InitAsync();
+        var result = await _customDiscoveryProtocol.InitAsync();
 
         Assert.That(result, Is.True);
         
@@ -54,7 +55,7 @@ public class DiscoveryProtocolTests
         _mockDiscv5Protocol.Setup(p => p.SelfEnr).Returns(mockEnr.Object);
         _mockDiscv5Protocol.Setup(p => p.InitAsync()).ReturnsAsync(false);
 
-        var result = await _discoveryProtocol.InitAsync();
+        var result = await _customDiscoveryProtocol.InitAsync();
 
         Assert.That(result, Is.False);
         
@@ -64,7 +65,7 @@ public class DiscoveryProtocolTests
     [Test]
     public async Task StopAsync_ShouldInvokeStopOnDiscv5Protocol()
     {
-        await _discoveryProtocol.StopAsync();
+        await _customDiscoveryProtocol.StopAsync();
         _mockDiscv5Protocol.Verify(p => p.StopAsync(), Times.Once);
     }
 
@@ -74,7 +75,7 @@ public class DiscoveryProtocolTests
         var nodeId = new byte[32];
         _mockDiscv5Protocol.Setup(p => p.DiscoverAsync(nodeId)).ReturnsAsync(new List<IEnr> { Mock.Of<IEnr>() });
 
-        var result = _discoveryProtocol.DiscoverAsync(nodeId);
+        var result = _customDiscoveryProtocol.DiscoverAsync(Multiaddress.Decode("/ip4/127.0.0.1/tcp/4001"));
         
         Assert.That(result, Is.Not.Null);
     }
