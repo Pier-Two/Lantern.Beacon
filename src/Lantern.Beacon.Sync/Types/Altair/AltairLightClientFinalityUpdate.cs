@@ -15,7 +15,7 @@ public class AltairLightClientFinalityUpdate : IEquatable<AltairLightClientFinal
     public byte[][] FinalityBranch { get; protected init; } 
     
     [SszElement(3, "Container")]
-    public AltairSyncAggregate SyncAggregate { get; protected init; } 
+    public AltairSyncAggregate SyncAggregate { get; private init; } 
     
     [SszElement(4, "uint64")]
     public ulong SignatureSlot { get; protected init; } 
@@ -61,7 +61,6 @@ public class AltairLightClientFinalityUpdate : IEquatable<AltairLightClientFinal
             SignatureSlot = signatureSlot
         };
     }
-
     
     public static AltairLightClientFinalityUpdate CreateDefault()
     {

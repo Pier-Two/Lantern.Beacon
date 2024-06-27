@@ -23,4 +23,10 @@
       <ProjectReference Include="..\..\src\Lantern.Beacon\Lantern.Beacon.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Reference Include="Lantern.Discv5.Enr">
+        <HintPath>..\..\src\Lantern.Beacon.Console\bin\Debug\net8.0\Lantern.Discv5.Enr.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
 </Project>

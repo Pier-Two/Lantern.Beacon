@@ -8,9 +8,8 @@ using NUnit.Framework;
 namespace Lantern.Beacon.Tests;
 
 [TestFixture]
-public class MultiAddressEnrConverterTests
+public class BeaconChainUtility
 {
-
     [Test]
     public void ConvertToMultiAddress_ShouldCorrectlyConvertToMultiAddress()
     {

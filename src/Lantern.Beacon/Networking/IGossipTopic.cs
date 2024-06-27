@@ -2,7 +2,7 @@ using SszSharp;
 
 namespace Lantern.Beacon.Networking;
 
-public interface ITopic
+public interface IGossipTopic
 {
     string Name { get; }
     

@@ -169,7 +169,7 @@ public static class DenebProcessors
 
         var forkVersionSlot = Math.Max(update.SignatureSlot, 1) - 1;
         var forkVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(forkVersionSlot));
-        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, genesisValidatorsRoot, options.Preset);
+        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, options);
         var signingRoot = Phase0Helpers.ComputeSigningRoot(update.AttestedHeader.Beacon, domain, options.Preset);
         var blsPublicKeys = new PublicKey[syncCommitteePubKeys.Length];
         var message = new Msg();
@@ -239,9 +239,9 @@ public static class DenebProcessors
     }
 
     public static void ProcessLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update,
-        ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
@@ -270,7 +270,7 @@ public static class DenebProcessors
     }
 
     public static void ProcessLightClientFinalityUpdate(DenebLightClientStore store,
-        DenebLightClientFinalityUpdate finalityUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        DenebLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         
@@ -288,11 +288,11 @@ public static class DenebProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
     public static void ProcessLightClientOptimisticUpdate(DenebLightClientStore store,
-        DenebLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        DenebLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         var finalityBranch = new byte[Constants.FinalityBranchDepth][];
@@ -316,6 +316,6 @@ public static class DenebProcessors
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }

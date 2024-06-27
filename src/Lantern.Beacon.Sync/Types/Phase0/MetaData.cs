@@ -1,16 +1,26 @@
-using Lantern.Beacon.Sync.Config;
+using SszSharp;
 
-namespace Lantern.Beacon;
+namespace Lantern.Beacon.Sync.Types.Phase0;
 
-public class MetaData(ulong seqNumber, List<bool> attnets) : IEquatable<MetaData>
+public class MetaData : IEquatable<MetaData>
 {
-    public ulong SeqNumber { get; protected init; } = seqNumber;
+    [SszElement(0, "uint64")]
+    public ulong SeqNumber { get; private set; } 
     
-    public List<bool> Attnets { get; protected init; } = attnets;
+    [SszElement(1, "Bitvector[64]")]
+    public List<bool> Attnets { get; private set; }
+    
+    [SszElement(2, "Bitvector[4]")]
+    public List<bool> Syncnets { get; private set; }
     
     public bool Equals(MetaData? other)
     {
-        return other != null && SeqNumber == other.SeqNumber && Attnets.SequenceEqual(other.Attnets);
+        return other != null && SeqNumber == other.SeqNumber && Attnets.SequenceEqual(other.Attnets) && Syncnets.SequenceEqual(other.Syncnets);
+    }
+    
+    public void IncrementSeqNumber()
+    {
+        SeqNumber++;
     }
     
     public override bool Equals(object? obj)
@@ -42,6 +52,32 @@ public class MetaData(ulong seqNumber, List<bool> attnets) : IEquatable<MetaData
     
     public static MetaData CreateDefault()
     {
-        return new MetaData(0, Enumerable.Repeat(false, Config.AttestationSubnetCount).ToList());
+        return new MetaData
+        {
+            SeqNumber = 0,
+            Attnets = Enumerable.Repeat(false, Config.Config.AttestationSubnetCount).ToList(),
+            Syncnets = Enumerable.Repeat(false, Config.Config.SyncCommitteeSubnetCount).ToList()
+        };
+    }
+    
+    public static MetaData CreateFrom(ulong seqNumber, List<bool> attnets, List<bool> syncnets)
+    {
+        return new MetaData
+        {
+            SeqNumber = seqNumber,
+            Attnets = attnets,
+            Syncnets = syncnets
+        };
+    }
+    
+    public static byte[] Serialize(MetaData metaData)
+    {
+        return SszContainer.Serialize(metaData);
+    }
+    
+    public static MetaData Deserialize(byte[] data)
+    {
+        var result = SszContainer.Deserialize<MetaData>(data);
+        return result.Item1;
     }
 }

@@ -12,6 +12,14 @@ public class Config
     
     public static int RespTimeout { get; set; }
     
+    public static int AttestationSubnetCount { get; set; }
+    
+    public static int SyncCommitteeSubnetCount { get; set; }
+    
+    public static int GossipMaxSize { get; set; }
+    
+    public static int MaxRequestLightClientUpdates { get; set; }
+    
     public static uint GenesisForkVersion { get; set; }
     
     public static uint AltairForkVersion { get; set; }
@@ -39,6 +47,10 @@ public class Config
         SecondsPerSlot = MainnetConfig.SecondsPerSlot;
         TimeToFirstByteTimeout = MainnetConfig.TimeToFirstByteTimeout;
         RespTimeout = MainnetConfig.RespTimeout;
+        AttestationSubnetCount = MainnetConfig.AttestationSubnetCount;
+        SyncCommitteeSubnetCount = MainnetConfig.SyncCommitteeSubnetCount;
+        GossipMaxSize = MainnetConfig.GossipMaxSize;
+        MaxRequestLightClientUpdates = MainnetConfig.MaxRequestLightClientUpdates;
         AltairForkVersion = MainnetConfig.AltairForkVersion;
         AltairForkEpoch = MainnetConfig.AltairForkEpoch;
         BellatrixForkVersion = MainnetConfig.BellatrixForkVersion;
@@ -58,6 +70,10 @@ public class Config
         SecondsPerSlot = MinimalConfig.SecondsPerSlot;
         TimeToFirstByteTimeout = MinimalConfig.TimeToFirstByteTimeout;
         RespTimeout = MinimalConfig.RespTimeout;
+        AttestationSubnetCount = MinimalConfig.AttestationSubnetCount;
+        SyncCommitteeSubnetCount = MinimalConfig.SyncCommitteeSubnetCount;
+        GossipMaxSize = MinimalConfig.GossipMaxSize;
+        MaxRequestLightClientUpdates = MinimalConfig.MaxRequestLightClientUpdates;
         AltairForkVersion = MinimalConfig.AltairForkVersion;
         AltairForkEpoch = MinimalConfig.AltairForkEpoch;
         BellatrixForkVersion = MinimalConfig.BellatrixForkVersion;

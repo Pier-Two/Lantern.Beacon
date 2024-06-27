@@ -62,10 +62,8 @@ public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
     
     public static AltairSyncAggregate CreateDefault()
     {
-        return CreateFrom(Enumerable.Repeat(false, (int)AltairPresetValues.SyncCommitteeSize).ToList(),new byte[96]);
+        return CreateFrom(Enumerable.Repeat(false, AltairPresetValues.SyncCommitteeSize).ToList(),new byte[96]);
     }
-    
-    public static int BytesLength => (int)AltairPresetValues.SyncCommitteeSize + BlsSignature.Length;
     
     public static byte[] Serialize(AltairSyncAggregate altairSyncAggregate, SizePreset preset)
     {

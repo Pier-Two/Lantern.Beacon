@@ -1,12 +1,13 @@
+using System.Text;
 using Lantern.Beacon.Networking;
-using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Sync;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager peerManager, ISyncProtocol syncProtocol, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(ISyncProtocol syncProtocol, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -14,8 +15,16 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
     {
         try
         {
-            await syncProtocol.InitAsync();
-            await peerManager.InitAsync(token);
+            syncProtocol.Init();
+            gossipSubManager.Init();
+
+            if (gossipSubManager.BeaconBlock == null || gossipSubManager.LightClientFinalityUpdate == null || gossipSubManager.LightClientOptimisticUpdate == null)
+            {
+                return;
+            }
+            
+            gossipSubManager.BeaconBlock.OnMessage += ProcessBeaconBlock;
+            await beaconClientManager.InitAsync(token);
         }
         catch (Exception e)
         {
@@ -23,14 +32,13 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
             throw;
         }
     }
-    
+
     public async Task StartAsync(CancellationToken token = default)
     {
         try
         { 
-            var syncTask = syncProtocol.StartAsync(token); 
-            await peerManager.StartAsync(token); 
-            await syncTask; 
+            //await gossipSubManager.StartAsync(token);
+            await beaconClientManager.StartAsync(token); 
         }
         catch (Exception e)
         {
@@ -41,7 +49,12 @@ public class BeaconClient(IDiscoveryProtocol discoveryProtocol, IPeerManager pee
     
     public async Task StopAsync()
     {
-        await syncProtocol.StopAsync();
-        await peerManager.StopAsync();
+        //await gossipSubManager.StopAsync();
+        await beaconClientManager.StopAsync();
+    }
+    
+    private void ProcessBeaconBlock(byte[] obj)
+    {
+        //Console.WriteLine("Received message: " + Encoding.UTF8.GetString(obj));
     }
 }

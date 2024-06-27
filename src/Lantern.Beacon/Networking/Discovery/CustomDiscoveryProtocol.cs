@@ -1,4 +1,3 @@
-using Lantern.Beacon;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Types.Phase0;
@@ -11,10 +10,10 @@ using Multiformats.Address;
 
 namespace Lantern.Beacon.Networking.Discovery;
 
-public class DiscoveryProtocolExtended(BeaconClientOptions beaconOptions, SyncProtocolOptions syncProtocolOptions, IDiscv5Protocol discv5Protocol, IIdentityManager identityManager, ILoggerFactory loggerFactory) : IDiscoveryProtocolExtended
+public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProtocolOptions syncProtocolOptions, IDiscv5Protocol discv5Protocol, IIdentityManager identityManager, ILoggerFactory loggerFactory) : ICustomDiscoveryProtocol
 {
-    private readonly ILogger<DiscoveryProtocolExtended> _logger = loggerFactory.CreateLogger<DiscoveryProtocolExtended>();
-
+    private readonly ILogger<CustomDiscoveryProtocol> _logger = loggerFactory.CreateLogger<CustomDiscoveryProtocol>();
+    
     public async Task<bool> InitAsync()
     {
         var result = await discv5Protocol.InitAsync();
@@ -26,8 +25,8 @@ public class DiscoveryProtocolExtended(BeaconClientOptions beaconOptions, SyncPr
         
         identityManager.Record.UpdateEntry(new EntryTcp(beaconOptions.TcpPort));
 
-        var currentVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot()));
-        var forkDigest = Phase0Helpers.ComputeForkDigest(currentVersion, syncProtocolOptions.GenesisValidatorsRoot, syncProtocolOptions.Preset);
+        var currentVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocolOptions.GenesisTime)));
+        var forkDigest = Phase0Helpers.ComputeForkDigest(currentVersion, syncProtocolOptions);
         var enrForkId = EnrForkId.Serialize(EnrForkId.CreateFrom(forkDigest, currentVersion, Constants.FarFutureEpoch), syncProtocolOptions.Preset);
         
         identityManager.Record.UpdateEntry(new EntryEth2(enrForkId));
@@ -36,14 +35,10 @@ public class DiscoveryProtocolExtended(BeaconClientOptions beaconOptions, SyncPr
         
         return true;
     }
+    
+    public Task DiscoverAsync(Multiaddress localPeerAddr, CancellationToken token = default) => Task.CompletedTask;
 
-    public async Task StopAsync()
-    {
-        await discv5Protocol.StopAsync();
-    }
-
-    // Need to separate Discover and Refresh
-    public async Task DiscoverAsync(Multiaddress localPeerAddr, CancellationToken token = default)
+    public async Task GetDiscoveredNodesAsync(Multiaddress localPeerAddr, CancellationToken token = default)
     {
         _logger.LogInformation("Starting discovery with local peer address: {LocalPeerAddr}", localPeerAddr);
 
@@ -74,7 +69,7 @@ public class DiscoveryProtocolExtended(BeaconClientOptions beaconOptions, SyncPr
                 if(node == null)
                     continue;
                     
-                if(!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)))
+                if (!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)) || !node.HasKey(EnrEntryKey.Eth2))
                     continue;
                         
                 var multiAddress = BeaconClientUtility.ConvertToMultiAddress(node);
@@ -86,14 +81,22 @@ public class DiscoveryProtocolExtended(BeaconClientOptions beaconOptions, SyncPr
             }
                 
             OnAddPeer?.Invoke(multiaddresses.ToArray());
-            _logger.LogInformation("Discovered {Count} peers", multiaddresses.Count);
+            _logger.LogInformation("Collected {Count} peers to dial", multiaddresses.Count);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred during discovery");
         }
     }
+    
+    public async Task StopAsync()
+    {
+        await discv5Protocol.StopAsync();
+    }
+    
+    //
 
+    // Need to separate Discover and Refresh
     public Func<Multiaddress[], bool>? OnAddPeer { get; set; }
     
     public Func<Multiaddress[], bool>? OnRemovePeer { get; set; }

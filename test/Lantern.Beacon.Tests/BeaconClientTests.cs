@@ -1,21 +1,23 @@
 ﻿using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Moq;
+using Nethermind.Libp2p.Core.Discovery;
 
 
 namespace Lantern.Beacon.Tests;
 
 [TestFixture]
-public class BeaconClientTests
+ public class BeaconClientTests
 {
-    private Mock<IDiscoveryProtocol> _mockDiscoveryProtocol;
-    private Mock<IPeerManager> _mockPeerManager;
+    private Mock<IBeaconClientManager> _mockPeerManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
     private Mock<ILogger<BeaconClient>> _mockLogger;
     private Mock<ISyncProtocol> _mockSyncProtocol;
+    private Mock<IGossipSubManager> _mockGossipSubManager;
     private Mock<IServiceProvider> _mockServiceProvider;
     private BeaconClient _beaconClient;
     
@@ -23,11 +25,11 @@ public class BeaconClientTests
     public void Setup()
     {
         // Initialize all mocks first
-        _mockDiscoveryProtocol = new Mock<IDiscoveryProtocol>();
-        _mockPeerManager = new Mock<IPeerManager>();
+        _mockPeerManager = new Mock<IBeaconClientManager>();
         _mockLogger = new Mock<ILogger<BeaconClient>>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockSyncProtocol = new Mock<ISyncProtocol>();
+        _mockGossipSubManager = new Mock<IGossipSubManager>();
         _mockServiceProvider = new Mock<IServiceProvider>();
 
         // Setup the LoggerFactory to return the Logger mock
@@ -37,13 +39,13 @@ public class BeaconClientTests
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
 
         // Ensure all mocks are initialized before creating BeaconClient
-        if (_mockDiscoveryProtocol == null || _mockPeerManager == null || _mockServiceProvider == null)
+        if (_mockPeerManager == null || _mockServiceProvider == null)
         {
             throw new InvalidOperationException("A required mock is null.");
         }
 
         // Create BeaconClient with initialized mocks
-        _beaconClient = new BeaconClient(_mockDiscoveryProtocol.Object, _mockPeerManager.Object, _mockSyncProtocol.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockPeerManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
     }
 
     [Test]
@@ -101,4 +103,4 @@ public class BeaconClientTests
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
     }
-}
+} 

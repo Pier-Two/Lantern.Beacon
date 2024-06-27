@@ -34,6 +34,12 @@ public class AltairLightClientOptimisticUpdate : IEquatable<AltairLightClientOpt
         return HashCode.Combine(AttestedHeader, SyncAggregate, SignatureSlot);
     }
     
+    public byte[] GetHashTreeRoot(SizePreset preset)
+    {
+        var container = SszContainer.GetContainer<AltairLightClientOptimisticUpdate>(preset);
+        return container.HashTreeRoot(this);
+    }
+    
     public static AltairLightClientOptimisticUpdate CreateFrom(
         AltairLightClientHeader altairLightClientHeader, 
         AltairSyncAggregate altairSyncAggregate, 
@@ -49,7 +55,7 @@ public class AltairLightClientOptimisticUpdate : IEquatable<AltairLightClientOpt
     
     public static AltairLightClientOptimisticUpdate CreateDefault()
     {
-        return AltairLightClientOptimisticUpdate.CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncAggregate.CreateDefault(), 0);
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncAggregate.CreateDefault(), 0);
     }
     
     public static byte[] Serialize(AltairLightClientOptimisticUpdate altairLightClientOptimisticUpdate, SizePreset preset)

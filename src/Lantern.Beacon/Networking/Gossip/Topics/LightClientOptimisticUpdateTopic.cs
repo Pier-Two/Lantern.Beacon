@@ -1,16 +1,15 @@
+using Lantern.Beacon.Sync;
 using SszSharp;
 
 namespace Lantern.Beacon.Networking.Gossip.Topics;
 
-public class LightClientOptimisticUpdateTopic : ITopic
+public static class LightClientOptimisticUpdateTopic 
 {
-    public string Name => "light_client_optimistic_update";
+    public static string Name => "light_client_optimistic_update";
     
-    public string GetTopicString(byte[] genesisValidatorsRoot, SizePreset preset)
+    public static string GetTopicString(SyncProtocolOptions options)
     { 
-        var forkDigest = BeaconClientUtility.GetForkDigest(genesisValidatorsRoot, preset);
+        var forkDigest = BeaconClientUtility.GetForkDigestString(options);
         return $"/eth2/{forkDigest}/{Name}/ssz_snappy";
     }
-    
-    public byte[] Encode() => [];
 }

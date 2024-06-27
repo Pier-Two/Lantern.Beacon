@@ -156,7 +156,7 @@ public static class AltairProcessors
 
         var forkVersionSlot = Math.Max(update.SignatureSlot, 1) - 1;
         var forkVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(forkVersionSlot));
-        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, genesisValidatorsRoot, options.Preset);
+        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, options);
         var signingRoot = Phase0Helpers.ComputeSigningRoot(update.AttestedHeader.Beacon, domain, options.Preset);
         var blsPublicKeys = new PublicKey[syncCommitteePubKeys.Length];
         var message = new Msg();
@@ -227,9 +227,9 @@ public static class AltairProcessors
     }
 
     public static void ProcessLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update,
-        ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
         if(store.BestValidUpdate == null || AltairHelpers.IsBetterUpdate(update, store.BestValidUpdate))
@@ -257,7 +257,7 @@ public static class AltairProcessors
     }
 
     public static void ProcessLightClientFinalityUpdate(AltairLightClientStore store,
-        AltairLightClientFinalityUpdate finalityUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        AltairLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         
@@ -275,11 +275,11 @@ public static class AltairProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
     public static void ProcessLightClientOptimisticUpdate(AltairLightClientStore store,
-        AltairLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        AltairLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         var finalityBranch = new byte[Constants.FinalityBranchDepth][];
@@ -303,6 +303,6 @@ public static class AltairProcessors
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }
