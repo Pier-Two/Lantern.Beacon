@@ -12,6 +12,14 @@ public static class MainnetConfig
     
     public const int RespTimeout = 10;
     
+    public const int AttestationSubnetCount = 64;
+    
+    public const int SyncCommitteeSubnetCount = 4;
+    
+    public const int GossipMaxSize = 10485760;
+    
+    public const int MaxRequestLightClientUpdates = 128;
+    
     public const uint GenesisForkVersion = 0x00000000;
     
     public const uint AltairForkVersion = 0x01000000;

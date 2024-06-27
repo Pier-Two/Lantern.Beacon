@@ -1,4 +1,4 @@
-using Lantern.Beacon.Utility;
+using Lantern.Beacon;
 using Lantern.Discv5.Enr;
 using Multiformats.Address;
 
@@ -13,6 +13,6 @@ public class Node
     public Node(IEnr enr)
     {
         Enr = enr;
-        Address = MultiAddressEnrConverter.ConvertToMultiAddress(enr);
+        Address = BeaconClientUtility.ConvertToMultiAddress(enr);
     }
 }

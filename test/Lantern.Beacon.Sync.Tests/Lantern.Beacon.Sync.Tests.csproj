@@ -24,6 +24,7 @@
       <PackageReference Include="Nethereum.Merkle" Version="4.20.0" />
       <PackageReference Include="NUnit" Version="4.1.0" />
       <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+      <PackageReference Include="Snappier" Version="1.1.6" />
       <PackageReference Include="YamlDotNet" Version="15.1.2" />
     </ItemGroup>
 

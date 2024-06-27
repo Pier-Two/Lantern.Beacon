@@ -168,7 +168,7 @@ public static class CapellaProcessors
 
         var forkVersionSlot = Math.Max(update.SignatureSlot, 1) - 1;
         var forkVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(forkVersionSlot));
-        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, genesisValidatorsRoot, options.Preset);
+        var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, options);
         var signingRoot = Phase0Helpers.ComputeSigningRoot(update.AttestedHeader.Beacon, domain, options.Preset);
         var blsPublicKeys = new PublicKey[syncCommitteePubKeys.Length];
         var message = new Msg();
@@ -239,9 +239,9 @@ public static class CapellaProcessors
     }
 
     public static void ProcessLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update,
-        ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
         if(store.BestValidUpdate == null || CapellaHelpers.IsBetterUpdate(update, store.BestValidUpdate))
@@ -269,7 +269,7 @@ public static class CapellaProcessors
     }
 
     public static void ProcessLightClientFinalityUpdate(CapellaLightClientStore store,
-        CapellaLightClientFinalityUpdate finalityUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        CapellaLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         
@@ -287,11 +287,11 @@ public static class CapellaProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
     public static void ProcessLightClientOptimisticUpdate(CapellaLightClientStore store,
-        CapellaLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+        CapellaLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
         var finalityBranch = new byte[Constants.FinalityBranchDepth][];
@@ -315,6 +315,6 @@ public static class CapellaProcessors
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, genesisValidatorsRoot, options, logger);
+        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }

@@ -1,8 +1,8 @@
 using Nethermind.Libp2p.Core;
 
-namespace Lantern.Beacon.Networking;
+namespace Lantern.Beacon;
 
-public interface IPeerManager
+public interface IBeaconClientManager
 { 
     ILocalPeer? LocalPeer { get; }
     

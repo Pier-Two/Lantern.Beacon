@@ -39,6 +39,6 @@ public class FileFixtureBase
     
     private static byte[] LoadSszFile(string filePath)
     {
-        return Snappy.Decode(File.ReadAllBytes(filePath));
+        return IronSnappy.Snappy.Decode(File.ReadAllBytes(filePath));
     }
 }

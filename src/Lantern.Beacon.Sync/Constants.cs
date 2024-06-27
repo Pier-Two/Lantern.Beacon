@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Lantern.Beacon.Sync;
 
 public static class Constants
@@ -26,5 +28,9 @@ public static class Constants
     
     public const int VersionLength = 4;
     
+    public const int ContextBytesLength = 4;
+    
     public const int DomainLength = 32;
+
+    public const ulong FarFutureEpoch = ulong.MaxValue;
 }

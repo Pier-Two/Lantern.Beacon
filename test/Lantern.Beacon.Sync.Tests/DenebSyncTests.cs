@@ -3,6 +3,7 @@ using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Processors;
 using NUnit.Framework;
 using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Discv5.WireProtocol.Logging;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SszSharp;
@@ -24,7 +25,7 @@ public class DenebSyncTests : FileFixtureBase
         _dataFolderPath = Path.Combine(projectFolderPath, "MockData");
         _options = new SyncProtocolOptions();
         _options.Preset = SizePreset.MinimalPreset;
-        _syncProtocol = new SyncProtocol(_options, Mock.Of<ILogger<SyncProtocol>>());
+        _syncProtocol = new SyncProtocol(_options, LoggingOptions.Default);
         
         Config.Config.InitializeWithMinimal();
         Phase0Preset.InitializeWithMinimal();
@@ -67,14 +68,14 @@ public class DenebSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = DenebLightClientUpdate.Deserialize(updateData, _options.Preset);
                 
-                DenebProcessors.ProcessLightClientUpdate(_syncProtocol._denebLightClientStore, update, currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                DenebProcessors.ProcessLightClientUpdate(_syncProtocol.DenebLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
             
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
             }
         }
     }
@@ -117,44 +118,43 @@ public class DenebSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = DenebLightClientUpdate.Deserialize(updateData, _options.Preset);
 
-                DenebProcessors.ProcessLightClientUpdate(_syncProtocol._denebLightClientStore, update, currentSlot,
-                    genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                DenebProcessors.ProcessLightClientUpdate(_syncProtocol.DenebLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
 
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
             }
             else if (step.ContainsKey("force_update"))
             {
                 var currentSlot = ulong.Parse(step["force_update"]["current_slot"]);
               
-                DenebProcessors.ProcessLightClientStoreForceUpdate(_syncProtocol._denebLightClientStore, currentSlot, Mock.Of<ILogger<SyncProtocol>>());
+                DenebProcessors.ProcessLightClientStoreForceUpdate(_syncProtocol.DenebLightClientStore, currentSlot, Mock.Of<ILogger<SyncProtocol>>());
 
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["force_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["force_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["force_update"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["force_update"]["checks"]["finalized_header"]["execution_root"])));
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["force_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["force_update"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["force_update"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["force_update"]["checks"]["optimistic_header"]["execution_root"])));
             }
         }
     }
@@ -195,20 +195,19 @@ public class DenebSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = DenebLightClientUpdate.Deserialize(updateData, _options.Preset);
 
-                DenebProcessors.ProcessLightClientUpdate(_syncProtocol._denebLightClientStore, update, currentSlot,
-                    genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                DenebProcessors.ProcessLightClientUpdate(_syncProtocol.DenebLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
 
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
                 Assert.That(
-                    _syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
             }
         }

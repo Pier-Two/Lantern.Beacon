@@ -1,6 +1,4 @@
-﻿using Lantern.Beacon.Networking;
-using Lantern.Beacon.Sync;
-using Lantern.Discv5.Enr;
+﻿using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Connection;
 using Lantern.Discv5.WireProtocol.Session;
@@ -12,9 +10,68 @@ using SszSharp;
 
 namespace Lantern.Beacon.Console;
 
+public class NodeTableEntry {
+    public Guid Id { get; set; }
+}
+
 internal static class Program
 {
-    public static async Task Main(string[] args)
+    // private static List<NodeTableEntry> bucket = new List<NodeTableEntry>();
+    // private static Dictionary<Guid, NodeTableEntry> routingTable = new Dictionary<Guid, NodeTableEntry>();
+    // private static List<HashSet<Guid>> _pathBuckets = new List<HashSet<Guid>>();
+    // private static HashSet<Guid> requestManager = new HashSet<Guid>();
+    //
+    // static void Main() {
+    //     // Setup a large number of nodes for the test
+    //     for (int i = 0; i < 10000; i++) {
+    //         var id = Guid.NewGuid();
+    //         bucket.Add(new NodeTableEntry { Id = id });
+    //         if (i % 2 == 0) routingTable[id] = new NodeTableEntry { Id = id };
+    //         if (i % 3 == 0) requestManager.Add(id);
+    //         if (i % 4 == 0) _pathBuckets.Add(new HashSet<Guid> { id });
+    //     }
+    //     
+    //     var senderNodeId = 0;  // Simulate the senderNodeId
+    //     var queryCount = 1000;
+    //     
+    //     var sw = Stopwatch.StartNew();
+    //     
+    //     // LINQ approach
+    //     sw.Restart();
+    //     var nodesToQueryLinq = bucket
+    //         .Where(node => routingTable.ContainsKey(node.Id))
+    //         .Where(node => !_pathBuckets.Any(pathBucket => pathBucket.Contains(node.Id)))
+    //         .Where(node => !requestManager.Contains(node.Id))
+    //         .Take(queryCount)
+    //         .ToList();
+    //     sw.Stop();
+    //     var linqTime = sw.ElapsedMilliseconds;
+    //     System.Console.WriteLine($"LINQ approach took: {linqTime} ms");
+    //     
+    //     // Manual loop approach
+    //     sw.Restart();
+    //     var nodesToQueryLoop = new List<NodeTableEntry>();
+    //     foreach (var node in bucket) {
+    //         if (nodesToQueryLoop.Count >= queryCount)
+    //             break;
+    //         
+    //         if (!routingTable.ContainsKey(node.Id))
+    //             continue;
+    //
+    //         if (_pathBuckets.Any(pathBucket => pathBucket.Contains(node.Id)))
+    //             continue;
+    //
+    //         if (requestManager.Contains(node.Id))
+    //             continue;
+    //
+    //         nodesToQueryLoop.Add(node);
+    //     }
+    //     sw.Stop();
+    //     var loopTime = sw.ElapsedMilliseconds;
+    //     System.Console.WriteLine($"Manual loop approach took: {loopTime} ms");
+    // }
+    
+    public static async Task Main()
     {
         var bootstrapEnrs = new[]
         {
@@ -30,43 +87,59 @@ internal static class Program
         {
             MaxNodesCount = 16
         };
-        
         var enr = new EnrBuilder()
             .WithIdentityScheme(sessionOptions.Verifier, sessionOptions.Signer)
             .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
             .WithEntry(EnrEntryKey.Secp256K1, new EntrySecp256K1(sessionOptions.Signer.PublicKey));
         var services = new ServiceCollection();
-        
-        services.AddLogging(builder =>
-            {
-                builder.AddSimpleConsole(options =>
+        var discv5LoggerFactory = LoggerFactory.Create(builder =>
+            builder.SetMinimumLevel(LogLevel.None)
+                .AddSimpleConsole(l => {
+                l.SingleLine = true; 
+                l.TimestampFormat = "[HH:mm:ss] ";
+                l.ColorBehavior = LoggerColorBehavior.Default;
+                l.IncludeScopes = false;
+                l.UseUtcTimestamp = true;
+            }));
+        var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder
+                .SetMinimumLevel(LogLevel.Trace)
+                //.AddFilter((category, level) => level != LogLevel.Error && level >= LogLevel.Information)
+                .AddSimpleConsole(l =>
                 {
-                    options.ColorBehavior = LoggerColorBehavior.Default;
-                    options.IncludeScopes = false;
-                    options.SingleLine = true;
-                    options.TimestampFormat = "[HH:mm:ss] ";
-                    options.UseUtcTimestamp = true;
+                    l.SingleLine = true;
+                    l.TimestampFormat = "[HH:mm:ss] ";
+                    l.ColorBehavior = LoggerColorBehavior.Default;
+                    l.IncludeScopes = false;
+                    l.UseUtcTimestamp = true;
                 });
-            })
-            .AddBeaconClient(beaconClientBuilder =>
+        });
+        services.AddBeaconClient(beaconClientBuilder =>
             {
                 beaconClientBuilder.AddDiscoveryProtocol(discv5Builder =>
                 {
                     discv5Builder.WithConnectionOptions(connectionOptions)
                         .WithTableOptions(tableOptions)
                         .WithEnrBuilder(enr)
-                        .WithSessionOptions(sessionOptions);
+                        .WithSessionOptions(sessionOptions)
+                        .WithLoggerFactory(discv5LoggerFactory);
                 });
-
+    
                 beaconClientBuilder.WithBeaconClientOptions(options => options.TcpPort = 30303);
-                beaconClientBuilder.WithSyncProtocolOptions(syncProtocol => syncProtocol.Preset = SizePreset.MainnetPreset);
+                beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
+                {
+                    syncProtocol.Preset = SizePreset.MainnetPreset;
+                    syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
+                    syncProtocol.GenesisTime = 1606824023;
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9469afc5289ffe15475344d636b204286f2745e77c124bb978755151eb80ee09");
+                });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
-                
+                beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);
             });
         
         var serviceProvider = services.BuildServiceProvider();
         var beaconClient = serviceProvider.GetRequiredService<IBeaconClient>();
-        var peerManager = serviceProvider.GetRequiredService<IPeerManager>();
         
         await beaconClient.InitAsync();
         await beaconClient.StartAsync();

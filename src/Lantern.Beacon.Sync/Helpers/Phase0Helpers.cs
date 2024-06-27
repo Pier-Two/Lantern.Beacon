@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using SszSharp;
 using Cortex.Containers;
 using Lantern.Beacon.Sync.Presets;
+using Lantern.Beacon.Sync.Types;
 using Lantern.Beacon.Sync.Types.Phase0;
 
 namespace Lantern.Beacon.Sync.Helpers;
@@ -68,65 +69,96 @@ public static class Phase0Helpers
         return slot / (ulong)Phase0Preset.SlotsPerEpoch;
     }
     
-    public static uint ComputeForkVersion(ulong epoch)
+    public static ForkType ComputeForkType(byte[] forkDigest, SyncProtocolOptions options)
     {
+        // Compute Deneb Fork Digest
+        var denebForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.DenebForkVersion), options);
+        var capellaForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.CapellaForkVersion), options);
+        var bellatrixForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.BellatrixForkVersion), options);
+        var altairForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.AltairForkVersion), options);
+        
+        if (denebForkDigest.SequenceEqual(forkDigest))
+        {
+            return ForkType.Deneb;
+        }
+        
+        if (capellaForkDigest.SequenceEqual(forkDigest))
+        {
+            return ForkType.Capella;
+        }
+        
+        if (bellatrixForkDigest.SequenceEqual(forkDigest))
+        {
+            return ForkType.Bellatrix;
+        }
+        
+        if (altairForkDigest.SequenceEqual(forkDigest))
+        {
+            return ForkType.Altair;
+        }
+        
+        return ForkType.Phase0;
+    }
+    
+    public static byte[] ComputeForkVersion(ulong epoch)
+    {
+        if (epoch >= Config.Config.DenebForkEpoch)
+        {
+            return ConvertToLittleEndian(Config.Config.DenebForkVersion);
+        }
+        
         if (epoch >= Config.Config.CapellaForkEpoch)
         {
-            return Config.Config.CapellaForkVersion;
+            return ConvertToLittleEndian(Config.Config.CapellaForkVersion);
         }
 
         if (epoch >= Config.Config.BellatrixForkEpoch)
         {
-            return Config.Config.BellatrixForkVersion;
+            return ConvertToLittleEndian(Config.Config.BellatrixForkVersion);
         }
 
         if (epoch >= Config.Config.AltairForkEpoch)
         {
-            return Config.Config.AltairForkVersion;
+            return ConvertToLittleEndian(Config.Config.AltairForkVersion);
         }       
         
-        return Config.Config.GenesisForkVersion;
-    }
-    
-    public static byte[] ComputeDomain(uint domainType, uint? forkVersion, byte[]? genesisValidatorsRoot, SizePreset preset)
-    {
-        if(!forkVersion.HasValue)
-        {
-            forkVersion = Config.Config.GenesisForkVersion;
-        }
-        
-        if(genesisValidatorsRoot == null)
-        {
-            genesisValidatorsRoot = new byte[Constants.RootLength];
-        }
-        
-        var forkDataRoot = ComputeForkDataRoot(forkVersion.Value, genesisValidatorsRoot, preset).Take(28);
-        var domainTypeBytes = BitConverter.GetBytes(domainType);
-        
-        if (BitConverter.IsLittleEndian)
-        {
-            Array.Reverse(domainTypeBytes);
-        }
-        
-        return domainTypeBytes.Concat(forkDataRoot).ToArray();
-    }
-    
-    public static byte[] ComputeForkDataRoot(uint currentVersion, byte[] genesisValidatorsRoot, SizePreset preset)
-    {
-        var currentVersionBytes = BitConverter.GetBytes(currentVersion);
-        
-        if (BitConverter.IsLittleEndian)
-        {
-            Array.Reverse(currentVersionBytes);
-        }
-        
-        var forkData = ForkData.CreateFrom(currentVersionBytes, genesisValidatorsRoot);
-        return forkData.GetHashTreeRoot(preset);
+        return ConvertToLittleEndian(Config.Config.GenesisForkVersion);
     }
 
-    public static byte[] ComputeForkDigest(uint currentVersion, byte[] genesisValidatorsRoot, SizePreset preset)
+    public static ulong ComputeCurrentSlot(ulong genesisTime)
     {
-        return ComputeForkDataRoot(currentVersion, genesisValidatorsRoot, preset).Take(4).ToArray();
+        var currentTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var secondsPerSlot = (ulong)Config.Config.SecondsPerSlot;
+        
+        return ((currentTime - genesisTime) / secondsPerSlot);
+    }
+    
+    public static byte[] ComputeDomain(uint domainType, byte[]? forkVersion, SyncProtocolOptions options)
+    {
+        if(forkVersion == null)
+        {
+            forkVersion = ComputeForkVersion(ComputeEpochAtSlot(ComputeCurrentSlot(options.GenesisTime)));
+        }
+        
+        if(options.GenesisValidatorsRoot == null)
+        {
+            options.GenesisValidatorsRoot = new byte[Constants.RootLength];
+        }
+        
+        var forkDataRoot = ComputeForkDataRoot(forkVersion, options).Take(28);
+        
+        return ConvertToLittleEndian(domainType).Concat(forkDataRoot).ToArray();
+    }
+
+    public static byte[] ComputeForkDigest(byte[] currentVersion, SyncProtocolOptions options)
+    {
+        return ComputeForkDataRoot(currentVersion, options).Take(4).ToArray();
+    }
+    
+    public static byte[] ComputeForkDataRoot(byte[] currentVersion, SyncProtocolOptions options)
+    {
+        var forkData = ForkData.CreateFrom(currentVersion, options.GenesisValidatorsRoot);
+        return forkData.GetHashTreeRoot(options.Preset);
     }
 
     public static byte[] ComputeSigningRoot<T>(T sszObject, byte[] domain, SizePreset sizePreset)
@@ -134,5 +166,17 @@ public static class Phase0Helpers
         var sszContainer = SszContainer.GetContainer<T>(sizePreset);
         var signingData = SigningData.CreateFrom(sszContainer.HashTreeRoot(sszObject), domain);
         return signingData.GetHashTreeRoot(sizePreset);
+    }
+    
+    private static byte[] ConvertToLittleEndian(uint value)
+    {
+        var bytes = BitConverter.GetBytes(value);
+        
+        if (BitConverter.IsLittleEndian)
+        {
+            Array.Reverse(bytes);
+        }
+        
+        return bytes;
     }
 }

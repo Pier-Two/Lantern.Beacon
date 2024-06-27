@@ -1,12 +1,31 @@
 using System.Net;
+using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Helpers;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Multiformats.Address;
+using SszSharp;
 
-namespace Lantern.Beacon.Utility;
+namespace Lantern.Beacon;
 
-public static class MultiAddressEnrConverter
+public static class BeaconClientUtility
 {
+    public static byte[] GetForkDigestBytes(SyncProtocolOptions options)
+    {
+        var epoch = Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(options.GenesisTime));
+        var currentForkVersion = Phase0Helpers.ComputeForkVersion(epoch);
+        var forkDigest = Phase0Helpers.ComputeForkDigest(currentForkVersion, options);
+        return forkDigest;
+    }
+    
+    public static string GetForkDigestString(SyncProtocolOptions options)
+    {
+        var epoch = Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(options.GenesisTime));
+        var currentForkVersion = Phase0Helpers.ComputeForkVersion(epoch);
+        var forkDigest = Convert.ToHexString(Phase0Helpers.ComputeForkDigest(currentForkVersion, options)).ToLower();
+        return forkDigest;
+    }
+    
     public static Multiaddress? ConvertToMultiAddress(IEnr? enr)
     {
         if (enr == null)

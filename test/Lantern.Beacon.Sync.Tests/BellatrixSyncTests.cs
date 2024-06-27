@@ -5,6 +5,7 @@ using NUnit.Framework;
 using Lantern.Beacon.Sync.Types.Altair;
 using Lantern.Beacon.Sync.Types.Capella;
 using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Discv5.WireProtocol.Logging;
 using Microsoft.Extensions.Logging;
 using Moq;
 using SszSharp;
@@ -27,7 +28,7 @@ public class BellatrixSyncTests : FileFixtureBase
         _dataFolderPath = Path.Combine(projectFolderPath, "MockData");
         _options = new SyncProtocolOptions();
         _options.Preset = SizePreset.MinimalPreset;
-        _syncProtocol = new SyncProtocol(_options, Mock.Of<ILogger<SyncProtocol>>());
+        _syncProtocol = new SyncProtocol(_options, LoggingOptions.Default);
         
         Config.Config.InitializeWithMinimal();
         Phase0Preset.InitializeWithMinimal();
@@ -55,6 +56,7 @@ public class BellatrixSyncTests : FileFixtureBase
         var trustedBlockRoot = TestUtility.HexToByteArray((string)meta["trusted_block_root"]);
         var bootstrap = AltairLightClientBootstrap.Deserialize(bootstrapData, _options.Preset);
         
+        _options.GenesisValidatorsRoot = genesisValidatorsRoot;
         _syncProtocol.InitialiseStoreFromAltairBootstrap(trustedBlockRoot, bootstrap);
         
         foreach (var step in steps)
@@ -68,12 +70,12 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
                 
-                AltairProcessors.ProcessLightClientUpdate(_syncProtocol._altairLightClientStore, update, currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                AltairProcessors.ProcessLightClientUpdate(_syncProtocol.AltairLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
             
-                Assert.That(_syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(_syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
                 
             }
         }
@@ -112,12 +114,12 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = CapellaLightClientUpdate.Deserialize(updateData, _options.Preset);
                 
-                CapellaProcessors.ProcessLightClientUpdate(_syncProtocol._capellaLightClientStore, update, currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                CapellaProcessors.ProcessLightClientUpdate(_syncProtocol.CapellaLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
             
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
             }
         }
     }
@@ -158,33 +160,33 @@ public class BellatrixSyncTests : FileFixtureBase
                 if (step["process_update"]["update_fork_digest"] == "0x790e5b44")
                 {
                     var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
-                    CapellaProcessors.ProcessLightClientUpdate(_syncProtocol._capellaLightClientStore, CapellaLightClientUpdate.CreateFromAltair(update), currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                    CapellaProcessors.ProcessLightClientUpdate(_syncProtocol.CapellaLightClientStore, CapellaLightClientUpdate.CreateFromAltair(update), currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
                 }
                 else if(step["process_update"]["update_fork_digest"] == "0x856842be")
                 {
                     var update = CapellaLightClientUpdate.Deserialize(updateData, _options.Preset);
-                    CapellaProcessors.ProcessLightClientUpdate(_syncProtocol._capellaLightClientStore, update, currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                    CapellaProcessors.ProcessLightClientUpdate(_syncProtocol.CapellaLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
                 }
                
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
 
                 if (step.ContainsKey("execution_root"))
                 {
-                    Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
-                    Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
+                    Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
+                    Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
                 }
             }
             else if(step.ContainsKey("upgrade_store"))
             {
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["upgrade_store"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["upgrade_store"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["finalized_header"]["execution_root"])));
-                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["upgrade_store"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["upgrade_store"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["upgrade_store"]["checks"]["optimistic_header"]["execution_root"])));
             }
         }
     }
@@ -223,14 +225,14 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
                 
-                CapellaProcessors.ProcessLightClientUpdate(_syncProtocol._capellaLightClientStore, CapellaLightClientUpdate.CreateFromAltair(update), currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                CapellaProcessors.ProcessLightClientUpdate(_syncProtocol.CapellaLightClientStore, CapellaLightClientUpdate.CreateFromAltair(update), currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
             
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._capellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol._capellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(CapellaHelpers.GetLcExecutionRoot(_syncProtocol.CapellaLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
             }
         }
     }
@@ -269,14 +271,14 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
                 
-                DenebProcessors.ProcessLightClientUpdate(_syncProtocol._denebLightClientStore, DenebLightClientUpdate.CreateFromCapella(CapellaLightClientUpdate.CreateFromAltair(update)), currentSlot, genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                DenebProcessors.ProcessLightClientUpdate(_syncProtocol.DenebLightClientStore, DenebLightClientUpdate.CreateFromCapella(CapellaLightClientUpdate.CreateFromAltair(update)), currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
             
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._denebLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
-                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol._denebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.FinalizedHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["finalized_header"]["execution_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
+                Assert.That(_syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
+                Assert.That(DenebHelpers.GetLcExecutionRoot(_syncProtocol.DenebLightClientStore.OptimisticHeader, _options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["execution_root"])));
             }
         }
     }
@@ -302,6 +304,7 @@ public class BellatrixSyncTests : FileFixtureBase
         var trustedBlockRoot = TestUtility.HexToByteArray((string)meta["trusted_block_root"]);
         var bootstrap = AltairLightClientBootstrap.Deserialize(bootstrapData, _options.Preset);
 
+        _options.GenesisValidatorsRoot = genesisValidatorsRoot;
         _syncProtocol.InitialiseStoreFromAltairBootstrap(trustedBlockRoot, bootstrap);
 
         foreach (var step in steps)
@@ -315,39 +318,38 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
 
-                AltairProcessors.ProcessLightClientUpdate(_syncProtocol._altairLightClientStore, update, currentSlot,
-                    genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                AltairProcessors.ProcessLightClientUpdate(_syncProtocol.AltairLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
 
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
             }
             else if (step.ContainsKey("force_update"))
             {
                 var currentSlot = ulong.Parse(step["force_update"]["current_slot"]);
               
-                AltairProcessors.ProcessLightClientStoreForceUpdate(_syncProtocol._altairLightClientStore, currentSlot, Mock.Of<ILogger<SyncProtocol>>());
+                AltairProcessors.ProcessLightClientStoreForceUpdate(_syncProtocol.AltairLightClientStore, currentSlot, Mock.Of<ILogger<SyncProtocol>>());
                 
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["force_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["force_update"]["checks"]["finalized_header"]["slot"])));
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["force_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["force_update"]["checks"]["optimistic_header"]["slot"])));
             }
         }
@@ -374,6 +376,7 @@ public class BellatrixSyncTests : FileFixtureBase
         var trustedBlockRoot = TestUtility.HexToByteArray((string)meta["trusted_block_root"]);
         var bootstrap = AltairLightClientBootstrap.Deserialize(bootstrapData, _options.Preset);
 
+        _options.GenesisValidatorsRoot = genesisValidatorsRoot;
         _syncProtocol.InitialiseStoreFromAltairBootstrap(trustedBlockRoot, bootstrap);
 
         foreach (var step in steps)
@@ -387,20 +390,19 @@ public class BellatrixSyncTests : FileFixtureBase
                 var updateData = _sszData;
                 var update = AltairLightClientUpdate.Deserialize(updateData, _options.Preset);
 
-                AltairProcessors.ProcessLightClientUpdate(_syncProtocol._altairLightClientStore, update, currentSlot,
-                    genesisValidatorsRoot, _options, Mock.Of<ILogger<SyncProtocol>>());
+                AltairProcessors.ProcessLightClientUpdate(_syncProtocol.AltairLightClientStore, update, currentSlot, _options, Mock.Of<ILogger<SyncProtocol>>());
 
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["finalized_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.FinalizedHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
                 Assert.That(
-                    _syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
+                    _syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset),
                     Is.EqualTo(TestUtility.HexToByteArray(
                         (string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
-                Assert.That(_syncProtocol._altairLightClientStore.OptimisticHeader.Beacon.Slot,
+                Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot,
                     Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
             }
         }
