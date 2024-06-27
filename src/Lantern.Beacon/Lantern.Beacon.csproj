@@ -21,14 +21,6 @@
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Pubsub\Libp2p.Protocols.Pubsub.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
-      <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.WireProtocol\Lantern.Discv5.WireProtocol.csproj" />
       <ProjectReference Include="..\Lantern.Beacon.Sync\Lantern.Beacon.Sync.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Reference Include="Lantern.Discv5.Enr">
-        <HintPath>..\Lantern.Beacon.Console\bin\Debug\net8.0\Lantern.Discv5.Enr.dll</HintPath>
-      </Reference>
-    </ItemGroup>
-
 </Project>

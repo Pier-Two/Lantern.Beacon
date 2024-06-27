@@ -26,9 +26,6 @@
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Quic\Libp2p.Protocols.Quic.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Protocols.Yamux\Libp2p.Protocols.Yamux.csproj" />
       <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p\Libp2p.csproj" />
-      <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.Enr\Lantern.Discv5.Enr.csproj" />
-      <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.Rlp\Lantern.Discv5.Rlp.csproj" />
-      <ProjectReference Include="..\..\lib\Lantern.Discv5\src\Lantern.Discv5.WireProtocol\Lantern.Discv5.WireProtocol.csproj" />
       <ProjectReference Include="..\Lantern.Beacon.Sync\Lantern.Beacon.Sync.csproj" />
       <ProjectReference Include="..\Lantern.Beacon\Lantern.Beacon.csproj" />
     </ItemGroup>
