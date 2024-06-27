@@ -61,7 +61,6 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILogg
                 {
                     case ForkType.Deneb:
                         var denebLightClientUpdate = DenebLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                        _logger?.LogInformation("Processing light client update from {PeerId} for slot {Slot}", context.RemotePeer.Address.Get<P2P>(), denebLightClientUpdate.SignatureSlot);
                         DenebProcessors.ProcessLightClientUpdate(syncProtocol.DenebLightClientStore, denebLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
                         break;
                     case ForkType.Capella:

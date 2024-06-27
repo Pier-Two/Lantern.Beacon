@@ -34,13 +34,15 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="PierTwo.Lantern.Discv5" Version="1.0.0-preview.1" />
-    </ItemGroup>
-
-    <ItemGroup>
       <Reference Include="Lantern.Discv5.Enr">
         <HintPath>bin\Debug\net8.0\Lantern.Discv5.Enr.dll</HintPath>
       </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="PierTwo.Lantern.Discv5.Enr" Version="1.0.0-preview.4" />
+      <PackageReference Include="PierTwo.Lantern.Discv5.Rlp" Version="1.0.0-preview.4" />
+      <PackageReference Include="PierTwo.Lantern.Discv5.WireProtocol" Version="1.0.0-preview.4" />
     </ItemGroup>
 
 </Project>
