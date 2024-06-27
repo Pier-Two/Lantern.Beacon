@@ -114,8 +114,7 @@ public class BeaconClientManager : IBeaconClientManager
         private async Task ProcessPeerDiscoveryAsync(CancellationToken token)
         {
             var semaphore = new SemaphoreSlim(_clientOptions.MaxParallelDials);
-
-            var address = Multiaddress.Decode("/ip4/34.67.74.221/tcp/9000/p2p/16Uiu2HAmTRgEakJhZkyeKJ43eJNxC1BgTpq92p237CJePnZvFSW8");
+            var address = Multiaddress.Decode("/ip4/34.67.74.221/tcp/9000/p2p/16Uiu2HAmTRgEakJhZkyeKJ43eJNxC1BgTpq92p237CJePnZvFSW8"); //Multiaddress.Decode("/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmJHKsNZUo4y8U34aeVEdhBapHdtBhvb3bBS3TW7tAbNjd"); //
             await DialPeerWithThrottling(address, semaphore, token);
             await Task.Delay(3000, token);
         }
@@ -177,13 +176,17 @@ public class BeaconClientManager : IBeaconClientManager
                 var dialTask = LocalPeer.DialAsync(peer, token);
                 var timeoutTask = Task.Delay(TimeSpan.FromSeconds(_clientOptions.DialTimeoutSeconds), token);
                 var completedTask = await Task.WhenAny(dialTask, timeoutTask);
+                
                 if (completedTask != timeoutTask)
                 {
                     _logger.LogInformation("Successfully dialed peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
                     _livePeers.Add(dialTask.Result);
+                    
+                    // Only invoke if light client bootstrap initialisation is successful
+                    // _discoveryProtocol.OnAddPeer?.Invoke([peer]);
+
                     await dialTask.Result.DialAsync<LightClientBootstrapProtocol>(token);
-                    await dialTask.Result.DialAsync<LightClientFinalityUpdateProtocol>(token);
-                    await dialTask.Result.DialAsync<LightClientOptimisticUpdateProtocol>(token);
+                    await dialTask.Result.DialAsync<LightClientUpdatesByRangeProtocol>(token);
                 }
                 else
                 {

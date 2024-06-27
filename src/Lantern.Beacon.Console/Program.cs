@@ -132,7 +132,7 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("088e7784d2fa01669030d443288adcf550b6ebd0b8b7772ffe05fb179a3c3ca6");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9469afc5289ffe15475344d636b204286f2745e77c124bb978755151eb80ee09");
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

@@ -34,9 +34,9 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
                 .AddAppLayerProtocol<GoodbyeProtocol>()
                 .AddAppLayerProtocol<LightClientBootstrapProtocol>()
                 .AddAppLayerProtocol<LightClientFinalityUpdateProtocol>()
-                .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>())
+                .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>()
+                .AddAppLayerProtocol<LightClientUpdatesByRangeProtocol>())
             .AddScoped<PubsubRouter>()
-            .AddScoped<PingProtocol>()
             .AddScoped(sp => sp.GetService<IPeerFactoryBuilder>()!.Build());
         
         return this;

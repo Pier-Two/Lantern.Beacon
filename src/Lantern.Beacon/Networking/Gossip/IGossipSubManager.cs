@@ -8,8 +8,6 @@ public interface IGossipSubManager
     
     ITopic? LightClientOptimisticUpdate { get; }
     
-    ITopic? BeaconBlock { get; }
-    
     void Init();
     
     Task StartAsync(CancellationToken token = default);

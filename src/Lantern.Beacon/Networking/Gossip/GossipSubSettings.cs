@@ -1,5 +1,6 @@
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Presets;
+using Nethermind.Libp2p.Protocols.Pubsub;
 
 namespace Lantern.Beacon.Networking.Gossip;
 
@@ -22,4 +23,6 @@ public static class GossipSubSettings
     public static int MCacheGossip { get; set; } = 3;
     
     public static int MessageCacheTtl { get; set; } = Config.SecondsPerSlot * Phase0Preset.SlotsPerEpoch * 2;
+    
+    public static Settings.SignaturePolicy DefaultSignaturePolicy { get; set; } = Settings.SignaturePolicy.StrictNoSign;
 }

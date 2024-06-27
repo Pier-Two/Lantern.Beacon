@@ -13,18 +13,14 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
     
     public ITopic? LightClientFinalityUpdate { get; private set; }
     public ITopic? LightClientOptimisticUpdate { get; private set; }
-    public ITopic? BeaconBlock { get; private set; }
     
     public void Init()
     {
         LightClientFinalityUpdate = router.Subscribe(LightClientFinalityUpdateTopic.GetTopicString(syncProtocolOptions));
         LightClientOptimisticUpdate = router.Subscribe(LightClientOptimisticUpdateTopic.GetTopicString(syncProtocolOptions));
-        //BeaconBlock = router.Subscribe(BeaconBlockTopic.GetTopicString(syncProtocolOptions.GenesisValidatorsRoot, syncProtocolOptions.Preset));
-        BeaconBlock = router.Subscribe("/eth2/1e3ae766/beacon_block/ssz_snappy");
-
-        _logger.LogInformation("Subscribed to topic: {LightClientFinalityUpdate}", LightClientFinalityUpdateTopic.GetTopicString(syncProtocolOptions));
-        _logger.LogInformation("Subscribed to topic: {LightClientOptimisticUpdate}", LightClientOptimisticUpdateTopic.GetTopicString(syncProtocolOptions));
-        _logger.LogInformation("Subscribed to topic: {BeaconBlock}", BeaconBlockTopic.GetTopicString(syncProtocolOptions));
+        
+        _logger.LogDebug("Subscribed to topic: {LightClientFinalityUpdate}", LightClientFinalityUpdateTopic.GetTopicString(syncProtocolOptions));
+        _logger.LogDebug("Subscribed to topic: {LightClientOptimisticUpdate}", LightClientOptimisticUpdateTopic.GetTopicString(syncProtocolOptions));
     }
     
     public Task StartAsync(CancellationToken token = default)
@@ -46,12 +42,13 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
             FanoutTtl = GossipSubSettings.FanoutTtl,
             mcache_len = GossipSubSettings.MCacheLen,
             mcache_gossip = GossipSubSettings.MCacheGossip,
-            MessageCacheTtl = GossipSubSettings.MessageCacheTtl
+            MessageCacheTtl = GossipSubSettings.MessageCacheTtl,
+            DefaultSignaturePolicy = GossipSubSettings.DefaultSignaturePolicy
         };
         
         _ = Task.Run(() => router.RunAsync(beaconClientManager.LocalPeer, discoveryProtocol, settings, token), token);
         _logger.LogInformation("Running GossipSub protocol");
-        
+      
         return Task.CompletedTask;
     }
     

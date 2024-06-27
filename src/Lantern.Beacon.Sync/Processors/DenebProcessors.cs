@@ -3,7 +3,6 @@ using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Types.Altair;
 using Lantern.Beacon.Sync.Types.Deneb;
-using Lantern.Beacon.Sync.Types.Capella;
 using Microsoft.Extensions.Logging;
 using Planetarium.Cryptography.BLS12_381;
 
@@ -11,7 +10,7 @@ namespace Lantern.Beacon.Sync.Processors;
 
 public static class DenebProcessors
 {
-    public static void ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+    public static void ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var syncAggregate = update.SyncAggregate;
 
@@ -241,7 +240,7 @@ public static class DenebProcessors
     public static void ProcessLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update,
         ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
+        ValidateLightClientUpdate(store, update, currentSlot, options, logger);
         
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         

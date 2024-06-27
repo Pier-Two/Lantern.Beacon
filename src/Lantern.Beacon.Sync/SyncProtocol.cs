@@ -141,6 +141,5 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
                 0
             ); 
             Logger?.LogInformation("Light client initialised from Deneb bootstrap"); 
-        } 
-    
+        }
 }

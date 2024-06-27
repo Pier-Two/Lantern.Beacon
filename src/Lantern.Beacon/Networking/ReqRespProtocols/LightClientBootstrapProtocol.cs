@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
@@ -71,8 +72,31 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILoggerFac
         }
     }
 
-    public Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
+    public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        throw new NotImplementedException();
+        _logger?.LogInformation("Received light client bootstrap request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        
+        var receivedData = new List<byte[]>();
+        
+        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
+        {
+            receivedData.Add(readOnlySequence.ToArray());
+        }
+        
+        var flatData = receivedData.SelectMany(x => x).ToArray();
+        var result = ReqRespHelpers.DecodeRequest(flatData);
+
+        if (result == null)
+        {
+            _logger?.LogError("Failed to decode light client bootstrap request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
+        }
+        
+        var request = LightClientBootstrapRequest.Deserialize(result);
+        _logger?.LogInformation("Received light client bootstrap request from {PeerId} with trustedBlockRoot={trustedBlockRoot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(request.BlockRoot));
+
+        var response = Array.Empty<byte>();
+        var encodedResponse = ReqRespHelpers.EncodeResponse(response, ResponseCodes.ResourceUnavailable);
     }
 }
