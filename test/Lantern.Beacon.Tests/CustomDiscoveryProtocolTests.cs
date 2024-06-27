@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Multiformats.Address;
 using NUnit.Framework;
+using SszSharp;
 
 namespace Lantern.Beacon.Tests;
 
@@ -17,6 +18,7 @@ public class CustomDiscoveryProtocolTests
     private Mock<IIdentityManager> _mockIdentityManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
     private CustomDiscoveryProtocol _customDiscoveryProtocol;
+    private SyncProtocol _syncProtocol;
 
     [SetUp]
     public void Setup()
@@ -25,7 +27,15 @@ public class CustomDiscoveryProtocolTests
         _mockIdentityManager = new Mock<IIdentityManager>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLoggerFactory.Setup(f => f.CreateLogger(It.IsAny<string>())).Returns(Mock.Of<ILogger<CustomDiscoveryProtocol>>());
-        _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), new SyncProtocolOptions(), _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        var syncProtocolOptions = new SyncProtocolOptions
+        {
+            Preset = SizePreset.MainnetPreset,
+            GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
+            GenesisTime = 1606824023,
+        };
+        _syncProtocol = new SyncProtocol(syncProtocolOptions, _mockLoggerFactory.Object);
+        _syncProtocol.Init();
+        _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), syncProtocolOptions, _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 
     [Test]

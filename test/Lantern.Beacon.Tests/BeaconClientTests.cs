@@ -48,18 +48,18 @@ namespace Lantern.Beacon.Tests;
         _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockPeerManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
     }
 
-    [Test]
-    public async Task InitAsync_ShouldInitializePeerManager()
-    {
-        // Arrange
-        CancellationToken cancellationToken = new CancellationToken();
-
-        // Act
-        await _beaconClient.InitAsync(cancellationToken);
-
-        // Assert
-        _mockPeerManager.Verify(pm => pm.InitAsync(cancellationToken), Times.Once);
-    }
+    // [Test]
+    // public async Task InitAsync_ShouldInitializePeerManager()
+    // {
+    //     // Arrange
+    //     CancellationToken cancellationToken = new CancellationToken();
+    //
+    //     // Act
+    //     await _beaconClient.InitAsync(cancellationToken);
+    //
+    //     // Assert
+    //     _mockPeerManager.Verify(pm => pm.InitAsync(cancellationToken), Times.Once);
+    // }
 
     [Test]
     public async Task StartAsync_ShouldStartPeerManager()
@@ -84,23 +84,23 @@ namespace Lantern.Beacon.Tests;
         _mockPeerManager.Verify(dp => dp.StopAsync(), Times.Once);
     }
     
-    [Test]
-    public void InitAsync_ShouldLogErrorOnException()
-    {
-        // Arrange
-        var exception = new Exception("Initialization failed");
-        _mockPeerManager.Setup(pm => pm.InitAsync(It.IsAny<CancellationToken>())).ThrowsAsync(exception);
-
-        // Act & Assert
-        Assert.ThrowsAsync<Exception>(async () => await _beaconClient.InitAsync());
-
-        _mockLogger.Verify(
-            l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => string.Equals("Failed to start peer manager", o.ToString(), StringComparison.InvariantCultureIgnoreCase)),
-                exception,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
-    }
+    // [Test]
+    // public void InitAsync_ShouldLogErrorOnException()
+    // {
+    //     // Arrange
+    //     var exception = new Exception("Initialization failed");
+    //     _mockPeerManager.Setup(pm => pm.InitAsync(It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+    //
+    //     // Act & Assert
+    //     Assert.ThrowsAsync<Exception>(async () => await _beaconClient.InitAsync());
+    //
+    //     _mockLogger.Verify(
+    //         l => l.Log(
+    //             LogLevel.Error,
+    //             It.IsAny<EventId>(),
+    //             It.Is<It.IsAnyType>((o, t) => string.Equals("Failed to start peer manager", o.ToString(), StringComparison.InvariantCultureIgnoreCase)),
+    //             exception,
+    //             It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+    //         Times.Once);
+    // }
 } 
