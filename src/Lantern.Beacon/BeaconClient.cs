@@ -8,10 +8,11 @@ using Lantern.Beacon.Sync.Processors;
 using Lantern.Beacon.Sync.Types.Deneb;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(ISyncProtocol syncProtocol, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol syncProtocol, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -19,6 +20,7 @@ public class BeaconClient(ISyncProtocol syncProtocol, IBeaconClientManager beaco
     {
         try
         {
+            syncProtocol.AppLayerProtocols = peerFactoryBuilder.AppLayerProtocols;
             syncProtocol.Init();
             gossipSubManager.Init();
 
@@ -61,24 +63,44 @@ public class BeaconClient(ISyncProtocol syncProtocol, IBeaconClientManager beaco
     
     private void HandleLightClientFinalityUpdate(byte[] update)
     {
-        _logger.LogInformation("Receieved light client finality update from gossip");
+        var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+            Phase0Helpers.ComputeEpochAtSlot(
+                syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
+        var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+            Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
         var decompressedData = Snappy.Decode(update);
         var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
         var lightClientFinalityUpdate = DenebLightClientFinalityUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
+
+        _logger.LogInformation("Received light client finality update from gossip");
         
-        DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+        if (denebFinalizedPeriod + 1 >= denebCurrentPeriod)
+        {
+            DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+            _logger.LogInformation("Processed light client finality update from gossip");
+        }
         
         // Add validations and processing logic here before publishing to the network 
     }
     
     private void HandleLightClientOptimisticUpdate(byte[] update)
     {
-        _logger.LogInformation("Receieved light client optimistic update from gossip");
+        var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+            Phase0Helpers.ComputeEpochAtSlot(
+                syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
+        var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+            Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
         var decompressedData = Snappy.Decode(update);
         var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
         var lightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
+
+        _logger.LogInformation("Received light client optimistic update from gossip for head block {BlockRoot}",  Convert.ToHexString(lightClientOptimisticUpdate.AttestedHeader.GetHashTreeRoot(syncProtocol.Options.Preset)));
         
-        DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+        if (denebFinalizedPeriod + 1 >= denebCurrentPeriod)
+        {
+            DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+            _logger.LogInformation("Processed light client optimistic update from gossip");
+        }
         // Add validations and processing logic here before publishing to the network 
     }
 }

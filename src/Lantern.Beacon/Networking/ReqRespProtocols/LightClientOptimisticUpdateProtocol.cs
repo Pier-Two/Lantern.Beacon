@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
@@ -31,6 +32,13 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILo
         
         try
         {
+            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+            {
+                _logger?.LogInformation("Failed to handle light client optimistic update response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                await downChannel.CloseAsync();
+                return;
+            }
+            
             var result = ReqRespHelpers.DecodeResponseChunk(flatData);
             var forkType = Phase0Helpers.ComputeForkType(result.Item2, syncProtocol.Options);
             var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
@@ -40,22 +48,22 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILo
                 case ForkType.Deneb:
                     var denebLightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, denebLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Capella:
                     var capellaLightClientOptimisticUpdate = CapellaLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     CapellaProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientOptimisticUpdate = AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     AltairProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Altair:
                     var altairLightClientOptimisticUpdate = AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     AltairProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.AltairLightClientStore, altairLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client optimistic update response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());

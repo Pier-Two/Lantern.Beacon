@@ -26,6 +26,14 @@ public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? logger
         }
 
         var flatData = receivedData.SelectMany(x => x).ToArray();
+        
+        if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+        {
+            _logger?.LogInformation("Failed to handle metadata response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+            await downChannel.CloseAsync();
+            return;
+        }
+        
         var result = ReqRespHelpers.DecodeResponse(flatData);
         
         if(result.Item2 != ResponseCodes.Success)
@@ -37,7 +45,7 @@ public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? logger
         
         var metaDataResponse = MetaData.Deserialize(result.Item1);
         
-        _logger?.LogInformation("Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}", 
+        _logger?.LogDebug("Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}", 
             context.RemotePeer.Address.Get<P2P>(), 
             metaDataResponse.SeqNumber, 
             Convert.ToHexString(metaDataResponse.Attnets.Select(b => b ? (byte)1 : (byte)0).ToArray()));
@@ -45,7 +53,7 @@ public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? logger
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for MetaData request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for MetaData request from {PeerId}", context.RemotePeer.Address);
 
         var rawData = new ReadOnlySequence<byte>();
 
@@ -65,6 +73,6 @@ public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? logger
         }
         
         await downChannel.WriteAsync(rawData);
-        _logger?.LogInformation("Sent MetaData to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(rawData.ToArray()));
+        _logger?.LogDebug("Sent MetaData to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(rawData.ToArray()));
     }
 }

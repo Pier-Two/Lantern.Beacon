@@ -34,6 +34,13 @@ public class GoodbyeProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerF
         
         var flatData = receivedData.SelectMany(x => x).ToArray();
         
+        if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+        {
+            _logger?.LogInformation("Failed to handle goodbye response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+            await downChannel.CloseAsync();
+            return;
+        }
+        
         if(flatData.Length == 0)
         {
             _logger?.LogWarning("Did not receive goodbye response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
@@ -51,7 +58,7 @@ public class GoodbyeProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerF
         }
         
         var goodbyeResponse = Goodbye.Deserialize(result.Item1);
-        
+        syncProtocol.PeerCount--;
         _logger?.LogInformation("Received goodbye response from {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
     }
 
@@ -87,6 +94,7 @@ public class GoodbyeProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerF
         
         await downChannel.WriteAsync(rawData);
         
-        _logger?.LogInformation("Sent goodbye response to {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), GoodbyeReasonCodes.ClientShutdown);
+        syncProtocol.PeerCount--;
+        _logger?.LogDebug("Sent goodbye response to {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), GoodbyeReasonCodes.ClientShutdown);
     }
 }

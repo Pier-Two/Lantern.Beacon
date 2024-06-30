@@ -62,7 +62,7 @@ public static class AltairProcessors
 
         if (!AltairHelpers.IsFinalityUpdate(update))
         {
-            if (!update.FinalizedHeader.Equals(AltairLightClientHeader.CreateDefault()))
+            if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(AltairLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
                 throw new Exception("Finalized header in update is empty");
             }
@@ -73,7 +73,7 @@ public static class AltairProcessors
             
             if (updateFinalizedSlot == 0)
             {
-                if (!update.FinalizedHeader.Equals(AltairLightClientHeader.CreateDefault()))
+                if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(AltairLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
                     throw new Exception("Finalized header in update is empty");
                 }

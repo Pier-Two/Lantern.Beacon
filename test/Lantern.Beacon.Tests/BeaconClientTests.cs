@@ -5,6 +5,7 @@ using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Moq;
+using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Core.Discovery;
 
 
@@ -13,6 +14,7 @@ namespace Lantern.Beacon.Tests;
 [TestFixture]
  public class BeaconClientTests
 {
+    private Mock<IPeerFactoryBuilder> _mockPeerFactoryBuilder;
     private Mock<IBeaconClientManager> _mockPeerManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
     private Mock<ILogger<BeaconClient>> _mockLogger;
@@ -25,6 +27,7 @@ namespace Lantern.Beacon.Tests;
     public void Setup()
     {
         // Initialize all mocks first
+        _mockPeerFactoryBuilder = new Mock<IPeerFactoryBuilder>();
         _mockPeerManager = new Mock<IBeaconClientManager>();
         _mockLogger = new Mock<ILogger<BeaconClient>>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
@@ -45,7 +48,7 @@ namespace Lantern.Beacon.Tests;
         }
 
         // Create BeaconClient with initialized mocks
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockPeerManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(_mockPeerFactoryBuilder.Object, _mockSyncProtocol.Object, _mockPeerManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
     }
 
     // [Test]

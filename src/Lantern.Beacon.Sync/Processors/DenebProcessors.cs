@@ -10,7 +10,7 @@ namespace Lantern.Beacon.Sync.Processors;
 
 public static class DenebProcessors
 {
-    public static void ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+    public static void ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var syncAggregate = update.SyncAggregate;
 
@@ -67,9 +67,9 @@ public static class DenebProcessors
 
         if (!DenebHelpers.IsFinalityUpdate(update))
         {
-            if (!update.FinalizedHeader.Equals(DenebLightClientHeader.CreateDefault()))
+            if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(DenebLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
-                logger.LogWarning("Finalized header in update is empty");
+                logger.LogWarning("Finalized header in update is empty. Update Finalized header {Data}", Convert.ToHexString(DenebLightClientHeader.Serialize(update.FinalizedHeader, options.Preset)));
                 return;
             }
         }
@@ -79,9 +79,9 @@ public static class DenebProcessors
             
             if (updateFinalizedSlot == 0)
             {
-                if (!update.FinalizedHeader.Equals(DenebLightClientHeader.CreateDefault()))
+                if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(DenebLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
-                    logger.LogWarning("Finalized header in update is empty");
+                    logger.LogWarning("Finalized header in update is empty. Update has finalized header state root {Root}", Convert.ToHexString(update.FinalizedHeader.Beacon.StateRoot));
                     return;
                 }
 
@@ -240,7 +240,7 @@ public static class DenebProcessors
     public static void ProcessLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update,
         ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, options, logger);
+        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         

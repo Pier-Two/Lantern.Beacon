@@ -14,7 +14,24 @@ public class DenebExecutionPayloadHeader : CapellaExecutionPayloadHeader
     
     public bool Equals(DenebExecutionPayloadHeader? other)
     {
-        return other != null && ParentHash.Equals(other.ParentHash) && FeeRecipientAddress.Equals(other.FeeRecipientAddress) && StateRoot.Equals(other.StateRoot) && ReceiptsRoot.Equals(other.ReceiptsRoot) && LogsBloom.SequenceEqual(other.LogsBloom) && PrevRandoa.Equals(other.PrevRandoa) && BlockNumber.Equals(other.BlockNumber) && GasLimit.Equals(other.GasLimit) && GasUsed.Equals(other.GasUsed) && Timestamp.Equals(other.Timestamp) && ExtraData.SequenceEqual(other.ExtraData) && BaseFeePerGas.Equals(other.BaseFeePerGas) && BlockHash.Equals(other.BlockHash) && TransactionsRoot.Equals(other.TransactionsRoot) && WithdrawalsRoot.Equals(other.WithdrawalsRoot) && BlobGasUsed.Equals(other.BlobGasUsed) && ExcessBlobGas.Equals(other.ExcessBlobGas);
+        return other != null && 
+               ParentHash.SequenceEqual(other.ParentHash) && 
+               FeeRecipientAddress.SequenceEqual(other.FeeRecipientAddress) && 
+               StateRoot.SequenceEqual(other.StateRoot) && 
+               ReceiptsRoot.SequenceEqual(other.ReceiptsRoot) && 
+               LogsBloom.SequenceEqual(other.LogsBloom) && 
+               PrevRandoa.SequenceEqual(other.PrevRandoa) && 
+               BlockNumber.Equals(other.BlockNumber) && 
+               GasLimit.Equals(other.GasLimit) && 
+               GasUsed.Equals(other.GasUsed) && 
+               Timestamp.Equals(other.Timestamp) && 
+               ExtraData.SequenceEqual(other.ExtraData) && 
+               BaseFeePerGas.Equals(other.BaseFeePerGas) && 
+               BlockHash.SequenceEqual(other.BlockHash) && 
+               TransactionsRoot.SequenceEqual(other.TransactionsRoot) && 
+               WithdrawalsRoot.SequenceEqual(other.WithdrawalsRoot) && 
+               BlobGasUsed.Equals(other.BlobGasUsed) && 
+               ExcessBlobGas.Equals(other.ExcessBlobGas);
     }
     
     public override bool Equals(object? obj)

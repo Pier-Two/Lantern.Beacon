@@ -104,7 +104,7 @@ internal static class Program
         var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Trace)
+                .SetMinimumLevel(LogLevel.Information)
                 //.AddFilter((category, level) => level != LogLevel.Error && level >= LogLevel.Information)
                 .AddSimpleConsole(l =>
                 {
@@ -132,8 +132,9 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9469afc5289ffe15475344d636b204286f2745e77c124bb978755151eb80ee09");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9fbf5747e3ace43b192c5c7b557bc08ee2eb7d6585b329e134a80de809e7293a");
                 });
+
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);
             });

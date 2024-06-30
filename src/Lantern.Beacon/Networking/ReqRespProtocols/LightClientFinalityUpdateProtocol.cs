@@ -1,4 +1,5 @@
 using System.Buffers;
+using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
@@ -31,6 +32,14 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILogg
         
         try
         {
+            
+            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+            {
+                _logger?.LogInformation("Failed to handle light client finality update response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                await downChannel.CloseAsync();
+                return;
+            }
+            
             var result = ReqRespHelpers.DecodeResponseChunk(flatData);
             var forkType = Phase0Helpers.ComputeForkType(result.Item2, syncProtocol.Options);
             var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
@@ -40,22 +49,22 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILogg
                 case ForkType.Deneb:
                     var denebLightClientFinalityUpdate = DenebLightClientFinalityUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, denebLightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Capella:
                     var capellaLightClientFinalityUpdate = CapellaLightClientFinalityUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     CapellaProcessors.ProcessLightClientFinalityUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientFinalityUpdate = AltairLightClientFinalityUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     AltairProcessors.ProcessLightClientFinalityUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Altair:
                     var altairLightClientFinalityUpdate = AltairLightClientFinalityUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     AltairProcessors.ProcessLightClientFinalityUpdate(syncProtocol.AltairLightClientStore, altairLightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                    _logger?.LogInformation("Received light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogInformation("Processed light client finality update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client finality response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());

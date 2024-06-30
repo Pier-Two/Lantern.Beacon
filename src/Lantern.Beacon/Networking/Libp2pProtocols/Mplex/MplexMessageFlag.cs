@@ -1,4 +1,4 @@
-namespace Libp2p.Protocols.Mplex;
+namespace Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 
 public enum MplexMessageFlag
 {

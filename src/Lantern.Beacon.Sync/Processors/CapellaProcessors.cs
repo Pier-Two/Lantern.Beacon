@@ -67,7 +67,7 @@ public static class CapellaProcessors
 
         if (!CapellaHelpers.IsFinalityUpdate(update))
         {
-            if (!update.FinalizedHeader.Equals(CapellaLightClientHeader.CreateDefault()))
+            if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(CapellaLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
                 logger.LogWarning("Finalized header in update is empty");
                 return;
@@ -79,7 +79,7 @@ public static class CapellaProcessors
             
             if (updateFinalizedSlot == 0)
             {
-                if (!update.FinalizedHeader.Equals(CapellaLightClientHeader.CreateDefault()))
+                if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(CapellaLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
                     logger.LogWarning("Finalized header in update is empty");
                     return;
