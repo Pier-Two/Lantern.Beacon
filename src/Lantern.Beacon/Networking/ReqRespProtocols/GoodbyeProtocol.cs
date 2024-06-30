@@ -58,7 +58,11 @@ public class GoodbyeProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerF
         }
         
         var goodbyeResponse = Goodbye.Deserialize(result.Item1);
-        syncProtocol.PeerCount--;
+        
+        if (syncProtocol.PeerCount != 0)
+        {
+            syncProtocol.PeerCount--;
+        }
         _logger?.LogInformation("Received goodbye response from {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
     }
 
@@ -93,8 +97,12 @@ public class GoodbyeProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerF
         var rawData = new ReadOnlySequence<byte>(payload);
         
         await downChannel.WriteAsync(rawData);
-        
-        syncProtocol.PeerCount--;
+
+        if (syncProtocol.PeerCount != 0)
+        {
+            syncProtocol.PeerCount--;
+        }
+
         _logger?.LogDebug("Sent goodbye response to {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), GoodbyeReasonCodes.ClientShutdown);
     }
 }
