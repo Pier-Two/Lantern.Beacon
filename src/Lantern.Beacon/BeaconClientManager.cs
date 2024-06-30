@@ -213,7 +213,6 @@ public class BeaconClientManager : IBeaconClientManager
                     _discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     _syncProtocol.PeerCount++;
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    // Run the sync protocol asynchronously
                     await RunSyncProtocolAsync(dialTask.Result, token);
                 }
                 else

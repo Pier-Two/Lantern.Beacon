@@ -93,14 +93,15 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
         var decompressedData = Snappy.Decode(update);
         var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
         var lightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
-
-        _logger.LogInformation("Received light client optimistic update from gossip for head block {BlockRoot}",  Convert.ToHexString(lightClientOptimisticUpdate.AttestedHeader.GetHashTreeRoot(syncProtocol.Options.Preset)));
+        
+        _logger.LogInformation("Received light client optimistic update from gossip");
         
         if (denebFinalizedPeriod + 1 >= denebCurrentPeriod)
         {
             DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
             _logger.LogInformation("Processed light client optimistic update from gossip");
         }
+        
         // Add validations and processing logic here before publishing to the network 
     }
 }

@@ -81,7 +81,7 @@ public static class DenebProcessors
             {
                 if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(DenebLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
-                    logger.LogWarning("Finalized header in update is empty. Update has finalized header state root {Root}", Convert.ToHexString(update.FinalizedHeader.Beacon.StateRoot));
+                    logger.LogWarning("Finalized header in update is empty");
                     return;
                 }
 
