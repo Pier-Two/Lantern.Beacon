@@ -1,10 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
-using Nethermind.Libp2p.Core;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
+using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Core.Exceptions;
 
-namespace Libp2p.Protocols.Mplex;
+namespace Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 
 public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProtocol, IProtocol
 {

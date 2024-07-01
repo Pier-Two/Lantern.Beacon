@@ -17,7 +17,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
     
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Sending status request to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        _logger?.LogDebug("Sending status request to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         
         var forkDigest = BeaconClientUtility.GetForkDigestBytes(syncProtocol.Options);
         var finalisedRoot = syncProtocol.CapellaLightClientStore.FinalizedHeader.GetHashTreeRoot(syncProtocol.Options.Preset);
@@ -38,6 +38,14 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
         }
         
         var flatData = receivedData.SelectMany(x => x).ToArray();
+        
+        if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+        {
+            _logger?.LogInformation("Failed to handle status response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+            await downChannel.CloseAsync();
+            return;
+        }
+        
         var result = ReqRespHelpers.DecodeResponse(flatData);
         
         if(result.Item2 != ResponseCodes.Success)
@@ -56,7 +64,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for status request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for status request from {PeerId}", context.RemotePeer.Address);
         
         var receivedData = new List<byte[]>();
         
@@ -76,7 +84,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
         }
         
         var statusResponse = Status.Deserialize(result);
-        _logger?.LogInformation("Received status request from {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}", context.RemotePeer.Address.Get<P2P>(), 
+        _logger?.LogDebug("Received status request from {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}", context.RemotePeer.Address.Get<P2P>(), 
             Convert.ToHexString(statusResponse.ForkDigest), Convert.ToHexString(statusResponse.FinalizedRoot), statusResponse.FinalizedEpoch, Convert.ToHexString(statusResponse.HeadRoot), statusResponse.HeadSlot);
         
         var responseCode = (int)ResponseCodes.Success;
@@ -92,6 +100,6 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
         
         await downChannel.WriteAsync(rawData);
         
-        _logger?.LogInformation("Sent status response to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(payload));
+        _logger?.LogDebug("Sent status response to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(payload));
     }
 }

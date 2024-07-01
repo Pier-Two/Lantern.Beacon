@@ -1,6 +1,6 @@
 using SszSharp;
 
-namespace Lantern.Beacon.Networking;
+namespace Lantern.Beacon.Networking.Gossip;
 
 public interface IGossipTopic
 {

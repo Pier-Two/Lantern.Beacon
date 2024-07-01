@@ -10,20 +10,20 @@ namespace Lantern.Beacon.Sync.Processors;
 
 public static class DenebProcessors
 {
-    public static void ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+    private static bool ValidateLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var syncAggregate = update.SyncAggregate;
 
         if (!(syncAggregate.SyncCommitteeBits.Count(b => b) >= AltairPreset.MinSyncCommitteeParticipants))
         {
             logger.LogWarning("Sync aggregate has insufficient active participants in update");
-            return;
+            return false;
         }
 
         if (!DenebHelpers.IsValidLightClientHeader(update.AttestedHeader, options.Preset))
         {
             logger.LogWarning("Invalid attested header in update");
-            return;
+            return false;
         }
 
         var updateAttestedSlot = update.AttestedHeader.Beacon.Slot;
@@ -32,7 +32,7 @@ public static class DenebProcessors
         if (!(currentSlot >= update.SignatureSlot && update.SignatureSlot > updateAttestedSlot && updateAttestedSlot >= updateFinalizedSlot))
         {
             logger.LogWarning("Invalid slot values in update");
-            return;
+            return false;
         }
 
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
@@ -43,7 +43,7 @@ public static class DenebProcessors
             if (!(updateSignaturePeriod == storePeriod || updateSignaturePeriod == storePeriod + 1))
             {
                 logger.LogWarning("Invalid sync committee period in update");
-                return;
+                return false;
             }
         }
         else
@@ -51,7 +51,7 @@ public static class DenebProcessors
             if (updateSignaturePeriod != storePeriod)
             {
                 logger.LogWarning("Invalid sync committee period in update");
-                return;
+                return false;
             }
         }
 
@@ -62,15 +62,15 @@ public static class DenebProcessors
         if (!(updateAttestedSlot > store.FinalizedHeader.Beacon.Slot || updateHasNextSyncCommittee))
         {
             logger.LogWarning("Update is older than finalised slot");
-            return;
+            return false;
         }
 
         if (!DenebHelpers.IsFinalityUpdate(update))
         {
-            if (!update.FinalizedHeader.Equals(DenebLightClientHeader.CreateDefault()))
+            if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(DenebLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
                 logger.LogWarning("Finalized header in update is empty");
-                return;
+                return false;
             }
         }
         else
@@ -79,10 +79,10 @@ public static class DenebProcessors
             
             if (updateFinalizedSlot == 0)
             {
-                if (!update.FinalizedHeader.Equals(DenebLightClientHeader.CreateDefault()))
+                if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(DenebLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
                     logger.LogWarning("Finalized header in update is empty");
-                    return;
+                    return false; 
                 }
 
                 finalizedRoot = new byte[Constants.RootLength];
@@ -92,7 +92,7 @@ public static class DenebProcessors
                 if (!DenebHelpers.IsValidLightClientHeader(update.FinalizedHeader, options.Preset))
                 {
                     logger.LogWarning("Invalid finalized header in update");
-                    return;
+                    return false;
                 }
                 
                 finalizedRoot = update.FinalizedHeader.Beacon.GetHashTreeRoot(options.Preset);
@@ -107,7 +107,7 @@ public static class DenebProcessors
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
                 logger.LogWarning("Invalid finality branch in update");
-                return;
+                return false;
             }
         }
 
@@ -116,7 +116,7 @@ public static class DenebProcessors
             if (!update.NextSyncCommittee.Equals(AltairSyncCommittee.CreateDefault()))
             {
                 logger.LogWarning("Next sync committee in update is not empty");
-                return;
+                return false;
             }
         }
         else
@@ -126,7 +126,7 @@ public static class DenebProcessors
                 if (!update.NextSyncCommittee.Equals(store.NextSyncCommittee))
                 {
                     logger.LogWarning("Next sync committee in update does not match store");
-                    return;
+                    return false;
                 }
             }
 
@@ -139,7 +139,7 @@ public static class DenebProcessors
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
                 logger.LogWarning("Invalid next sync committee branch in update");
-                return;
+                return false;
             }
         }
 
@@ -186,10 +186,13 @@ public static class DenebProcessors
         if (!result)
         {
             logger.LogWarning("Invalid sync committee signature in update");
+            return false;
         }
+        
+        return true;
     }
 
-    public static void ApplyLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ILogger<SyncProtocol> logger)
+    public static bool ApplyLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update, ILogger<SyncProtocol> logger)
     {
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
         var updateFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(update.FinalizedHeader.Beacon.Slot);
@@ -199,6 +202,7 @@ public static class DenebProcessors
             if (updateFinalizedPeriod != storePeriod)
             {
                 logger.LogWarning("Invalid finalized period in update");
+                return false;
             }
 
             store.NextSyncCommittee = update.NextSyncCommittee;
@@ -220,6 +224,8 @@ public static class DenebProcessors
                 store.OptimisticHeader = store.FinalizedHeader;
             }
         }
+
+        return true;
     }
 
     public static void ProcessLightClientStoreForceUpdate(DenebLightClientStore store, ulong currentSlot, ILogger<SyncProtocol> logger)
@@ -237,10 +243,10 @@ public static class DenebProcessors
         }
     }
 
-    public static void ProcessLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update,
+    public static bool ProcessLightClientUpdate(DenebLightClientStore store, DenebLightClientUpdate update,
         ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, options, logger);
+        var result = ValidateLightClientUpdate(store, update, currentSlot, options, logger);
         
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
@@ -263,12 +269,14 @@ public static class DenebProcessors
 
         if ((ulong)syncCommitteeBits.Count(b => b) * 3 >= (ulong)(syncCommitteeBits.Count * 2) && update.FinalizedHeader.Beacon.Slot > store.FinalizedHeader.Beacon.Slot || updateHasFinalizedNextSyncCommittee)
         {
-            ApplyLightClientUpdate(store, update, logger);
+            result = ApplyLightClientUpdate(store, update, logger);
             store.BestValidUpdate = null;
         }
+
+        return result;
     }
 
-    public static void ProcessLightClientFinalityUpdate(DenebLightClientStore store,
+    public static bool ProcessLightClientFinalityUpdate(DenebLightClientStore store,
         DenebLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -287,10 +295,10 @@ public static class DenebProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
-    public static void ProcessLightClientOptimisticUpdate(DenebLightClientStore store,
+    public static bool ProcessLightClientOptimisticUpdate(DenebLightClientStore store,
         DenebLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -314,7 +322,7 @@ public static class DenebProcessors
             finalityBranch,
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
-        
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }

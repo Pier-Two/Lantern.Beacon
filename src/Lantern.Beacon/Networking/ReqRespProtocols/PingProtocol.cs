@@ -21,7 +21,7 @@ public class PingProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFact
         var payload = ReqRespHelpers.EncodeRequest(sszData);
         var rawData = new ReadOnlySequence<byte>(payload);
 
-        _logger?.LogInformation("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
+        _logger?.LogDebug("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
 
         await downChannel.WriteAsync(rawData);
         var receivedData = new List<byte[]>();
@@ -43,12 +43,12 @@ public class PingProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFact
         
         var pingResponse = Ping.Deserialize(result.Item1);
         
-        _logger?.LogInformation("Received pong from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
+        _logger?.LogDebug("Received pong from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for ping request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for ping request from {PeerId}", context.RemotePeer.Address);
         
         var receivedData = new List<byte[]>();
         
@@ -75,6 +75,6 @@ public class PingProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFact
         
         await downChannel.WriteAsync(rawData);
         
-        _logger?.LogInformation("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
+        _logger?.LogDebug("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
     }
 }

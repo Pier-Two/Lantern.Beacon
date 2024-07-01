@@ -1,6 +1,6 @@
 using Nethermind.Libp2p.Core;
 
-namespace Libp2p.Protocols.Mplex;
+namespace Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 
 public class ChannelState(IChannel? channel = null, IChannelRequest? request = null)
 {

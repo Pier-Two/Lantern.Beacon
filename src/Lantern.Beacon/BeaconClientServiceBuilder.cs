@@ -1,3 +1,5 @@
+using Lantern.Beacon.Networking;
+using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Lantern.Beacon.Sync;
 using Lantern.Discv5.WireProtocol;
@@ -32,6 +34,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
                 .AddAppLayerProtocol<StatusProtocol>()
                 .AddAppLayerProtocol<MetaDataProtocol>()
                 .AddAppLayerProtocol<GoodbyeProtocol>()
+                .AddAppLayerProtocol<CustomIdentifyProtocol>()
                 .AddAppLayerProtocol<LightClientBootstrapProtocol>()
                 .AddAppLayerProtocol<LightClientFinalityUpdateProtocol>()
                 .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>()

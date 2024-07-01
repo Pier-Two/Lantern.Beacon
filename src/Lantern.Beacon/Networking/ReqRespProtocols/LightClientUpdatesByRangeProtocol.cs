@@ -21,7 +21,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILogg
     
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        var request = LightClientUpdatesByRangeRequest.CreateFrom(1145,2);
+        var request = syncProtocol.LightClientUpdatesByRangeRequest;
         var sszData = LightClientUpdatesByRangeRequest.Serialize(request);
         var payload = ReqRespHelpers.EncodeRequest(sszData);
         var rawData = new ReadOnlySequence<byte>(payload);
@@ -34,6 +34,23 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILogg
         await foreach (var readOnlySequence in downChannel.ReadAllAsync())
         {
             receivedData.Add(readOnlySequence.ToArray());
+        }
+        
+        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+        {
+            // Log that we received an empty or null response
+            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
+        }
+        
+        var responseCode = receivedData[0][0];
+        
+        if (responseCode is (byte)ResponseCodes.ResourceUnavailable or (byte)ResponseCodes.InvalidRequest or (byte)ResponseCodes.ServerError)
+        {
+            _logger?.LogInformation("Failed to handle light client update response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)receivedData[0][0]);
+            await downChannel.CloseAsync();
+            return;
         }
 
         foreach (var data in receivedData)
@@ -62,18 +79,22 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILogg
                     case ForkType.Deneb:
                         var denebLightClientUpdate = DenebLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                         DenebProcessors.ProcessLightClientUpdate(syncProtocol.DenebLightClientStore, denebLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                         break;
                     case ForkType.Capella:
                         var capellaLightClientUpdate = CapellaLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                         CapellaProcessors.ProcessLightClientUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                         break;
                     case ForkType.Bellatrix:
                         var bellatrixLightClientUpdate = AltairLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                         AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                         break;
                     case ForkType.Altair:
                         var altairLightClientUpdate = AltairLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
                         AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, altairLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
                         break;
                     case ForkType.Phase0:
                         _logger?.LogError("Received light client update response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());

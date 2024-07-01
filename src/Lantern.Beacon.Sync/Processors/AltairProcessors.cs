@@ -10,18 +10,20 @@ namespace Lantern.Beacon.Sync.Processors;
 
 public static class AltairProcessors
 {
-    public static void ValidateLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+    public static bool ValidateLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var syncAggregate = update.SyncAggregate;
 
         if (!(syncAggregate.SyncCommitteeBits.Count(b => b) >= AltairPreset.MinSyncCommitteeParticipants))
         {
-            throw new Exception("Sync aggregate has insufficient active participants in update");
+            logger.LogWarning("Sync aggregate has insufficient active participants in update");
+            return false;
         }
 
         if (!AltairHelpers.IsValidLightClientHeader(update.AttestedHeader))
         {
-            throw new Exception("Invalid attested header in update");
+            logger.LogWarning("Invalid attested header in update");
+            return false;
         }
 
         var updateAttestedSlot = update.AttestedHeader.Beacon.Slot;
@@ -29,7 +31,8 @@ public static class AltairProcessors
 
         if (!(currentSlot >= update.SignatureSlot && update.SignatureSlot > updateAttestedSlot && updateAttestedSlot >= updateFinalizedSlot))
         {
-            throw new Exception("Invalid slot values in update");
+            logger.LogWarning("Invalid slot values in update");
+            return false;
         }
         
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
@@ -39,7 +42,8 @@ public static class AltairProcessors
         {
             if (!(updateSignaturePeriod == storePeriod || updateSignaturePeriod == storePeriod + 1))
             {
-                throw new Exception("Invalid sync committee period in update");
+                logger.LogWarning("Invalid sync committee period in update");
+                return false;
             }
         }
         else
@@ -47,7 +51,7 @@ public static class AltairProcessors
             if (updateSignaturePeriod != storePeriod)
             {
                 logger.LogWarning("Invalid sync committee period in update");
-                throw new Exception("Invalid sync committee period in update");
+                return false;
             }
         }
 
@@ -57,14 +61,16 @@ public static class AltairProcessors
 
         if (!(updateAttestedSlot > store.FinalizedHeader.Beacon.Slot || updateHasNextSyncCommittee))
         {
-            throw new Exception("Update is older than finalised slot");
+            logger.LogWarning("Update is older than finalised slot");
+            return false;
         }
 
         if (!AltairHelpers.IsFinalityUpdate(update))
         {
-            if (!update.FinalizedHeader.Equals(AltairLightClientHeader.CreateDefault()))
+            if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(AltairLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
-                throw new Exception("Finalized header in update is empty");
+                logger.LogWarning("Finalized header in update is empty");
+                return false;
             }
         }
         else
@@ -73,9 +79,10 @@ public static class AltairProcessors
             
             if (updateFinalizedSlot == 0)
             {
-                if (!update.FinalizedHeader.Equals(AltairLightClientHeader.CreateDefault()))
+                if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(AltairLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
-                    throw new Exception("Finalized header in update is empty");
+                    logger.LogWarning("Finalized header in update is empty");
+                    return false;
                 }
 
                 finalizedRoot = new byte[Constants.RootLength];
@@ -84,7 +91,8 @@ public static class AltairProcessors
             {
                 if (!AltairHelpers.IsValidLightClientHeader(update.FinalizedHeader))
                 {
-                    throw new Exception("Invalid finalized header in update");
+                    logger.LogWarning("Invalid finalized header in update");
+                    return false;
                 }
                 
                 finalizedRoot = update.FinalizedHeader.Beacon.GetHashTreeRoot(options.Preset);
@@ -98,7 +106,8 @@ public static class AltairProcessors
                 
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
-                throw new Exception("Invalid finality branch in update");
+                logger.LogWarning("Invalid finality branch in update");
+                return false;
             }
         }
         
@@ -106,7 +115,8 @@ public static class AltairProcessors
         {
             if (!update.NextSyncCommittee.Equals(AltairSyncCommittee.CreateDefault()))
             {
-                throw new Exception("Next sync committee in update is not empty");
+                logger.LogWarning("Next sync committee in update is not empty");
+                return false;
             }
         }
         else
@@ -115,7 +125,8 @@ public static class AltairProcessors
             {
                 if (!update.NextSyncCommittee.Equals(store.NextSyncCommittee))
                 {
-                    throw new Exception("Next sync committee in update does not match store");
+                    logger.LogWarning("Next sync committee in update does not match store");
+                    return false;
                 }
             }
             
@@ -127,7 +138,8 @@ public static class AltairProcessors
             
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
-                throw new Exception("Invalid next sync committee branch in update");
+                logger.LogWarning("Invalid next sync committee branch in update");
+                return false;
             }
         }
 
@@ -173,11 +185,14 @@ public static class AltairProcessors
         
         if (!result)
         {
-            throw new Exception("Invalid sync committee signature in update");
+            logger.LogWarning("Invalid sync committee signature in update");
+            return false;
         }
+
+        return true;
     }
 
-    public static void ApplyLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update, ILogger<SyncProtocol> logger)
+    public static bool ApplyLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update, ILogger<SyncProtocol> logger)
     {
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
         var updateFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(update.FinalizedHeader.Beacon.Slot);
@@ -187,6 +202,7 @@ public static class AltairProcessors
             if (updateFinalizedPeriod != storePeriod)
             {
                 logger.LogWarning("Invalid finalized period in update");
+                return false;
             }
 
             store.NextSyncCommittee = update.NextSyncCommittee;
@@ -201,7 +217,6 @@ public static class AltairProcessors
 
         if (update.FinalizedHeader.Beacon.Slot > store.FinalizedHeader.Beacon.Slot)
         {
-            Console.WriteLine("Applying finalized header update");
             store.FinalizedHeader = update.FinalizedHeader;
 
             if (store.FinalizedHeader.Beacon.Slot > store.OptimisticHeader.Beacon.Slot)
@@ -209,6 +224,8 @@ public static class AltairProcessors
                 store.OptimisticHeader = store.FinalizedHeader;
             }
         }
+
+        return true;
     }
 
     public static void ProcessLightClientStoreForceUpdate(AltairLightClientStore store, ulong currentSlot, ILogger<SyncProtocol> logger)
@@ -226,10 +243,10 @@ public static class AltairProcessors
         }
     }
 
-    public static void ProcessLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update,
+    public static bool ProcessLightClientUpdate(AltairLightClientStore store, AltairLightClientUpdate update,
         ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
+        var result = ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
         if(store.BestValidUpdate == null || AltairHelpers.IsBetterUpdate(update, store.BestValidUpdate))
@@ -251,12 +268,14 @@ public static class AltairProcessors
 
         if ((ulong)syncCommitteeBits.Count(b => b) * 3 >= (ulong)(syncCommitteeBits.Count * 2) && update.FinalizedHeader.Beacon.Slot > store.FinalizedHeader.Beacon.Slot || updateHasFinalizedNextSyncCommittee)
         {
-            ApplyLightClientUpdate(store, update, logger);
+            result = ApplyLightClientUpdate(store, update, logger);
             store.BestValidUpdate = null;
         }
+
+        return result;
     }
 
-    public static void ProcessLightClientFinalityUpdate(AltairLightClientStore store,
+    public static bool ProcessLightClientFinalityUpdate(AltairLightClientStore store,
         AltairLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -275,10 +294,10 @@ public static class AltairProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
-    public static void ProcessLightClientOptimisticUpdate(AltairLightClientStore store,
+    public static bool ProcessLightClientOptimisticUpdate(AltairLightClientStore store,
         AltairLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -303,6 +322,6 @@ public static class AltairProcessors
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }
