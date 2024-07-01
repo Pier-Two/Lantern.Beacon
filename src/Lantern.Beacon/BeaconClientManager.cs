@@ -101,7 +101,9 @@ public class BeaconClientManager : IBeaconClientManager
         
         var syncTask = Task.Run(async () => await DisplaySyncStatus(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
         var peerDiscoveryTask = Task.Run(() => ProcessPeerDiscoveryAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-        await Task.WhenAll(syncTask, peerDiscoveryTask);
+        var runSyncTask = Task.Run(() => MonitorPeerCountForSync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+
+        await Task.WhenAll(syncTask, peerDiscoveryTask, runSyncTask);
     }
 
     public async Task StopAsync()
@@ -137,40 +139,80 @@ public class BeaconClientManager : IBeaconClientManager
 
     private async Task ProcessPeerDiscoveryAsync(CancellationToken token)
     {
+        _logger.LogInformation("Peer discovery process started.");
         var semaphore = new SemaphoreSlim(_clientOptions.MaxParallelDials);
-        
-        while (_syncProtocol.PeerCount < _clientOptions.TargetPeerCount || !token.IsCancellationRequested)
+
+        while (!token.IsCancellationRequested)
         {
-            if (_peersToDial.IsEmpty)
+            _logger.LogDebug("Entering the main while loop. Checking peer count and peers to dial");
+            
+            if (_syncProtocol.PeerCount < _clientOptions.TargetPeerCount && _peersToDial.IsEmpty)
             {
-                _logger.LogInformation("No peers to dial. Refreshing peers");
-                
-                if(LocalPeer == null)
+                _logger.LogInformation("No peers connected and no peers to dial. Initiating peer discovery");
+
+                if (LocalPeer == null)
                 {
                     _logger.LogError("Local peer is null. Cannot discover new peers");
                     return;
                 }
-                
-                await _customDiscoveryProtocol.GetDiscoveredNodesAsync(LocalPeer.Address, token);
+
+                try
+                {
+                    _logger.LogInformation($"Requesting discovered nodes for local peer: {LocalPeer.Address}");
+                    await _customDiscoveryProtocol.GetDiscoveredNodesAsync(LocalPeer.Address, token);
+                    _logger.LogInformation("Discovered nodes successfully retrieved");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred during peer discovery");
+                }
             }
-            
+
             var dialTasks = new List<Task>();
-        
+            
             while (!token.IsCancellationRequested && !_peersToDial.IsEmpty)
             {
+                _logger.LogDebug("Starting peer dequeue and dial process");
+                
                 while (_peersToDial.TryDequeue(out var peerAddress))
                 {
                     await semaphore.WaitAsync(token);
-        
-                    if (peerAddress != null)
-                    {
-                        dialTasks.Add(DialPeerWithThrottling(peerAddress, semaphore, token));
-                    }
+                    _logger.LogDebug($"Semaphore acquired. Attempting to dial peer at address: {peerAddress}");
+
+                    if (peerAddress == null) 
+                        continue;
+                    
+                    dialTasks.Add(DialPeerWithThrottling(peerAddress, semaphore, token));
+                    _logger.LogInformation($"Dialing peer at address: {peerAddress}");
                 }
-        
-                await Task.WhenAll(dialTasks);
+
+                _logger.LogDebug("Waiting for all dial tasks to complete");
+
+                try
+                {
+                    await Task.WhenAll(dialTasks);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred while dialing peers");
+                }
+
                 dialTasks.Clear();
             }
+        }
+
+        _logger.LogInformation("Peer discovery process terminated");
+    }
+    
+    private async Task MonitorPeerCountForSync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            if (_syncProtocol.PeerCount <= 0 || _livePeers.IsEmpty) 
+                continue;
+            
+            var peer = _livePeers.First();
+            await RunSyncProtocolAsync(peer, token);
         }
     }
 
@@ -249,8 +291,6 @@ public class BeaconClientManager : IBeaconClientManager
                     _livePeers.Add(dialTask.Result);
                     _discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     _syncProtocol.PeerCount++;
-                    
-                    await RunSyncProtocolAsync(dialTask.Result, token);
                 }
                 else
                 {
