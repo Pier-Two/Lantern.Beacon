@@ -76,11 +76,25 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
         
         if (denebFinalizedPeriod + 1 >= denebCurrentPeriod)
         {
-            DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+            var oldFinalizedHeader = syncProtocol.DenebLightClientStore.FinalizedHeader;
+            var result = DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
             _logger.LogInformation("Processed light client finality update from gossip");
+
+            if (result)
+            {
+                if (!DenebHelpers.ShouldForwardFinalizedLightClientUpdate(lightClientFinalityUpdate, oldFinalizedHeader, syncProtocol))
+                    return;
+            
+                gossipSubManager.LightClientFinalityUpdate!.Publish(update);
+                _logger.LogInformation("Forwarded light client finality update to gossip");
+            
+                syncProtocol.SetDenebLightClientFinalityUpdate(lightClientFinalityUpdate);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to process light client finality update from gossip. Ignoring...");
+            }
         }
-        
-        // Add validations and processing logic here before publishing to the network 
     }
     
     private void HandleLightClientOptimisticUpdate(byte[] update)
@@ -98,10 +112,24 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
         
         if (denebFinalizedPeriod + 1 >= denebCurrentPeriod)
         {
-            DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-            _logger.LogInformation("Processed light client optimistic update from gossip");
+            var oldOptimisticHeader = syncProtocol.DenebLightClientStore.OptimisticHeader;
+            var result = DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+            if (result)
+            {
+                _logger.LogInformation("Processed light client optimistic update from gossip");
+                if (!DenebHelpers.ShouldForwardLightClientOptimisticUpdate(lightClientOptimisticUpdate, oldOptimisticHeader, syncProtocol))
+                    return;
+            
+                gossipSubManager.LightClientFinalityUpdate!.Publish(update);
+                _logger.LogInformation("Forwarded light client optimistic update to gossip");
+                
+                syncProtocol.SetDenebLightClientOptimisticUpdate(lightClientOptimisticUpdate);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to process light client optimistic update from gossip. Ignoring...");
+            }
         }
-        
-        // Add validations and processing logic here before publishing to the network 
     }
 }

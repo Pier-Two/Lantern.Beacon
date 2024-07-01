@@ -21,10 +21,16 @@ public interface ISyncProtocol
     CapellaLightClientStore CapellaLightClientStore { get; }
     
     DenebLightClientStore DenebLightClientStore { get; }
+    
+    DenebLightClientOptimisticUpdate DenebLightClientOptimisticUpdate { get; }
+    
+    DenebLightClientFinalityUpdate DenebLightClientFinalityUpdate { get; }
 
     SyncProtocolOptions Options { get; }
     
     LightClientUpdatesByRangeRequest? LightClientUpdatesByRangeRequest { get; }
+    
+    ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; } 
     
     int PeerCount { get; set; }
     
@@ -33,8 +39,6 @@ public interface ISyncProtocol
     ForkType ActiveFork { get; }
     
     bool IsInitialized { get; }
-    
-    ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; } 
     
     void Init();
 
@@ -47,4 +51,8 @@ public interface ISyncProtocol
     void SetActiveFork(ForkType forkType);
 
     void SetLightClientUpdatesByRangeRequest(ulong startPeriod, ulong count);
+    
+    void SetDenebLightClientOptimisticUpdate(DenebLightClientOptimisticUpdate update);
+    
+    void SetDenebLightClientFinalityUpdate(DenebLightClientFinalityUpdate update);
 }

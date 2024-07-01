@@ -33,6 +33,8 @@ public static class Constants
     public const int DomainLength = 32;
 
     public const int MaxLightClientUpdates = 128;
+    
+    public const int MaximumGossipClockDisparity = 500;
 
     public const ulong FarFutureEpoch = ulong.MaxValue;
 }

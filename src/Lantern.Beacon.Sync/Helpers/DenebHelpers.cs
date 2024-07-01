@@ -7,6 +7,60 @@ namespace Lantern.Beacon.Sync.Helpers;
 
 public static class DenebHelpers
 {
+    public static bool ShouldForwardFinalizedLightClientUpdate(DenebLightClientFinalityUpdate update, DenebLightClientHeader oldFinalizedHeader, ISyncProtocol syncProtocol)
+    {
+        bool result = default; 
+        
+        if(update.FinalizedHeader.Beacon.Slot > syncProtocol.DenebLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        {
+            result = true;
+        }
+
+        if(update.FinalizedHeader.Beacon.Slot == syncProtocol.DenebLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        {
+            var newNumActiveParticipants = update.SyncAggregate.SyncCommitteeBits.Count(b => b);
+            var oldNumActiveParticipants = syncProtocol.DenebLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count(b => b);
+            var newHasSuperMajority = newNumActiveParticipants * 3 >= update.SyncAggregate.SyncCommitteeBits.Count;
+            var oldHasSuperMajority = oldNumActiveParticipants * 3 >= syncProtocol.DenebLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count;
+            
+            result = newHasSuperMajority && !oldHasSuperMajority;
+        }
+
+        if (Phase0Helpers.HasSufficientPropagationTimeElapsed(Phase0Helpers.SlotToDateTime(update.SignatureSlot, syncProtocol.Options.GenesisTime)))
+        {
+            result = true;
+        }
+        
+        if (oldFinalizedHeader.Beacon.Slot < syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)
+        {
+            result = true;
+        }
+        
+        return result;
+    }
+    
+    public static bool ShouldForwardLightClientOptimisticUpdate(DenebLightClientOptimisticUpdate update, DenebLightClientHeader oldOptimisticHeader, ISyncProtocol syncProtocol)
+    {
+        bool result = default; 
+        
+        if(update.AttestedHeader.Beacon.Slot > syncProtocol.DenebLightClientOptimisticUpdate.AttestedHeader.Beacon.Slot)
+        {
+            result = true;
+        }
+
+        if (Phase0Helpers.HasSufficientPropagationTimeElapsed(Phase0Helpers.SlotToDateTime(update.SignatureSlot, syncProtocol.Options.GenesisTime)))
+        {
+            result = true;
+        }
+        
+        if (oldOptimisticHeader.Beacon.Slot < syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)
+        {
+            result = true;
+        }
+        
+        return result;
+    }
+    
     public static byte[] GetLcExecutionRoot(DenebLightClientHeader header, SizePreset preset)
     {
         var epoch = Phase0Helpers.ComputeEpochAtSlot(header.Beacon.Slot);

@@ -36,7 +36,17 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILogg
             receivedData.Add(readOnlySequence.ToArray());
         }
         
-        if (receivedData[0][0] == (byte)ResponseCodes.ResourceUnavailable || receivedData[0][0] == (byte)ResponseCodes.InvalidRequest || receivedData[0][0] == (byte)ResponseCodes.ServerError)
+        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+        {
+            // Log that we received an empty or null response
+            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
+        }
+        
+        var responseCode = receivedData[0][0];
+        
+        if (responseCode is (byte)ResponseCodes.ResourceUnavailable or (byte)ResponseCodes.InvalidRequest or (byte)ResponseCodes.ServerError)
         {
             _logger?.LogInformation("Failed to handle light client update response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)receivedData[0][0]);
             await downChannel.CloseAsync();

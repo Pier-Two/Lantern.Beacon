@@ -125,14 +125,17 @@ internal static class Program
                         .WithSessionOptions(sessionOptions)
                         .WithLoggerFactory(discv5LoggerFactory);
                 });
-    
-                beaconClientBuilder.WithBeaconClientOptions(options => options.TcpPort = 30303);
+                beaconClientBuilder.WithBeaconClientOptions(options =>
+                {
+                    options.TcpPort = 30303;
+                    options.Bootnodes = ["/ip4/34.67.74.221/tcp/9000/p2p/16Uiu2HAmTRgEakJhZkyeKJ43eJNxC1BgTpq92p237CJePnZvFSW8"];
+                });
                 beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
                 {
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9fbf5747e3ace43b192c5c7b557bc08ee2eb7d6585b329e134a80de809e7293a");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("a94d82b4610430e2818812b4b94213aebaba8e8e644354cfd0f85c3bd253f886");
                 });
 
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);

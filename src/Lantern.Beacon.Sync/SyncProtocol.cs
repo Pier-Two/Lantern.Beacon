@@ -22,6 +22,10 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
     public CapellaLightClientStore CapellaLightClientStore { get; private set; } = CapellaLightClientStore.CreateDefault();
 
     public DenebLightClientStore DenebLightClientStore { get; private set; } = DenebLightClientStore.CreateDefault();
+    
+    public DenebLightClientOptimisticUpdate? DenebLightClientOptimisticUpdate { get; private set; } = DenebLightClientOptimisticUpdate.CreateDefault();
+    
+    public DenebLightClientFinalityUpdate? DenebLightClientFinalityUpdate { get; private set; } = DenebLightClientFinalityUpdate.CreateDefault();
 
     public SyncProtocolOptions Options => options;
     
@@ -187,5 +191,15 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
     public void SetLightClientUpdatesByRangeRequest(ulong startPeriod, ulong count) 
     {
         LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
+    }
+    
+    public void SetDenebLightClientOptimisticUpdate(DenebLightClientOptimisticUpdate optimisticUpdate) 
+    { 
+        DenebLightClientOptimisticUpdate = optimisticUpdate; 
+    }
+    
+    public void SetDenebLightClientFinalityUpdate(DenebLightClientFinalityUpdate finalityUpdate) 
+    { 
+        DenebLightClientFinalityUpdate = finalityUpdate; 
     }
 }

@@ -9,6 +9,23 @@ namespace Lantern.Beacon.Sync.Helpers;
 
 public static class Phase0Helpers
 {
+    public static DateTime SlotToDateTime(ulong slot, ulong genesisTime)
+    {
+        var time = DateTimeOffset.FromUnixTimeSeconds((long)genesisTime);
+        var secondsPerSlot = Config.Config.SecondsPerSlot; 
+        var secondsSinceGenesis = slot * (ulong)secondsPerSlot;
+        var slotTime = time.AddSeconds(secondsSinceGenesis);
+
+        return slotTime.DateTime;
+    }
+    
+    public static bool HasSufficientPropagationTimeElapsed(DateTime signatureSlotStartTime)
+    {
+        var elapsedTime = DateTime.UtcNow - signatureSlotStartTime;
+        var requiredTime = (double)Config.Config.SecondsPerSlot / Phase0Preset.SlotsPerEpoch + Constants.MaximumGossipClockDisparity / 1000.0;
+        return elapsedTime.TotalSeconds >= requiredTime;
+    }
+    
     public static bool IsValidMerkleBranch(byte[] leaf, byte[][] branch, int depth, int index, byte[] root)
     {
         var value = leaf;

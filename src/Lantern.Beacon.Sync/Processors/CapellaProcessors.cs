@@ -10,20 +10,20 @@ namespace Lantern.Beacon.Sync.Processors;
 
 public static class CapellaProcessors
 {
-    public static void ValidateLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
+    private static bool ValidateLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update, ulong currentSlot, byte[] genesisValidatorsRoot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var syncAggregate = update.SyncAggregate;
 
         if (!(syncAggregate.SyncCommitteeBits.Count(b => b) >= AltairPreset.MinSyncCommitteeParticipants))
         {
             logger.LogWarning("Sync aggregate has insufficient active participants in update");
-            return;
+            return false;
         }
 
         if (!CapellaHelpers.IsValidLightClientHeader(update.AttestedHeader, options.Preset))
         {
             logger.LogWarning("Invalid attested header in update");
-            return;
+            return false;
         }
 
         var updateAttestedSlot = update.AttestedHeader.Beacon.Slot;
@@ -32,7 +32,7 @@ public static class CapellaProcessors
         if (!(currentSlot >= update.SignatureSlot && update.SignatureSlot > updateAttestedSlot && updateAttestedSlot >= updateFinalizedSlot))
         {
             logger.LogWarning("Invalid slot values in update");
-            return;
+            return false;
         }
 
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
@@ -43,7 +43,7 @@ public static class CapellaProcessors
             if (!(updateSignaturePeriod == storePeriod || updateSignaturePeriod == storePeriod + 1))
             {
                 logger.LogWarning("Invalid sync committee period in update");
-                return;
+                return false;
             }
         }
         else
@@ -51,7 +51,7 @@ public static class CapellaProcessors
             if (updateSignaturePeriod != storePeriod)
             {
                 logger.LogWarning("Invalid sync committee period in update");
-                return;
+                return false;
             }
         }
 
@@ -62,7 +62,7 @@ public static class CapellaProcessors
         if (!(updateAttestedSlot > store.FinalizedHeader.Beacon.Slot || updateHasNextSyncCommittee))
         {
             logger.LogWarning("Update is older than finalised slot");
-            return;
+            return false;
         }
 
         if (!CapellaHelpers.IsFinalityUpdate(update))
@@ -70,7 +70,7 @@ public static class CapellaProcessors
             if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(CapellaLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
             {
                 logger.LogWarning("Finalized header in update is empty");
-                return;
+                return false;
             }
         }
         else
@@ -82,7 +82,7 @@ public static class CapellaProcessors
                 if (!update.FinalizedHeader.GetHashTreeRoot(options.Preset).SequenceEqual(CapellaLightClientHeader.CreateDefault().GetHashTreeRoot(options.Preset)))
                 {
                     logger.LogWarning("Finalized header in update is empty");
-                    return;
+                    return false;
                 }
 
                 finalizedRoot = new byte[Constants.RootLength];
@@ -92,7 +92,7 @@ public static class CapellaProcessors
                 if (!CapellaHelpers.IsValidLightClientHeader(update.FinalizedHeader, options.Preset))
                 {
                     logger.LogWarning("Invalid finalized header in update");
-                    return;
+                    return false;
                 }
                 
                 finalizedRoot = update.FinalizedHeader.Beacon.GetHashTreeRoot(options.Preset);
@@ -107,7 +107,7 @@ public static class CapellaProcessors
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
                 logger.LogWarning("Invalid finality branch in update");
-                return;
+                return false;
             }
         }
 
@@ -116,7 +116,7 @@ public static class CapellaProcessors
             if (!update.NextSyncCommittee.Equals(AltairSyncCommittee.CreateDefault()))
             {
                 logger.LogWarning("Next sync committee in update is not empty");
-                return;
+                return false;
             }
         }
         else
@@ -126,7 +126,7 @@ public static class CapellaProcessors
                 if (!update.NextSyncCommittee.Equals(store.NextSyncCommittee))
                 {
                     logger.LogWarning("Next sync committee in update does not match store");
-                    return;
+                    return false;
                 }
             }
 
@@ -139,7 +139,7 @@ public static class CapellaProcessors
             if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root))
             {
                 logger.LogWarning("Invalid next sync committee branch in update");
-                return;
+                return false;
             }
         }
 
@@ -186,10 +186,13 @@ public static class CapellaProcessors
         if (!result)
         {
             logger.LogWarning("Invalid sync committee signature in update");
+            return false;
         }
+        
+        return true;
     }
 
-    public static void ApplyLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update, ILogger<SyncProtocol> logger)
+    public static bool ApplyLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update, ILogger<SyncProtocol> logger)
     {
         var storePeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(store.FinalizedHeader.Beacon.Slot);
         var updateFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriodAtSlot(update.FinalizedHeader.Beacon.Slot);
@@ -199,6 +202,7 @@ public static class CapellaProcessors
             if (updateFinalizedPeriod != storePeriod)
             {
                 logger.LogWarning("Invalid finalized period in update");
+                return false;
             }
 
             store.NextSyncCommittee = update.NextSyncCommittee;
@@ -213,7 +217,6 @@ public static class CapellaProcessors
 
         if (update.FinalizedHeader.Beacon.Slot > store.FinalizedHeader.Beacon.Slot)
         {
-            Console.WriteLine("Applying finalized header update");
             store.FinalizedHeader = update.FinalizedHeader;
 
             if (store.FinalizedHeader.Beacon.Slot > store.OptimisticHeader.Beacon.Slot)
@@ -221,6 +224,8 @@ public static class CapellaProcessors
                 store.OptimisticHeader = store.FinalizedHeader;
             }
         }
+
+        return true;
     }
 
     public static void ProcessLightClientStoreForceUpdate(CapellaLightClientStore store, ulong currentSlot, ILogger<SyncProtocol> logger)
@@ -238,10 +243,10 @@ public static class CapellaProcessors
         }
     }
 
-    public static void ProcessLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update,
+    public static bool ProcessLightClientUpdate(CapellaLightClientStore store, CapellaLightClientUpdate update,
         ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
-        ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
+        var result = ValidateLightClientUpdate(store, update, currentSlot, options.GenesisValidatorsRoot, options, logger);
         var syncCommitteeBits = update.SyncAggregate.SyncCommitteeBits;
         
         if(store.BestValidUpdate == null || CapellaHelpers.IsBetterUpdate(update, store.BestValidUpdate))
@@ -263,12 +268,14 @@ public static class CapellaProcessors
 
         if ((ulong)syncCommitteeBits.Count(b => b) * 3 >= (ulong)(syncCommitteeBits.Count * 2) && update.FinalizedHeader.Beacon.Slot > store.FinalizedHeader.Beacon.Slot || updateHasFinalizedNextSyncCommittee)
         {
-            ApplyLightClientUpdate(store, update, logger);
+            result = ApplyLightClientUpdate(store, update, logger);
             store.BestValidUpdate = null;
         }
+
+        return result;
     }
 
-    public static void ProcessLightClientFinalityUpdate(CapellaLightClientStore store,
+    public static bool ProcessLightClientFinalityUpdate(CapellaLightClientStore store,
         CapellaLightClientFinalityUpdate finalityUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -287,10 +294,10 @@ public static class CapellaProcessors
             finalityUpdate.SyncAggregate,
             finalityUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 
-    public static void ProcessLightClientOptimisticUpdate(CapellaLightClientStore store,
+    public static bool ProcessLightClientOptimisticUpdate(CapellaLightClientStore store,
         CapellaLightClientOptimisticUpdate optimisticUpdate, ulong currentSlot, SyncProtocolOptions options, ILogger<SyncProtocol> logger)
     {
         var nextSyncCommitteeBranch = new byte[Constants.NextSyncCommitteeBranchDepth][];
@@ -315,6 +322,6 @@ public static class CapellaProcessors
             optimisticUpdate.SyncAggregate,
             optimisticUpdate.SignatureSlot);
         
-        ProcessLightClientUpdate(store, update, currentSlot, options, logger);
+        return ProcessLightClientUpdate(store, update, currentSlot, options, logger);
     }
 }
