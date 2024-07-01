@@ -47,7 +47,6 @@ public class BeaconClientManagerTests
     [Test]
     public async Task InitAsync_SuccessfulInitialization_LogsInformation()
     {
-        // Arrange
         _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(true);
         
         var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
@@ -59,10 +58,8 @@ public class BeaconClientManagerTests
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
         
-        // Act
         await _beaconClientManager.InitAsync();
-
-        // Assert
+        
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
@@ -75,13 +72,10 @@ public class BeaconClientManagerTests
     [Test]
     public async Task InitAsync_FailedDiscoveryProtocol_LogsError()
     {
-        // Arrange
         _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(false);
-
-        // Act
+        
         await _beaconClientManager.InitAsync();
-
-        // Assert
+        
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Error,
                 It.IsAny<EventId>(),
