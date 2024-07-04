@@ -2,26 +2,26 @@ using System.Buffers;
 using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon.Networking.ReqRespProtocols;
 
-public class PingProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFactory = null) : IProtocol
+public class PingProtocol(INetworkState networkState, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<PingProtocol>();
     public string Id => "/eth2/beacon_chain/req/ping/1/ssz_snappy";
 
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        var ping = Ping.CreateFrom(syncProtocol.MetaData.SeqNumber);
+        var ping = Ping.CreateFrom(networkState.MetaData.SeqNumber);
         var sszData = Ping.Serialize(ping);
         var payload = ReqRespHelpers.EncodeRequest(sszData);
         var rawData = new ReadOnlySequence<byte>(payload);
 
-        _logger?.LogDebug("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
+        _logger?.LogDebug("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), networkState.MetaData.SeqNumber, Convert.ToHexString(payload));
 
         await downChannel.WriteAsync(rawData);
         var receivedData = new List<byte[]>();
@@ -68,13 +68,13 @@ public class PingProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFact
         }
 
         var responseCode = (int)ResponseCodes.Success;
-        var ping = Ping.CreateFrom(syncProtocol.MetaData.SeqNumber);
+        var ping = Ping.CreateFrom(networkState.MetaData.SeqNumber);
         var sszData = Ping.Serialize(ping);
         var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
         var rawData = new ReadOnlySequence<byte>(payload);
         
         await downChannel.WriteAsync(rawData);
         
-        _logger?.LogDebug("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), syncProtocol.MetaData.SeqNumber, Convert.ToHexString(payload));
+        _logger?.LogDebug("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), networkState.MetaData.SeqNumber, Convert.ToHexString(payload));
     }
 }

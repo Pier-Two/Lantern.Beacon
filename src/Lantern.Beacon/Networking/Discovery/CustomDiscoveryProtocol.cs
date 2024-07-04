@@ -1,6 +1,6 @@
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol;

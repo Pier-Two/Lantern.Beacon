@@ -1,9 +1,8 @@
 using System.Numerics;
 using Lantern.Beacon.Sync.Presets;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using NUnit.Framework;
-using Lantern.Beacon.Sync.Types.Capella;
-using Lantern.Beacon.Sync.Types.Deneb;
-using Lantern.Beacon.Sync.Types.Phase0;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Tests;

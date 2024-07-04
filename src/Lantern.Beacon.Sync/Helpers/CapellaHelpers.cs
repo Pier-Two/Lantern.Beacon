@@ -1,5 +1,5 @@
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Capella;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Helpers;

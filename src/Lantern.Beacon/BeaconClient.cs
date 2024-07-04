@@ -5,14 +5,14 @@ using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Processors;
-using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol syncProtocol, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(ISyncProtocol syncProtocol, IPeerFactoryBuilder peerFactoryBuilder, INetworkState networkState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -20,8 +20,8 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
     {
         try
         {
-            syncProtocol.AppLayerProtocols = peerFactoryBuilder.AppLayerProtocols;
             syncProtocol.Init();
+            networkState.Init(peerFactoryBuilder.AppLayerProtocols);
             gossipSubManager.Init();
 
             if (gossipSubManager.LightClientFinalityUpdate == null || gossipSubManager.LightClientOptimisticUpdate == null)
@@ -88,7 +88,7 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
                 gossipSubManager.LightClientFinalityUpdate!.Publish(update);
                 _logger.LogInformation("Forwarded light client finality update to gossip");
             
-                syncProtocol.SetDenebLightClientFinalityUpdate(lightClientFinalityUpdate);
+                syncProtocol.PreviousLightClientFinalityUpdate = lightClientFinalityUpdate;
             }
             else
             {
@@ -124,7 +124,7 @@ public class BeaconClient(IPeerFactoryBuilder peerFactoryBuilder, ISyncProtocol 
                 gossipSubManager.LightClientFinalityUpdate!.Publish(update);
                 _logger.LogInformation("Forwarded light client optimistic update to gossip");
                 
-                syncProtocol.SetDenebLightClientOptimisticUpdate(lightClientOptimisticUpdate);
+                syncProtocol.PreviousLightClientOptimisticUpdate = lightClientOptimisticUpdate;
             }
             else
             {

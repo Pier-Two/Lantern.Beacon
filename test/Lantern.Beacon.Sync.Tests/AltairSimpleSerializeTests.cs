@@ -1,9 +1,9 @@
 using System.Collections;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Presets.Mainnet;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using NUnit.Framework;
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Phase0;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Tests;

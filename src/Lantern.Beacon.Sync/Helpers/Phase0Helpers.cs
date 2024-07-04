@@ -3,7 +3,8 @@ using SszSharp;
 using Cortex.Containers;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Types;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Basic;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 
 namespace Lantern.Beacon.Sync.Helpers;
 
@@ -88,7 +89,6 @@ public static class Phase0Helpers
     
     public static ForkType ComputeForkType(byte[] forkDigest, SyncProtocolOptions options)
     {
-        // Compute Deneb Fork Digest
         var denebForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.DenebForkVersion), options);
         var capellaForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.CapellaForkVersion), options);
         var bellatrixForkDigest = ComputeForkDigest(ConvertToLittleEndian(Config.Config.BellatrixForkVersion), options);

@@ -43,7 +43,7 @@ public static class ReqRespHelpers
         return resultArray;
     }
     
-    public static byte[] EncodeResponseChunk(byte[] sszData, byte[] contextBytes)
+    public static byte[] EncodeResponseChunk(byte[] sszData, byte[] contextBytes, ResponseCodes responseCode)
     {
         if (contextBytes.Length != Constants.ContextBytesLength)
         {
@@ -57,7 +57,7 @@ public static class ReqRespHelpers
         
         Varint.Encode(sszLength, varintHeader, ref offset);
         
-        byte result = 0;
+        byte result = (byte)responseCode;
         var resultArray = new byte[1 + contextBytes.Length + varintHeader.Length + compressedData.Length];
         var currentOffset = 0;
         resultArray[currentOffset++] = result;

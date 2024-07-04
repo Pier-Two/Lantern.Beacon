@@ -4,9 +4,10 @@ using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Types;
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Capella;
-using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Beacon.Sync.Types.Basic;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Capella;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
@@ -68,8 +69,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILoggerFac
                     break;
                 case ForkType.Altair:
                     var altairLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot,
-                        altairLightClientBootstrap);
+                    syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, altairLightClientBootstrap);
                     syncProtocol.SetActiveFork(forkType);
                     break;
                 case ForkType.Phase0:

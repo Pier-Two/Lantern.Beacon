@@ -1,4 +1,5 @@
-﻿using Lantern.Beacon.Networking.Gossip;
+﻿using Lantern.Beacon.Networking;
+using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework;
@@ -11,6 +12,7 @@ namespace Lantern.Beacon.Tests;
 [TestFixture]
  public class BeaconClientTests
 {
+    private Mock<INetworkState> _mockNetworkState;
     private Mock<IPeerFactoryBuilder> _mockPeerFactoryBuilder;
     private Mock<IBeaconClientManager> _mockBeaconClientManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
@@ -23,6 +25,7 @@ namespace Lantern.Beacon.Tests;
     [SetUp]
     public void Setup()
     {
+        _mockNetworkState = new Mock<INetworkState>();
         _mockPeerFactoryBuilder = new Mock<IPeerFactoryBuilder>();
         _mockBeaconClientManager = new Mock<IBeaconClientManager>();
         _mockLogger = new Mock<ILogger<BeaconClient>>();
@@ -40,7 +43,7 @@ namespace Lantern.Beacon.Tests;
             throw new InvalidOperationException("A required mock is null.");
         }
         
-        _beaconClient = new BeaconClient(_mockPeerFactoryBuilder.Object, _mockSyncProtocol.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockPeerFactoryBuilder.Object, _mockNetworkState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
     }
 
     [Test]

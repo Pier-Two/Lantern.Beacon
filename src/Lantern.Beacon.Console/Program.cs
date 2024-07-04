@@ -1,5 +1,6 @@
 ﻿using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
+using Lantern.Discv5.Enr.Identity.V4;
 using Lantern.Discv5.WireProtocol.Connection;
 using Lantern.Discv5.WireProtocol.Session;
 using Lantern.Discv5.WireProtocol.Table;
@@ -82,7 +83,14 @@ internal static class Program
         {
             UdpPort = 4555
         };
-        var sessionOptions = SessionOptions.Default;
+        var sessionKeys = new SessionKeys(Convert.FromHexString("F57EC7A295ED7F7FE54DD155C36F64384FC78D7D48C20FB7D415DE4E99575EA3"));
+        var sessionOptions = new SessionOptions
+        {
+            SessionKeys = sessionKeys,
+            Signer = new IdentitySignerV4(sessionKeys.PrivateKey),
+            Verifier = new IdentityVerifierV4(),
+            SessionCacheSize = 1000
+        };
         var tableOptions = new TableOptions(bootstrapEnrs)
         {
             MaxNodesCount = 16
@@ -127,24 +135,23 @@ internal static class Program
                 });
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
-                    options.TcpPort = 30303;
-                    options.Bootnodes = ["/ip4/34.67.74.221/tcp/9000/p2p/16Uiu2HAmTRgEakJhZkyeKJ43eJNxC1BgTpq92p237CJePnZvFSW8"];
+                    options.TcpPort = 9000;
+                    options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAmPYkvHs9HNDgRFnTAZyPT9qdXYumArdCQm922XrwsSSzJ"];
                 });
                 beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
                 {
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("a94d82b4610430e2818812b4b94213aebaba8e8e644354cfd0f85c3bd253f886");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("0e980533edbcba7b2ed6270c754d90e87b1a012170db7c67b6de43c1c9b94b7d");
                 });
-
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);
             });
         
         var serviceProvider = services.BuildServiceProvider();
         var beaconClient = serviceProvider.GetRequiredService<IBeaconClient>();
-        
+
         await beaconClient.InitAsync();
         await beaconClient.StartAsync();
     }

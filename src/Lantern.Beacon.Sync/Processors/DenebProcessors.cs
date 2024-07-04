@@ -1,8 +1,8 @@
 using Cortex.Containers;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Presets;
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
 using Planetarium.Cryptography.BLS12_381;
 
