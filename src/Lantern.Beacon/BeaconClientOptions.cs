@@ -4,7 +4,7 @@ public class BeaconClientOptions
 {
     public int TargetPeerCount { get; set; } = 1;
     
-    public int MaxParallelDials { get; set; } = 1;
+    public int MaxParallelDials { get; set; } = 10;
     
     public int DialTimeoutSeconds { get; set; } = 5;
     

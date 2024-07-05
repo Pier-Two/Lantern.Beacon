@@ -1,6 +1,6 @@
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Capella;
-using Lantern.Beacon.Sync.Types.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Capella;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Helpers;
@@ -11,17 +11,17 @@ public static class DenebHelpers
     {
         bool result = default; 
         
-        if(update.FinalizedHeader.Beacon.Slot > syncProtocol.DenebLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        if(update.FinalizedHeader.Beacon.Slot > syncProtocol.PreviousLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
         {
             result = true;
         }
 
-        if(update.FinalizedHeader.Beacon.Slot == syncProtocol.DenebLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        if(update.FinalizedHeader.Beacon.Slot == syncProtocol.PreviousLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
         {
             var newNumActiveParticipants = update.SyncAggregate.SyncCommitteeBits.Count(b => b);
-            var oldNumActiveParticipants = syncProtocol.DenebLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count(b => b);
+            var oldNumActiveParticipants = syncProtocol.PreviousLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count(b => b);
             var newHasSuperMajority = newNumActiveParticipants * 3 >= update.SyncAggregate.SyncCommitteeBits.Count;
-            var oldHasSuperMajority = oldNumActiveParticipants * 3 >= syncProtocol.DenebLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count;
+            var oldHasSuperMajority = oldNumActiveParticipants * 3 >= syncProtocol.PreviousLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count;
             
             result = newHasSuperMajority && !oldHasSuperMajority;
         }
@@ -43,7 +43,7 @@ public static class DenebHelpers
     {
         bool result = default; 
         
-        if(update.AttestedHeader.Beacon.Slot > syncProtocol.DenebLightClientOptimisticUpdate.AttestedHeader.Beacon.Slot)
+        if(update.AttestedHeader.Beacon.Slot > syncProtocol.PreviousLightClientOptimisticUpdate.AttestedHeader.Beacon.Slot)
         {
             result = true;
         }

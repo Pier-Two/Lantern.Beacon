@@ -2,7 +2,7 @@ using System.Buffers;
 using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
@@ -10,7 +10,7 @@ using SszSharp;
 
 namespace Lantern.Beacon.Networking.ReqRespProtocols;
 
-public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFactory = null) : IProtocol
+public class MetaDataProtocol(INetworkState networkState, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<MetaDataProtocol>();
     
@@ -60,7 +60,7 @@ public class MetaDataProtocol(ISyncProtocol syncProtocol, ILoggerFactory? logger
         try
         {
             var responseCode = (int)ResponseCodes.Success;
-            var metaData = syncProtocol.MetaData;
+            var metaData = networkState.MetaData;
             var sszData = MetaData.Serialize(metaData);
             var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
             rawData = new ReadOnlySequence<byte>(payload);

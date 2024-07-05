@@ -1,7 +1,7 @@
 using System.Numerics;
 using Lantern.Beacon.Sync.Presets;
+using Lantern.Beacon.Sync.Types.Ssz.Bellatrix;
 using NUnit.Framework;
-using Lantern.Beacon.Sync.Types.Bellatrix;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Tests;

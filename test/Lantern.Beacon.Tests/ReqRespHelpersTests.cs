@@ -1,8 +1,8 @@
 using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
-using Lantern.Beacon.Sync.Types.Deneb;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NUnit.Framework;

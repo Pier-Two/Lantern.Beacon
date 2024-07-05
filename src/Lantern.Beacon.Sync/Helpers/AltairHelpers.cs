@@ -1,6 +1,6 @@
 using Cortex.Containers;
 using Lantern.Beacon.Sync.Presets;
-using Lantern.Beacon.Sync.Types.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
 
 namespace Lantern.Beacon.Sync.Helpers;
 

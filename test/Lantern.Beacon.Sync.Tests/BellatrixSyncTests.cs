@@ -1,10 +1,10 @@
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Processors;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Capella;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using NUnit.Framework;
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Capella;
-using Lantern.Beacon.Sync.Types.Deneb;
 using Lantern.Discv5.WireProtocol.Logging;
 using Microsoft.Extensions.Logging;
 using Moq;

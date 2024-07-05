@@ -1,14 +1,10 @@
-using System.Collections.Concurrent;
-using Google.Protobuf.Collections;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Types;
-using Lantern.Beacon.Sync.Types.Altair;
-using Lantern.Beacon.Sync.Types.Capella;
-using Lantern.Beacon.Sync.Types.Deneb;
-using Lantern.Beacon.Sync.Types.Phase0;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Capella;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
-using Nethermind.Libp2p.Core;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync;
@@ -16,38 +12,22 @@ namespace Lantern.Beacon.Sync;
 public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFactory) : ISyncProtocol
 {
     public ILogger<SyncProtocol>? Logger { get; } = loggerFactory.CreateLogger<SyncProtocol>(); 
-
-    public AltairLightClientStore AltairLightClientStore { get; private set; } = AltairLightClientStore.CreateDefault();
-
-    public CapellaLightClientStore CapellaLightClientStore { get; private set; } = CapellaLightClientStore.CreateDefault();
-
-    public DenebLightClientStore DenebLightClientStore { get; private set; } = DenebLightClientStore.CreateDefault();
     
-    public DenebLightClientOptimisticUpdate? DenebLightClientOptimisticUpdate { get; private set; } = DenebLightClientOptimisticUpdate.CreateDefault();
+    public AltairLightClientStore AltairLightClientStore { get; private set; } 
+
+    public CapellaLightClientStore CapellaLightClientStore { get; private set; }
+
+    public DenebLightClientStore DenebLightClientStore { get; private set; } 
     
-    public DenebLightClientFinalityUpdate? DenebLightClientFinalityUpdate { get; private set; } = DenebLightClientFinalityUpdate.CreateDefault();
+    public LightClientUpdatesByRangeRequest? LightClientUpdatesByRangeRequest { get; set; } 
+    
+    public DenebLightClientOptimisticUpdate PreviousLightClientOptimisticUpdate { get; set; } 
+    
+    public DenebLightClientFinalityUpdate PreviousLightClientFinalityUpdate { get; set; } 
 
     public SyncProtocolOptions Options => options;
     
-    public MetaData MetaData { get; private set; }
-    
     public ForkType ActiveFork { get; private set; } = ForkType.Phase0;
-    
-    public bool IsInitialized { get; private set; }
-    
-    public int PeerCount { get; set; }
-    
-    public IEnumerable<IProtocol> AppLayerProtocols { get; set; }
-    
-    public ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; } = new();
-
-    public LightClientUpdatesByRangeRequest? LightClientUpdatesByRangeRequest { get; private set; } =
-        LightClientUpdatesByRangeRequest.CreateFrom(0, 0);
-
-    // SyncProtocol implementation future change 
-    // Create a type for each object that is compatible with the latest hardfork 
-    // Create separate SSZ types for each hardfork 
-    // Get rid of separate stores, processors, and helpers for each hardfork 
 
     public void Init() 
     { 
@@ -68,19 +48,25 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             throw new Exception("Invalid preset type"); 
         } 
         
-        MetaData = MetaData.CreateDefault(); 
-    } 
+        AltairLightClientStore = AltairLightClientStore.CreateDefault();
+        CapellaLightClientStore = CapellaLightClientStore.CreateDefault();
+        DenebLightClientStore = DenebLightClientStore.CreateDefault();
+        PreviousLightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.CreateDefault();
+        PreviousLightClientFinalityUpdate = DenebLightClientFinalityUpdate.CreateDefault();
+    }
     
-    public void InitialiseStoreFromAltairBootstrap(byte[] trustedBlockRoot, AltairLightClientBootstrap bootstrap) 
-    { 
+    public bool InitialiseStoreFromAltairBootstrap(byte[] trustedBlockRoot, AltairLightClientBootstrap bootstrap)
+    {
         if (!AltairHelpers.IsValidLightClientHeader(bootstrap.Header)) 
         { 
-            throw new Exception("Invalid light client header in bootstrap"); 
+            Logger?.LogError("Invalid light client header in bootstrap");
+            return false;
         } 
         
         if (!trustedBlockRoot.SequenceEqual(bootstrap.Header.Beacon.GetHashTreeRoot(options.Preset))) 
         { 
-            throw new Exception("Invalid trusted block root in bootstrap"); 
+            Logger?.LogError("Invalid trusted block root in bootstrap");
+            return false;
         } 
         
         var leaf = bootstrap.CurrentSyncCommittee.GetHashTreeRoot(options.Preset); 
@@ -91,7 +77,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         
         if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root)) 
         { 
-            throw new Exception("Invalid sync committee branch in bootstrap"); 
+            Logger?.LogError("Invalid sync committee branch in bootstrap");
+            return false;
         } 
         
         AltairLightClientStore = new AltairLightClientStore( 
@@ -102,22 +89,25 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             bootstrap.Header, 
             0, 
             0
-        ); 
+        );
         
-        IsInitialized = true;
+        return true;
     } 
 
-    public void InitialiseStoreFromCapellaBootstrap(byte[] trustedBlockRoot, CapellaLightClientBootstrap bootstrap) 
+    public bool InitialiseStoreFromCapellaBootstrap(byte[] trustedBlockRoot, CapellaLightClientBootstrap bootstrap) 
     { 
         if (!CapellaHelpers.IsValidLightClientHeader(bootstrap.Header, options.Preset)) 
         { 
-            throw new Exception("Invalid light client header in bootstrap"); 
+            Logger?.LogError("Invalid light client header in bootstrap");
+            return false;
         } 
         
         if (!trustedBlockRoot.SequenceEqual(bootstrap.Header.Beacon.GetHashTreeRoot(options.Preset))) 
         { 
-            throw new Exception("Invalid trusted block root in bootstrap"); 
+            Logger?.LogError("Invalid trusted block root in bootstrap");
+            return false;
         } 
+        
         var leaf = bootstrap.CurrentSyncCommittee.GetHashTreeRoot(options.Preset); 
         var branch = bootstrap.CurrentSyncCommitteeBranch; 
         var depth = Constants.CurrentSyncCommitteeBranchDepth; 
@@ -126,7 +116,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         
         if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root)) 
         { 
-            throw new Exception("Invalid sync committee branch in bootstrap"); 
+            Logger?.LogError("Invalid sync committee branch in bootstrap");
+            return false;
         } 
         
         CapellaLightClientStore = new CapellaLightClientStore( 
@@ -139,19 +130,21 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             0
         ); 
         
-        IsInitialized = true;
+        return true;
     } 
 
-    public void InitialiseStoreFromDenebBootstrap(byte[] trustedBlockRoot, DenebLightClientBootstrap bootstrap) 
+    public bool InitialiseStoreFromDenebBootstrap(byte[] trustedBlockRoot, DenebLightClientBootstrap bootstrap) 
     { 
         if (!DenebHelpers.IsValidLightClientHeader(bootstrap.Header, options.Preset)) 
         { 
-            throw new Exception("Invalid light client header in bootstrap"); 
+            Logger?.LogError("Invalid light client header in bootstrap");
+            return false;
         } 
         
         if (!trustedBlockRoot.SequenceEqual(bootstrap.Header.Beacon.GetHashTreeRoot(options.Preset))) 
         { 
-            throw new Exception("Invalid trusted block root in bootstrap"); 
+            Logger?.LogError("Invalid trusted block root in bootstrap");
+            return false;
         } 
         
         var leaf = bootstrap.CurrentSyncCommittee.GetHashTreeRoot(options.Preset); 
@@ -162,7 +155,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         
         if (!Phase0Helpers.IsValidMerkleBranch(leaf, branch, depth, index, root)) 
         { 
-            throw new Exception("Invalid sync committee branch in bootstrap"); 
+            Logger?.LogError("Invalid sync committee branch in bootstrap");
+            return false;
         } 
         
         DenebLightClientStore = new DenebLightClientStore( 
@@ -175,7 +169,7 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             0
         ); 
         
-        IsInitialized = true;
+        return true;
     }
     
     public void SetActiveFork(ForkType forkType) 
@@ -188,18 +182,18 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         ActiveFork = forkType;
     }
     
-    public void SetLightClientUpdatesByRangeRequest(ulong startPeriod, ulong count) 
+    public bool IsNotInitialised()
     {
-        LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
-    }
-    
-    public void SetDenebLightClientOptimisticUpdate(DenebLightClientOptimisticUpdate optimisticUpdate) 
-    { 
-        DenebLightClientOptimisticUpdate = optimisticUpdate; 
-    }
-    
-    public void SetDenebLightClientFinalityUpdate(DenebLightClientFinalityUpdate finalityUpdate) 
-    { 
-        DenebLightClientFinalityUpdate = finalityUpdate; 
+        var result = ActiveFork switch
+        {
+            ForkType.Deneb => DenebLightClientStore.Equals(DenebLightClientStore.CreateDefault()),
+            ForkType.Capella => CapellaLightClientStore.Equals(CapellaLightClientStore.CreateDefault()),
+            ForkType.Bellatrix => AltairLightClientStore.Equals(AltairLightClientStore.CreateDefault()),
+            ForkType.Altair => AltairLightClientStore.Equals(AltairLightClientStore.CreateDefault()),
+            ForkType.Phase0 => false,
+            _ => false
+        };
+
+        return result;
     }
 }

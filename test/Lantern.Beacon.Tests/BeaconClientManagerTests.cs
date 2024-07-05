@@ -22,6 +22,7 @@ public class BeaconClientManagerTests
     private Mock<ManualDiscoveryProtocol> _manualDiscoveryProtocolMock;
     private Mock<ICustomDiscoveryProtocol> _mockCustomDiscoveryProtocol;
     private Mock<ISyncProtocol> _mockSyncProtocol;
+    private Mock<INetworkState> _mockNetworkState;
     private Mock<IIdentityManager> _mockIdentityManager;
     private Mock<IPeerFactory> _mockPeerFactory;
     private Mock<ILoggerFactory> _mockLoggerFactory;
@@ -37,11 +38,12 @@ public class BeaconClientManagerTests
         _mockCustomDiscoveryProtocol = new Mock<ICustomDiscoveryProtocol>();
         _mockSyncProtocol = new Mock<ISyncProtocol>();
         _mockIdentityManager = new Mock<IIdentityManager>();
+        _mockNetworkState = new Mock<INetworkState>();
         _mockPeerFactory = new Mock<IPeerFactory>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<BeaconClientManager>>();
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
-        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockNetworkState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 
     [Test]

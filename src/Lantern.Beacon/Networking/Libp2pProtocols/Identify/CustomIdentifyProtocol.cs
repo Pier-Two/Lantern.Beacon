@@ -8,7 +8,7 @@ using Nethermind.Libp2p.Protocols;
 
 namespace Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 
-public class CustomIdentifyProtocol(ISyncProtocol syncProtocol, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
+public class CustomIdentifyProtocol(INetworkState networkState, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly string _agentVersion = settings?.AgentVersion ?? IdentifyProtocolSettings.Default.AgentVersion!;
     private readonly string _protocolVersion = settings?.ProtocolVersion ?? IdentifyProtocolSettings.Default.ProtocolVersion!;
@@ -20,7 +20,7 @@ public class CustomIdentifyProtocol(ISyncProtocol syncProtocol, IdentifyProtocol
     {
         _logger?.LogDebug("Dial");
 
-        Nethermind.Libp2p.Protocols.Identify.Dto.Identify identity = await downChannel.ReadPrefixedProtobufAsync(Nethermind.Libp2p.Protocols.Identify.Dto.Identify.Parser);
+        var identity = await downChannel.ReadPrefixedProtobufAsync(Nethermind.Libp2p.Protocols.Identify.Dto.Identify.Parser);
     
         _logger?.LogDebug("Received peer info: {identify}", identity);
         context.RemotePeer.Identity = new Identity(PublicKey.Parser.ParseFrom(identity.PublicKey));
@@ -30,7 +30,7 @@ public class CustomIdentifyProtocol(ISyncProtocol syncProtocol, IdentifyProtocol
             throw new PeerConnectionException();
         }
         
-        syncProtocol.PeerProtocols.TryAdd(context.RemotePeer.Address.GetPeerId(), identity.Protocols);
+        networkState.PeerProtocols.TryAdd(context.RemotePeer.Address.GetPeerId(), identity.Protocols);
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
@@ -44,9 +44,10 @@ public class CustomIdentifyProtocol(ISyncProtocol syncProtocol, IdentifyProtocol
             PublicKey = context.LocalPeer.Identity.PublicKey.ToByteString(),
             ListenAddrs = { ByteString.CopyFrom(context.LocalEndpoint.Get<IP>().ToBytes()) },
             ObservedAddr = ByteString.CopyFrom(context.RemoteEndpoint.Get<IP>().ToBytes()), 
-            Protocols = { syncProtocol.AppLayerProtocols.Select(p => p.Id) }
+            Protocols = { networkState.AppLayerProtocols.Select(p => p.Id) }
         };
-        byte[] ar = new byte[identify.CalculateSize()];
+        
+        var ar = new byte[identify.CalculateSize()];
         identify.WriteTo(ar);
 
         await downChannel.WriteSizeAndDataAsync(ar);
