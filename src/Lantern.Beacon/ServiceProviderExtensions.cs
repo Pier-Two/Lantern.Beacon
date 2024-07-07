@@ -2,7 +2,6 @@ using Lantern.Discv5.WireProtocol;
 using Microsoft.Extensions.DependencyInjection;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols.Pubsub;
-using Nethermind.Libp2p.Stack;
 
 namespace Lantern.Beacon;
 

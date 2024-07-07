@@ -7,7 +7,6 @@ using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Types;
-using Lantern.Beacon.Sync.Types.Basic;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
@@ -24,7 +23,7 @@ namespace Lantern.Beacon;
 public class BeaconClientManager(BeaconClientOptions clientOptions, 
     ManualDiscoveryProtocol discoveryProtocol,
     ICustomDiscoveryProtocol customDiscoveryProtocol,
-    INetworkState networkState,
+    IPeerState peerState,
     ISyncProtocol syncProtocol,
     IPeerFactory peerFactory,
     IIdentityManager identityManager,
@@ -32,7 +31,6 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 {
     private readonly ILogger<BeaconClientManager> _logger = loggerFactory.CreateLogger<BeaconClientManager>();
     private readonly ConcurrentQueue<Multiaddress> _peersToDial = new(); 
-    private readonly ConcurrentBag<IRemotePeer> _livePeers = []; 
     private CancellationTokenSource? _cancellationTokenSource; 
     public ILocalPeer? LocalPeer { get; private set; } 
 
@@ -41,18 +39,18 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try 
         { 
             var result = await customDiscoveryProtocol.InitAsync(); 
-            
+
             if (!result) 
             { 
                 _logger.LogError("Failed to start peer manager"); 
                 return; 
             } 
             
-            var identity = new Identity(); 
+            var identity = new Identity();
             
             LocalPeer = peerFactory.Create(identity); 
-            LocalPeer.Address.ReplaceOrAdd<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value); 
-            LocalPeer.Address.ReplaceOrAdd<P2P>(identityManager.Record.ToPeerId()); 
+            LocalPeer.Address.Add<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
+            LocalPeer.Address.Add<P2P>(identityManager.Record.ToPeerId());
             
             if(clientOptions.Bootnodes.Length > 0) 
             { 
@@ -116,7 +114,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
-                Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(), networkState.PeerCount);
+                Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(), peerState.LivePeers.Count);
 
             await Task.Delay(Config.SecondsPerSlot * 1000, token);
         }
@@ -131,7 +129,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         {
             await Task.Delay(1000, token);
             
-            if (networkState.PeerCount < clientOptions.TargetPeerCount && _peersToDial.IsEmpty)
+            if (peerState.LivePeers.Count < clientOptions.TargetPeerCount && _peersToDial.IsEmpty)
             {
                 _logger.LogInformation("Discovering more peers...");
 
@@ -188,11 +186,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     {
         while (!token.IsCancellationRequested)
         {
-            if (networkState.PeerCount <= 0 || _livePeers.IsEmpty) 
+            await Task.Delay(1000, token);
+            
+            if (peerState.LivePeers.IsEmpty) 
                 continue;
             
-            var peer = _livePeers.First();
-            await RunSyncProtocolAsync(peer, token);
+            var peer = peerState.LivePeers.First();
+            await RunSyncProtocolAsync(peer.Value, token);
         }
     }
 
@@ -214,11 +214,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         {
             return false;
         }
+        
         foreach (var peer in newPeers)
         {
             _logger.LogDebug("New peer added: {Peer}", peer);
             _peersToDial.Enqueue(peer);
         }
+        
         return true;
     }
 
@@ -236,10 +238,9 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             return;
         }
         
-        var peerId = (Multihash)peer.Get<P2P>().Value;
         var ip4 = peer.Get<IP4>().Value.ToString();
         var tcpPort = peer.Get<TCP>().Value.ToString();
-        var peerIdString = peerId.ToString(MultibaseEncoding.Base58Btc);
+        var peerIdString = peer.GetPeerId().ToString();
         
         try
         {
@@ -254,7 +255,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 await dialTask.Result.DialAsync<CustomIdentifyProtocol>(token);
                 
                 var remotePeerId = dialTask.Result.Address.GetPeerId();
-                var result = networkState.PeerProtocols.TryRemove(remotePeerId, out var peerProtocols);
+                var result = peerState.PeerProtocols.TryRemove(remotePeerId!, out var peerProtocols);
 
                 if (!result)
                 {
@@ -262,18 +263,18 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     return;
                 }
                 
-                var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols.Contains(protocol));
+                var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
                 
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
                     
-                    _livePeers.Add(dialTask.Result);
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
-                    networkState.IncrementPeerCount();
+                    peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
                 else
                 {
+                    _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} does not support all light client protocols. Disconnecting...", ip4, tcpPort, peerIdString);
                     await dialTask.Result.DialAsync<GoodbyeProtocol>(token);
                     await dialTask.Result.DisconnectAsync();
                 }
@@ -299,34 +300,35 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         {
             await peer.DialAsync<LightClientBootstrapProtocol>(token);
 
-            if (syncProtocol.IsNotInitialised())
+            if (!syncProtocol.IsInitialised)
             {
                 _logger.LogWarning("Failed to initialize light client. Disconnecting peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", 
                     peer.Address.Get<IP4>().Value.ToString(), peer.Address.Get<TCP>().Value.ToString(), peer.Address.Get<P2P>().Value.ToString());
                 await peer.DialAsync<GoodbyeProtocol>(token);
-                return;
             }
-            
-            _logger.LogInformation("Successfully initialised light client. Starting sync"); 
-            var activeFork = syncProtocol.ActiveFork;
-            
-            switch (activeFork)
+            else
             {
-                case ForkType.Deneb:
-                    await SyncDenebForkAsync(peer, token);
-                    break;
-                case ForkType.Capella:
-                    await SyncCapellaForkAsync(peer, token);
-                    break;
-                case ForkType.Bellatrix:
-                    await SyncAltairForkAsync(peer, token);
-                    break;
-                case ForkType.Altair:
-                    await SyncAltairForkAsync(peer, token);
-                    break;
-                case ForkType.Phase0:
-                    _logger.LogWarning("Active fork is Phase0. Must be on Altair or above to run sync protocol");
-                    break;
+                _logger.LogInformation("Successfully initialised light client. Starting sync"); 
+                var activeFork = syncProtocol.ActiveFork;
+            
+                switch (activeFork)
+                {
+                    case ForkType.Deneb:
+                        await SyncDenebForkAsync(peer, token);
+                        break;
+                    case ForkType.Capella:
+                        await SyncCapellaForkAsync(peer, token);
+                        break;
+                    case ForkType.Bellatrix:
+                        await SyncAltairForkAsync(peer, token);
+                        break;
+                    case ForkType.Altair:
+                        await SyncAltairForkAsync(peer, token);
+                        break;
+                    case ForkType.Phase0:
+                        _logger.LogWarning("Active fork is Phase0. Must be on Altair or above to run sync protocol");
+                        break;
+                }
             }
         }
         catch (Exception ex)

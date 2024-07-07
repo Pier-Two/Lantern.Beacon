@@ -12,7 +12,7 @@ namespace Lantern.Beacon.Tests;
 [TestFixture]
  public class BeaconClientTests
 {
-    private Mock<INetworkState> _mockNetworkState;
+    private Mock<IPeerState> _mockNetworkState;
     private Mock<IPeerFactoryBuilder> _mockPeerFactoryBuilder;
     private Mock<IBeaconClientManager> _mockBeaconClientManager;
     private Mock<ILoggerFactory> _mockLoggerFactory;
@@ -25,7 +25,7 @@ namespace Lantern.Beacon.Tests;
     [SetUp]
     public void Setup()
     {
-        _mockNetworkState = new Mock<INetworkState>();
+        _mockNetworkState = new Mock<IPeerState>();
         _mockPeerFactoryBuilder = new Mock<IPeerFactoryBuilder>();
         _mockBeaconClientManager = new Mock<IBeaconClientManager>();
         _mockLogger = new Mock<ILogger<BeaconClient>>();
@@ -34,7 +34,7 @@ namespace Lantern.Beacon.Tests;
         _mockGossipSubManager = new Mock<IGossipSubManager>();
         _mockServiceProvider = new Mock<IServiceProvider>();
 
-        _mockBeaconClientManager.Setup(bc => bc.InitAsync(It.IsAny<CancellationToken>()));
+        _mockBeaconClientManager.Setup(bc => bc.InitAsync(new CancellationToken()));
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
 
@@ -51,7 +51,7 @@ namespace Lantern.Beacon.Tests;
     {
         var cancellationToken = new CancellationToken();
         
-        await _beaconClient.StartAsync(cancellationToken);
+        _beaconClient.StartAsync(cancellationToken);
         
         _mockBeaconClientManager.Verify(pm => pm.StartAsync(cancellationToken), Times.Once);
     }

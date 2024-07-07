@@ -1,4 +1,5 @@
 using Lantern.Beacon.Networking.Codes;
+using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Sync;
 
 namespace Lantern.Beacon.Networking.Encoding;

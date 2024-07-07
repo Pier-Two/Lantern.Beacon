@@ -113,7 +113,14 @@ internal static class Program
         {
             builder
                 .SetMinimumLevel(LogLevel.Information)
-                //.AddFilter((category, level) => level != LogLevel.Error && level >= LogLevel.Information)
+                // .AddFilter((category, level) =>
+                // {
+                //     if (category.StartsWith("Nethermind.Libp2p"))
+                //     {
+                //         return false;
+                //     }
+                //     return level >= LogLevel.Information;
+                // })
                 .AddSimpleConsole(l =>
                 {
                     l.SingleLine = true;

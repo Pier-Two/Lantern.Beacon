@@ -28,6 +28,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
     public SyncProtocolOptions Options => options;
     
     public ForkType ActiveFork { get; private set; } = ForkType.Phase0;
+    
+    public bool IsInitialised { get; private set; } = false;
 
     public void Init() 
     { 
@@ -91,6 +93,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             0
         );
         
+        IsInitialised = true;
+        
         return true;
     } 
 
@@ -129,6 +133,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             0, 
             0
         ); 
+        
+        IsInitialised = true;
         
         return true;
     } 
@@ -169,6 +175,8 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             0
         ); 
         
+        IsInitialised = true;
+        
         return true;
     }
     
@@ -180,20 +188,5 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         }
         
         ActiveFork = forkType;
-    }
-    
-    public bool IsNotInitialised()
-    {
-        var result = ActiveFork switch
-        {
-            ForkType.Deneb => DenebLightClientStore.Equals(DenebLightClientStore.CreateDefault()),
-            ForkType.Capella => CapellaLightClientStore.Equals(CapellaLightClientStore.CreateDefault()),
-            ForkType.Bellatrix => AltairLightClientStore.Equals(AltairLightClientStore.CreateDefault()),
-            ForkType.Altair => AltairLightClientStore.Equals(AltairLightClientStore.CreateDefault()),
-            ForkType.Phase0 => false,
-            _ => false
-        };
-
-        return result;
     }
 }

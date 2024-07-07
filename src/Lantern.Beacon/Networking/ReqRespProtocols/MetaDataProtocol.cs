@@ -10,7 +10,7 @@ using SszSharp;
 
 namespace Lantern.Beacon.Networking.ReqRespProtocols;
 
-public class MetaDataProtocol(INetworkState networkState, ILoggerFactory? loggerFactory = null) : IProtocol
+public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<MetaDataProtocol>();
     
@@ -60,7 +60,7 @@ public class MetaDataProtocol(INetworkState networkState, ILoggerFactory? logger
         try
         {
             var responseCode = (int)ResponseCodes.Success;
-            var metaData = networkState.MetaData;
+            var metaData = peerState.MetaData;
             var sszData = MetaData.Serialize(metaData);
             var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
             rawData = new ReadOnlySequence<byte>(payload);

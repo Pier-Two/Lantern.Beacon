@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using Snappier;
 
-namespace Lantern.Beacon;
+namespace Lantern.Beacon.Networking.Encoding;
 
 public static class SnappyHelper
 {

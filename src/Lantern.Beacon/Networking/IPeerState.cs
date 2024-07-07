@@ -5,19 +5,15 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon.Networking;
 
-public interface INetworkState
+public interface IPeerState
 {
     ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; }
+    
+    ConcurrentDictionary<PeerId, IRemotePeer> LivePeers { get; }
     
     IEnumerable<IProtocol> AppLayerProtocols { get; }
     
     MetaData MetaData { get; }
     
-    int PeerCount { get; }
-    
     void Init(IEnumerable<IProtocol> appLayerProtocols);
-
-    void IncrementPeerCount();
-
-    void DecrementPeerCount();
 }
