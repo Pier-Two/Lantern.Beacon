@@ -1,6 +1,3 @@
-[submodule "lib/dotnet-libp2p"]
-	path = lib/dotnet-libp2p
-	url = https://github.com/NethermindEth/dotnet-libp2p.git
 [submodule "lib/cortex"]
 	path = lib/cortex
 	url = https://github.com/Pier-Two/cortex.git

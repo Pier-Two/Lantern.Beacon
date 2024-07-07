@@ -12,7 +12,7 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(ISyncProtocol syncProtocol, IPeerFactoryBuilder peerFactoryBuilder, INetworkState networkState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(ISyncProtocol syncProtocol, IPeerFactoryBuilder peerFactoryBuilder, IPeerState peerState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -21,7 +21,7 @@ public class BeaconClient(ISyncProtocol syncProtocol, IPeerFactoryBuilder peerFa
         try
         {
             syncProtocol.Init();
-            networkState.Init(peerFactoryBuilder.AppLayerProtocols);
+            peerState.Init(peerFactoryBuilder.AppLayerProtocols);
             gossipSubManager.Init();
 
             if (gossipSubManager.LightClientFinalityUpdate == null || gossipSubManager.LightClientOptimisticUpdate == null)

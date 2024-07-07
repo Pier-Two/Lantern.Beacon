@@ -11,24 +11,34 @@ obj/
 # User-specific settings
 *.suo
 *.user
+
 # Visual Studio settings
 *.vs/
 *.vscode/
+
 # Generated code
 Generated_Code/
+
 # .NET Core/Nuget packages
 bin/
 obj/
 *.nupkg
-*.nuget.config
-nuget.config
+
 # Runtime store files
 *.pidb
+
 # JetBrains Rider settings
 .idea/
 
+# Ignore special files
 .cursorignore
 .DS_Store
+
+# Commented out the following to include nuget.config in the repository
+#*.nuget.config
+#nuget.config
+
+# Additional settings
 test.yml
 sonar-project copy.properties
 *.yml_*

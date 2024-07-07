@@ -21,7 +21,7 @@ public static class BeaconClientServiceConfiguration
         services.AddSingleton<ICustomDiscoveryProtocol, CustomDiscoveryProtocol>();
         services.AddSingleton<IBeaconClientManager, BeaconClientManager>();
         services.AddSingleton<ISyncProtocol, SyncProtocol>();
-        services.AddSingleton<INetworkState, NetworkState>();
+        services.AddSingleton<IPeerState, PeerState>();
         services.AddSingleton<IBeaconClient, BeaconClient>();
         services.AddSingleton<IGossipSubManager, GossipSubManager>();
         

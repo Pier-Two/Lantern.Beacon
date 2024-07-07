@@ -1,6 +1,5 @@
 using Lantern.Discv5.Enr;
 using Multiformats.Address;
-using Nethermind.Libp2p.Core.Discovery;
 
 namespace Lantern.Beacon.Networking.Discovery;
 

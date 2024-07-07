@@ -1,5 +1,4 @@
 using Google.Protobuf;
-using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
@@ -8,7 +7,7 @@ using Nethermind.Libp2p.Protocols;
 
 namespace Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 
-public class CustomIdentifyProtocol(INetworkState networkState, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
+public class CustomIdentifyProtocol(IPeerState peerState, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly string _agentVersion = settings?.AgentVersion ?? IdentifyProtocolSettings.Default.AgentVersion!;
     private readonly string _protocolVersion = settings?.ProtocolVersion ?? IdentifyProtocolSettings.Default.ProtocolVersion!;
@@ -30,7 +29,7 @@ public class CustomIdentifyProtocol(INetworkState networkState, IdentifyProtocol
             throw new PeerConnectionException();
         }
         
-        networkState.PeerProtocols.TryAdd(context.RemotePeer.Address.GetPeerId(), identity.Protocols);
+        peerState.PeerProtocols.TryAdd(context.RemotePeer.Address.GetPeerId(), identity.Protocols);
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
@@ -44,7 +43,7 @@ public class CustomIdentifyProtocol(INetworkState networkState, IdentifyProtocol
             PublicKey = context.LocalPeer.Identity.PublicKey.ToByteString(),
             ListenAddrs = { ByteString.CopyFrom(context.LocalEndpoint.Get<IP>().ToBytes()) },
             ObservedAddr = ByteString.CopyFrom(context.RemoteEndpoint.Get<IP>().ToBytes()), 
-            Protocols = { networkState.AppLayerProtocols.Select(p => p.Id) }
+            Protocols = { peerState.AppLayerProtocols.Select(p => p.Id) }
         };
         
         var ar = new byte[identify.CalculateSize()];

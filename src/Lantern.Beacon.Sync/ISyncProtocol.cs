@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Google.Protobuf.Collections;
 using Lantern.Beacon.Sync.Types;
 using Lantern.Beacon.Sync.Types.Basic;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
@@ -7,7 +6,6 @@ using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
-using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon.Sync;
 
@@ -31,6 +29,8 @@ public interface ISyncProtocol
     
     ForkType ActiveFork { get; }
     
+    bool IsInitialised { get; }
+    
     void Init();
 
     bool InitialiseStoreFromAltairBootstrap(byte[] trustedBlockRoot, AltairLightClientBootstrap bootstrap);
@@ -40,6 +40,4 @@ public interface ISyncProtocol
     bool InitialiseStoreFromDenebBootstrap(byte[] trustedBlockRoot, DenebLightClientBootstrap bootstrap);
     
     void SetActiveFork(ForkType forkType);
-
-    bool IsNotInitialised();
 }

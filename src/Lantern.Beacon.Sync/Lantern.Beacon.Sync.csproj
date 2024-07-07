@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\lib\cortex\src\Cortex.Containers\Cortex.Containers.csproj" />
-      <ProjectReference Include="..\..\lib\dotnet-libp2p\src\libp2p\Libp2p.Core\Libp2p.Core.csproj" />
       <ProjectReference Include="..\..\lib\SszSharp\SszSharp\SszSharp.csproj" />
     </ItemGroup>
 
