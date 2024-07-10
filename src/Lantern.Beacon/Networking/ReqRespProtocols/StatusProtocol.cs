@@ -29,12 +29,22 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
         var payload = ReqRespHelpers.EncodeRequest(sszData);
         var rawData = new ReadOnlySequence<byte>(payload);
         
+        _logger?.LogDebug("Sending status request to {PeerId} with forkDigest={ForkDigest}, finalizedRoot={FinalizedRoot}, finalizedEpoch={FinalizedEpoch}, headRoot={HeadRoot}, headSlot={HeadSlot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(localStatus.ForkDigest), Convert.ToHexString(localStatus.FinalizedRoot), localStatus.FinalizedEpoch, Convert.ToHexString(localStatus.HeadRoot), localStatus.HeadSlot);
+        
         await downChannel.WriteAsync(rawData);
         var receivedData = new List<byte[]>();
         
         await foreach (var readOnlySequence in downChannel.ReadAllAsync())
         {
             receivedData.Add(readOnlySequence.ToArray());
+        }
+        
+        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+        {
+            // Log that we received an empty or null response
+            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
         }
         
         var flatData = receivedData.SelectMany(x => x).ToArray();

@@ -49,8 +49,9 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             var identity = new Identity();
             
             LocalPeer = peerFactory.Create(identity); 
-            LocalPeer.Address.Add<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
-            LocalPeer.Address.Add<P2P>(identityManager.Record.ToPeerId());
+            
+            LocalPeer.Address.ReplaceOrAdd<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
+            LocalPeer.Address.ReplaceOrAdd<P2P>(identityManager.Record.ToPeerId());
             
             if(clientOptions.Bootnodes.Length > 0) 
             { 
@@ -114,7 +115,8 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
                 AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
-                Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(), peerState.LivePeers.Count);
+                Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(), 
+                peerState.LivePeers.Count);
 
             await Task.Delay(Config.SecondsPerSlot * 1000, token);
         }
@@ -127,12 +129,14 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
         while (!token.IsCancellationRequested)
         {
+            _logger.LogInformation("Checking peer count...");
             await Task.Delay(1000, token);
             
-            if (peerState.LivePeers.Count < clientOptions.TargetPeerCount && _peersToDial.IsEmpty)
-            {
-                _logger.LogInformation("Discovering more peers...");
+            if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
+                continue;
 
+            if (_peersToDial.IsEmpty)
+            {
                 if (LocalPeer == null)
                 {
                     _logger.LogError("Local peer is null. Cannot discover new peers");
@@ -141,44 +145,42 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 try
                 {
-                    _logger.LogDebug("Requesting discovered nodes for local peer: {LocalPeerAddress}", LocalPeer.Address);
+                    _logger.LogInformation("Discovering more peers...");
                     await customDiscoveryProtocol.GetDiscoveredNodesAsync(LocalPeer.Address, token);
-                    _logger.LogDebug("Discovered nodes successfully retrieved");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error occurred during peer discovery");
                 }
             }
-
-            var dialTasks = new List<Task>();
-            
-            while (!token.IsCancellationRequested && !_peersToDial.IsEmpty)
+            else
             {
+                _logger.LogInformation("Dialing peers...");
+                var dialingTasks = new List<Task>();
+
                 while (_peersToDial.TryDequeue(out var peerAddress))
                 {
                     await semaphore.WaitAsync(token);
                     
-                    if (peerAddress == null) 
+                    if (peerAddress == null)
+                    {
+                        semaphore.Release();
                         continue;
+                    }
                     
-                    dialTasks.Add(DialPeerWithThrottling(peerAddress, semaphore, token));
-                    _logger.LogDebug("Dialing peer at address: {PeerAddress}", peerAddress);
+                    var dialTask = DialPeerWithThrottling(peerAddress, semaphore, token);
+                    dialingTasks.Add(dialTask); 
                 }
                 
-                try
+                if (dialingTasks.Count > 0)
                 {
-                    await Task.WhenAll(dialTasks);
+                    _logger.LogInformation("Waiting for {Count} dialing tasks to complete", dialingTasks.Count);
+                    await Task.WhenAll(dialingTasks);
+                    _logger.LogInformation("Finished dialing all peers");
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error occurred while dialing peers");
-                }
-
-                dialTasks.Clear();
             }
         }
-
+        
         _logger.LogInformation("Stopping peer discovery...");
     }
     
@@ -231,19 +233,29 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             _logger.LogError("Local peer is null. Cannot dial peer");
             return;
         }
-        
+
         if (peer == null)
         {
             _logger.LogError("Peer's address is null. Cannot dial discovered peer");
             return;
         }
-        
+
         var ip4 = peer.Get<IP4>().Value.ToString();
         var tcpPort = peer.Get<TCP>().Value.ToString();
-        var peerIdString = peer.GetPeerId().ToString();
-        
+        var peerId = peer.GetPeerId();
+
+        if(peerId == null)
+        {
+            _logger.LogError("Peer ID is null for address /ip4/{Ip4}/tcp/{TcpPort}. Cannot dial peer", ip4, tcpPort);
+            return;
+        }
+
+        var peerIdString = peerId.ToString();
+
         try
         {
+            _logger.LogDebug("Dialing peer at address: {PeerAddress}, {Count} peers remaining for dialing", peer, _peersToDial.Count);
+
             var dialTask = LocalPeer.DialAsync(peer, token);
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
             var completedTask = await Task.WhenAny(dialTask, timeoutTask);
@@ -251,31 +263,28 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             if (completedTask != timeoutTask)
             {
                 _logger.LogInformation("Successfully dialed peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
-                
-                await dialTask.Result.DialAsync<CustomIdentifyProtocol>(token);
-                
+
                 var remotePeerId = dialTask.Result.Address.GetPeerId();
                 var result = peerState.PeerProtocols.TryRemove(remotePeerId!, out var peerProtocols);
-
+                
                 if (!result)
                 {
                     _logger.LogInformation("No protocols found for peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
                     return;
                 }
-                
+
                 var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
-                
+
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    
+
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
                 else
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} does not support all light client protocols. Disconnecting...", ip4, tcpPort, peerIdString);
-                    await dialTask.Result.DialAsync<GoodbyeProtocol>(token);
                     await dialTask.Result.DisconnectAsync();
                 }
             }

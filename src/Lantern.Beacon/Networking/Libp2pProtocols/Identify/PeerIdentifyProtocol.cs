@@ -7,11 +7,11 @@ using Nethermind.Libp2p.Protocols;
 
 namespace Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 
-public class CustomIdentifyProtocol(IPeerState peerState, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
+public class PeerIdentifyProtocol(IPeerState peerState, IdentifyProtocolSettings? settings = null, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly string _agentVersion = settings?.AgentVersion ?? IdentifyProtocolSettings.Default.AgentVersion!;
     private readonly string _protocolVersion = settings?.ProtocolVersion ?? IdentifyProtocolSettings.Default.ProtocolVersion!;
-    private readonly ILogger? _logger = loggerFactory?.CreateLogger<CustomIdentifyProtocol>();
+    private readonly ILogger? _logger = loggerFactory?.CreateLogger<PeerIdentifyProtocol>();
     
     public string Id => "/ipfs/id/1.0.0";
     

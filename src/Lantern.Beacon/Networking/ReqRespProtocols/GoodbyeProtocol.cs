@@ -30,6 +30,14 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
             receivedData.Add(readOnlySequence.ToArray());
         }
         
+        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+        {
+            // Log that we received an empty or null response
+            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
+        }
+        
         var flatData = receivedData.SelectMany(x => x).ToArray();
         
         if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
