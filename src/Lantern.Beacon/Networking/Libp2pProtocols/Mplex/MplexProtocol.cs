@@ -383,6 +383,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                 {
                     _logger?.LogDebug("Stream {streamId} (initiator): Received ResetReceiver", streamId);
                     resetReceiver.IsClosed = true; 
+                    
+                    if(resetReceiver.Channel != null)
+                        await resetReceiver.Channel.CloseAsync();
                 }
                 break;
             case MplexMessageFlag.ResetInitiator:
@@ -394,6 +397,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                 {
                     _logger?.LogDebug("Stream {streamId} (receiver): Received ResetInitiator", streamId);
                     resetInitiator.IsClosed = true;
+                    
+                    if(resetInitiator.Channel != null)
+                        await resetInitiator.Channel.CloseAsync();
                 }
                 break;
         }

@@ -14,8 +14,6 @@ using Lantern.Discv5.WireProtocol.Identity;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address;
 using Multiformats.Address.Protocols;
-using Multiformats.Base;
-using Multiformats.Hash;
 using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;

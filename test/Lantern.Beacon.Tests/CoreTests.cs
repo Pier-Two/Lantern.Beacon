@@ -15,7 +15,7 @@ public class CoreTests
     [Test]
     public void Test()
     {
-        var str = "/eth2/beacon_chain/req/goodbye/1/ssz_snappy";
+        var str = "/ipfs/id/1.0.0";
         int len = Encoding.UTF8.GetByteCount(str) + 1;
         byte[] buf = new byte[VarInt.GetSizeInBytes(len) + len];
         int offset = 0;
@@ -24,6 +24,7 @@ public class CoreTests
         buf[^1] = 0x0a;
         var buffer = new ReadOnlySequence<byte>(buf);
         Console.WriteLine(Convert.ToHexString(buffer.ToArray()));
+        Console.WriteLine(buffer.Length);
         
     }
 }

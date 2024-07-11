@@ -144,7 +144,8 @@ internal static class Program
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
                     options.TcpPort = 9000;
-                    //options.Bootnodes = ["/ip4/86.111.48.168/tcp/9000/p2p/16Uiu2HAmAcTg3qN9v3r3YiboyZfuxN9tpppY1PS2JfUjyieAaTYd", "/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
+                    options.Bootnodes = ["/ip4/54.38.80.34/tcp/9000/p2p/16Uiu2HAm8t1aQArVwrJ9fwHRGXL2sXumPGTvmsne14piPaFJ5FYi"];
+                    //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9004/p2p/16Uiu2HAkwi3Xb62zddjuJiFrsJasFZXygrxebHXqTkqPdJYEJs4R"];
                     //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
                     //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
                 });
