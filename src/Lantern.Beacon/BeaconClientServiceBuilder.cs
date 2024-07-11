@@ -40,6 +40,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
                 .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>()
                 .AddAppLayerProtocol<LightClientUpdatesByRangeProtocol>())
             .AddScoped<PubsubRouter>()
+            .AddScoped<MultiplexerSettings>()
             .AddScoped<IdentifyProtocolSettings>(_ => new IdentifyProtocolSettings
             {
                 AgentVersion = LanternIdentifyProtocolSettings.AgentVersion,

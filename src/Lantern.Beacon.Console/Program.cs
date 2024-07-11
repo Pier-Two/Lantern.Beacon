@@ -144,10 +144,8 @@ internal static class Program
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
                     options.TcpPort = 9000;
-                    options.Bootnodes =
-                        ["/ip4/73.189.35.128/tcp/9000/p2p/16Uiu2HAm6yuAQ9SDPpf8kcgg3btSPp1ysgVM61Azv97L2x4m3YCe"];
+                    //options.Bootnodes = ["/ip4/86.111.48.168/tcp/9000/p2p/16Uiu2HAmAcTg3qN9v3r3YiboyZfuxN9tpppY1PS2JfUjyieAaTYd", "/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
                     //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
-                    //options.Bootnodes = ["/ip4/135.148.55.199/tcp/9001/p2p/16Uiu2HAmLbZBHa9dXgvfLN76Z1mnw7M5AjbLz8gAxSUpLG1ph2dr"];
                     //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
                 });
                 beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
@@ -155,7 +153,7 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("afd942f90e0a31c382c04a66259536af48b97dc8761733e1b5354f8793b04aef");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("e6a9a01ed7705658b283d1b5cd7b4c4c2ad2030381bd8d4ab14c77fa3968027a");
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

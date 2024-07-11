@@ -7,4 +7,6 @@ public class ChannelState(IChannel? channel = null, IChannelRequest? request = n
     public IChannel? Channel { get; } = channel;
     
     public IChannelRequest? Request { get; } = request;
+    
+    public bool IsClosed { get; set; }
 }

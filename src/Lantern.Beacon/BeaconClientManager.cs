@@ -129,11 +129,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
         while (!token.IsCancellationRequested)
         {
-            _logger.LogInformation("Checking peer count...");
             await Task.Delay(1000, token);
-            
+
             if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
+            {
+                _logger.LogInformation("Target peer count reached. Stopping peer discovery...");
                 continue;
+            }
 
             if (_peersToDial.IsEmpty)
             {
@@ -174,7 +176,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 
                 if (dialingTasks.Count > 0)
                 {
-                    _logger.LogInformation("Waiting for {Count} dialing tasks to complete", dialingTasks.Count);
+                    _logger.LogDebug("Waiting for {Count} dialing tasks to complete", dialingTasks.Count);
                     await Task.WhenAll(dialingTasks);
                     _logger.LogInformation("Finished dialing all peers");
                 }
@@ -273,6 +275,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     return;
                 }
 
+                // Make it so that if not the light client has not yet initialised then if the peer supports bootstrap protocol at least then still connect to it 
                 var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
 
                 if (supportsLightClientProtocols)

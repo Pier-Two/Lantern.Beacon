@@ -36,6 +36,7 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
                 .Over<MultistreamProtocol>()
                 .AddAppLayerProtocol<PeerIdentifyProtocol>()
                 .AddAppLayerProtocol<GossipsubProtocol>()
+                .AddAppLayerProtocol<GossipsubProtocolV11>()
                 .AddAppLayerProtocol<FloodsubProtocol>();
     }
 }
