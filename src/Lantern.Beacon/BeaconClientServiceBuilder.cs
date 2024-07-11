@@ -7,6 +7,7 @@ using Lantern.Discv5.WireProtocol.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nethermind.Libp2p.Core;
+using Nethermind.Libp2p.Protocols;
 using Nethermind.Libp2p.Protocols.Pubsub;
 using Nethermind.Libp2p.Stack;
 
@@ -29,17 +30,22 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
     public IBeaconClientServiceBuilder AddLibp2pProtocol(
         Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup)
     {
-        services.AddScoped(sp => factorySetup(new Libp2pPeerFactoryBuilder(sp))
+        services.AddScoped(sp => factorySetup(new BeaconClientPeerFactoryBuilder(sp))
                 .AddAppLayerProtocol<PingProtocol>()
                 .AddAppLayerProtocol<StatusProtocol>()
                 .AddAppLayerProtocol<MetaDataProtocol>()
                 .AddAppLayerProtocol<GoodbyeProtocol>()
-                .AddAppLayerProtocol<CustomIdentifyProtocol>()
                 .AddAppLayerProtocol<LightClientBootstrapProtocol>()
                 .AddAppLayerProtocol<LightClientFinalityUpdateProtocol>()
                 .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>()
                 .AddAppLayerProtocol<LightClientUpdatesByRangeProtocol>())
             .AddScoped<PubsubRouter>()
+            .AddScoped<MultiplexerSettings>()
+            .AddScoped<IdentifyProtocolSettings>(_ => new IdentifyProtocolSettings
+            {
+                AgentVersion = LanternIdentifyProtocolSettings.AgentVersion,
+                ProtocolVersion = LanternIdentifyProtocolSettings.ProtocolVersion
+            })
             .AddScoped(sp => sp.GetService<IPeerFactoryBuilder>()!.Build());
         
         return this;

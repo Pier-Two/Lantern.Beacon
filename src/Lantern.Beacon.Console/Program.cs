@@ -83,14 +83,15 @@ internal static class Program
         {
             UdpPort = 4555
         };
-        var sessionKeys = new SessionKeys(Convert.FromHexString("F57EC7A295ED7F7FE54DD155C36F64384FC78D7D48C20FB7D415DE4E99575EA3"));
-        var sessionOptions = new SessionOptions
-        {
-            SessionKeys = sessionKeys,
-            Signer = new IdentitySignerV4(sessionKeys.PrivateKey),
-            Verifier = new IdentityVerifierV4(),
-            SessionCacheSize = 1000
-        };
+        //var sessionKeys = new SessionKeys(Convert.FromHexString("F57EC7A295ED7F7FE54DD155C36F64384FC78D7D48C20FB7D415DE4E99575EA3"));
+        // var sessionOptions = new SessionOptions
+        // {
+        //     SessionKeys = sessionKeys,
+        //     Signer = new IdentitySignerV4(sessionKeys.PrivateKey),
+        //     Verifier = new IdentityVerifierV4(),
+        //     SessionCacheSize = 1000
+        // };
+        var sessionOptions = SessionOptions.Default;
         var tableOptions = new TableOptions(bootstrapEnrs)
         {
             MaxNodesCount = 16
@@ -112,7 +113,7 @@ internal static class Program
         var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Information)
+                .SetMinimumLevel(LogLevel.Debug)
                 // .AddFilter((category, level) =>
                 // {
                 //     if (category.StartsWith("Nethermind.Libp2p"))
@@ -143,14 +144,16 @@ internal static class Program
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
                     options.TcpPort = 9000;
-                    options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAmPYkvHs9HNDgRFnTAZyPT9qdXYumArdCQm922XrwsSSzJ"];
+                    //options.Bootnodes = ["/ip4/86.111.48.168/tcp/9000/p2p/16Uiu2HAmAcTg3qN9v3r3YiboyZfuxN9tpppY1PS2JfUjyieAaTYd", "/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
+                    //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
+                    //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
                 });
                 beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
                 {
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("0e980533edbcba7b2ed6270c754d90e87b1a012170db7c67b6de43c1c9b94b7d");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("e6a9a01ed7705658b283d1b5cd7b4c4c2ad2030381bd8d4ab14c77fa3968027a");
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

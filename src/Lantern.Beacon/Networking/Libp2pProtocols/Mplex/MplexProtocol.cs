@@ -6,33 +6,49 @@ using Nethermind.Libp2p.Core.Exceptions;
 
 namespace Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 
-public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProtocol, IProtocol
+public class MplexProtocol : SymmetricProtocol, IProtocol
 {
-    private readonly ILogger? _logger = loggerFactory?.CreateLogger<MplexProtocol>();
-    private readonly ConcurrentDictionary<int, ChannelState> _channels = new();
-    private int _streamIdCounter;
+    private const long MaxStreamId = (1L << 60) - 1;
+    private const int MaxMessageSize = 1048576; 
+    private readonly ConcurrentDictionary<IPeerContext, PeerConnectionState> _peerStates = new();
+    private readonly ILogger? _logger;
 
+    public MplexProtocol(MultiplexerSettings? multiplexerSettings = null, ILoggerFactory? loggerFactory = null)
+    {
+        multiplexerSettings?.Add(this);
+        _logger = loggerFactory?.CreateLogger<MplexProtocol>();
+    }
+    
     public string Id => "/mplex/6.7.0";
 
-    protected override async Task ConnectAsync(IChannel channel, IChannelFactory? channelFactory, IPeerContext context, bool isListener)
+    protected override async Task ConnectAsync(IChannel downChannel, IChannelFactory? channelFactory, IPeerContext context, bool isListener)
     {
-        if (channelFactory is null)
+        if (context == null)
+        {
+            throw new ArgumentException("Context cannot be null", nameof(context));
+        }
+
+        if (channelFactory == null)
         {
             throw new ArgumentException("ChannelFactory should be available for a muxer", nameof(channelFactory));
         }
 
+        var peerState = new PeerConnectionState();
+        _peerStates[context] = peerState;
+
         _logger?.LogInformation(isListener ? "Listen" : "Dial");
 
-        var downChannelAwaiter = channel.GetAwaiter();
+        var downChannelAwaiter = downChannel.GetAwaiter();
         context.Connected(context.RemotePeer);
-        _ = Task.Run(() => HandleSubDialRequests(context, channelFactory, isListener, channel));
+
+        _ = Task.Run(() => HandleSubDialRequests(context, channelFactory, isListener, downChannel, peerState));
 
         try
         {
             while (!downChannelAwaiter.IsCompleted)
             {
-                var message = await ReadMessageAsync(channel);
-                await HandleMessageAsync(message, channel, channelFactory, context);
+                var message = await ReadMessageAsync(downChannel);
+                await HandleMessageAsync(message, downChannel, channelFactory, context, peerState);
             }
         }
         catch (ChannelClosedException ex)
@@ -42,100 +58,97 @@ public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProt
         catch (Exception ex)
         {
             _logger?.LogDebug("Closed with exception {exception}", ex.Message);
-            _logger?.LogTrace("{stackTrace}", ex.StackTrace);
+            Console.WriteLine(ex);
         }
 
         _logger?.LogDebug("Closing all channels");
-        foreach (var upChannel in _channels.Values)
+
+        foreach (var upChannel in peerState.InitiatorChannels.Values)
+        {
+            _ = upChannel.Channel?.CloseAsync();
+        }
+        
+        foreach (var upChannel in peerState.ReceiverChannels.Values)
         {
             _ = upChannel.Channel?.CloseAsync();
         }
 
-        _channels.Clear();
+        peerState.InitiatorChannels.Clear();
+        peerState.ReceiverChannels.Clear();
+        
+        _peerStates.TryRemove(context, out _);
     }
 
-    private void HandleSubDialRequests(IPeerContext context, IChannelFactory channelFactory, bool isListener, IChannel channel)
+    private void HandleSubDialRequests(IPeerContext context, IChannelFactory channelFactory, bool isListener, IChannel downChannel, PeerConnectionState peerState)
     {
         foreach (var request in context.SubDialRequests.GetConsumingEnumerable())
         {
-            var streamId = Interlocked.Increment(ref _streamIdCounter);
+            if (peerState.StreamIdCounter >= MaxStreamId)
+            {
+                throw new Exception("Stream ID counter exceeded the maximum value.");
+            }
+            
+            var streamId = Interlocked.Increment(ref peerState.StreamIdCounter);
             
             _logger?.LogDebug("Handling sub dial request for protocol {protocol}", request.SubProtocol?.Id);
-            var channelState = CreateUpChannel(streamId, MplexMessageFlag.NewStream, request, channelFactory, isListener, context, channel);
-            _channels.TryAdd(streamId, channelState);
+            
+            var channelState = CreateUpChannel(streamId, request, channelFactory, isListener, context, downChannel, peerState);
+            peerState.InitiatorChannels.TryAdd(streamId, channelState);
         }
     }
 
-    private ChannelState CreateUpChannel(int streamId, MplexMessageFlag initiationFlag, IChannelRequest? channelRequest, IChannelFactory channelFactory, bool isListener, IPeerContext context, IChannel channel)
+    private ChannelState CreateUpChannel(long streamId, IChannelRequest? request, IChannelFactory channelFactory, bool isListener, IPeerContext context, IChannel downChannel, PeerConnectionState peerState)
     {
-        _logger?.LogDebug("Creating upChannel for stream {streamId} as {isListener}", streamId, isListener ? "listener" : "dialer");
         IChannel upChannel;
 
         if (isListener)
         {
-            _logger?.LogDebug("Stream {streamId}: Listening in new stream", streamId);
             upChannel = channelFactory.SubListen(context);
         }
         else
         {
-            IPeerContext dialContext = context.Fork();
-            dialContext.SpecificProtocolRequest = channelRequest;
+            var dialContext = context.Fork();
+            dialContext.SpecificProtocolRequest = request;
             upChannel = channelFactory.SubDial(dialContext);
         }
 
-        var state = new ChannelState(upChannel, channelRequest);
-        TaskCompletionSource? tcs = state.Request?.CompletionSource;
+        var state = new ChannelState(upChannel, request);
+        var tcs = state.Request?.CompletionSource;
 
         upChannel.GetAwaiter().OnCompleted(() =>
         {
             tcs?.SetResult();
-            _logger?.LogDebug("Stream {stream id}: Preparing to close stream", streamId);
-            _channels.TryRemove(streamId, out _); 
-            Interlocked.Decrement(ref _streamIdCounter);
         });
 
         // Initiate background processing of the channel
-        _ = Task.Run(() => ProcessChannelAsync(channel, streamId, initiationFlag, channelRequest, upChannel, isListener));
+        _ = Task.Run(() => ProcessChannelAsync(downChannel, streamId, upChannel, isListener, peerState));
 
         return state;
     }
 
-    private async Task ProcessChannelAsync(IChannel channel, int streamId, MplexMessageFlag initiationFlag, IChannelRequest? channelRequest, IChannel upChannel, bool isListenerChannel)
+    private async Task ProcessChannelAsync(IChannel downChannel, long streamId, IChannel upChannel, bool isListener, PeerConnectionState peerState)
     {
         try
         {
-            _logger?.LogDebug("Stream {streamId}: Processing channel with flag={initiationFlag} as {isListener}", streamId, initiationFlag, isListenerChannel ? "listener" : "dialer");
-            
-            if (initiationFlag == MplexMessageFlag.NewStream)
+            // If this is a listener, we need to create a new stream
+            if (isListener)
             {
-                var streamName = channelRequest?.SubProtocol?.Id ?? string.Empty;
-                var streamNameBytes = System.Text.Encoding.UTF8.GetBytes(streamName);
-                
-                _logger?.LogDebug("Stream {streamId}: Creating new stream with name {streamName} as {isListener} ", streamId, streamName, isListenerChannel ? "listener" : "dialer");
-                await WriteMessageAsync(channel, new MplexMessage
-                {
-                    Flag = initiationFlag,
-                    StreamId = streamId,
-                    Data = new ReadOnlySequence<byte>(streamNameBytes)
-                });
-                
                 await foreach (var upData in upChannel.ReadAllAsync())
                 {
-                    _logger?.LogDebug("Stream {streamId}: Received data from upChannel as {isListener}, length={length}. Writing {data} to stream", streamId, isListenerChannel ? "listener" : "dialer", upData.Length, Convert.ToHexString(upData.ToArray()));
-                    await WriteMessageAsync(channel, new MplexMessage
+                    if (upData.Length > MaxMessageSize)
                     {
-                        Flag = MplexMessageFlag.MessageInitiator,
-                        StreamId = streamId,
-                        Data = upData
-                    });
-                }
-            }
-            else if (initiationFlag == MplexMessageFlag.MessageReceiver)
-            {
-                await foreach (var upData in upChannel.ReadAllAsync())
-                {
-                    _logger?.LogDebug("Stream {streamId}: Received data from upChannel as {isListener}, length={length}, data={data}", streamId, isListenerChannel ? "listener" : "dialer", upData.Length, Convert.ToHexString(upData.ToArray()));
-                    await WriteMessageAsync(channel, new MplexMessage
+                        _logger?.LogError("Stream {streamId} (receiver): Data size exceeds the maximum allowed limit of {maxSize} bytes. Resetting stream.", streamId, MaxMessageSize);
+                        await WriteMessageAsync(downChannel, new MplexMessage
+                        {
+                            Flag = MplexMessageFlag.ResetReceiver,
+                            StreamId = streamId,
+                            Data = default
+                        });
+                        return;
+                    }
+                    
+                    _logger?.LogDebug("Stream {streamId} (receiver): Collected data from upper channel for sending, length={length}", streamId, upData.Length);
+                    await WriteMessageAsync(downChannel, new MplexMessage
                     {
                         Flag = MplexMessageFlag.MessageReceiver,
                         StreamId = streamId,
@@ -143,14 +156,65 @@ public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProt
                     });
                 }
             }
+            else // If this is a dialer, we need to send a new stream request
+            {
+                // Send NewStream message
+                _logger?.LogDebug("Stream {streamId} (initiator): Creating new stream", streamId);
+                await WriteMessageAsync(downChannel, new MplexMessage
+                {
+                    Flag = MplexMessageFlag.NewStream,
+                    StreamId = streamId,
+                    Data = new ReadOnlySequence<byte>(System.Text.Encoding.UTF8.GetBytes(string.Empty))
+                });
+
+                // Send data from upper channel as MessageInitiator
+                await foreach (var upData in upChannel.ReadAllAsync())
+                {
+                    if (upData.Length > MaxMessageSize)
+                    {
+                        _logger?.LogError("Stream {streamId} (initiator): Data size exceeds the maximum allowed limit of {maxSize} bytes. Resetting stream.", streamId, MaxMessageSize);
+                        await WriteMessageAsync(downChannel, new MplexMessage
+                        {
+                            Flag = MplexMessageFlag.ResetInitiator,
+                            StreamId = streamId,
+                            Data = default
+                        });
+                        return;
+                    }
+
+                    _logger?.LogDebug("Stream {streamId} (initiator): Collected data from upper channel for sending, length={length}", streamId, upData.Length);
+                    await WriteMessageAsync(downChannel, new MplexMessage
+                    {
+                        Flag = MplexMessageFlag.MessageInitiator,
+                        StreamId = streamId,
+                        Data = upData
+                    });
+                }
+
+                // Send CloseInitiator message
+                _logger?.LogDebug("Stream {streamId} (initiator): Finished sending all data from upper channel. Sending CloseInitiator", streamId);
+                await WriteMessageAsync(downChannel, new MplexMessage
+                {
+                    Flag = MplexMessageFlag.CloseInitiator,
+                    StreamId = streamId,
+                    Data = default
+                });
+            }
         }
         catch (Exception e)
         {
-            _logger?.LogDebug("Stream {streamId}: Unexpected error: {error}", streamId, e.Message);
+            _logger?.LogDebug("Stream {streamId} ({isListener}): Unexpected error: {error}. Resetting stream", streamId, isListener ? "receiver" : "listener", e.Message);
+
+            await WriteMessageAsync(downChannel, new MplexMessage
+            {
+                Flag = isListener ? MplexMessageFlag.ResetReceiver : MplexMessageFlag.ResetInitiator,
+                StreamId = streamId,
+                Data = default
+            });
         }
     }
     
-    private async Task HandleMessageAsync(MplexMessage message, IChannel channel, IChannelFactory? channelFactory, IPeerContext context)
+    private async Task HandleMessageAsync(MplexMessage message, IChannel downChannel, IChannelFactory? channelFactory, IPeerContext context, PeerConnectionState peerState)
     {
         if (channelFactory is null)
         {
@@ -159,61 +223,178 @@ public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProt
 
         var streamId = message.StreamId;
         var flag = message.Flag;
+        
+        // Check the size of the data 
+        if (message.Data.Length > MaxMessageSize)
+        {
+            _logger?.LogError("Stream {streamId} ({isReceiver}): Received message with data size exceeding the limit of {maxSize} bytes. Resetting stream", 
+                streamId, 
+                flag == MplexMessageFlag.MessageInitiator ? "receiver" : "initiator",
+                MaxMessageSize);
+            
+            await WriteMessageAsync(downChannel, new MplexMessage
+            {
+                Flag = flag == MplexMessageFlag.MessageInitiator ? MplexMessageFlag.ResetReceiver : MplexMessageFlag.ResetInitiator,
+                StreamId = streamId,
+                Data = default
+            });
+            
+            return;
+        }
 
-        _logger?.LogDebug("Decoded received message flag={flag}, streamId={streamId}, len={len}, data={data}", flag, streamId, message.Data.Length, Convert.ToHexString(message.Data.ToArray()));
+        _logger?.LogDebug("Stream {streamId}: Decoded received message flag={flag}, len={len}", 
+            streamId, 
+            flag,
+            message.Data.Length);
         
         // If this flag is for a new stream and the stream does not already exist, create a new stream channel
         if (flag == MplexMessageFlag.NewStream)
         {
-            if (!_channels.ContainsKey(streamId))
+            if (!peerState.ReceiverChannels.ContainsKey(streamId) && streamId <= MaxStreamId)
             {
-                 _logger?.LogDebug("Stream {streamId}: Opening new stream", streamId);
-                 var newChannelState = CreateUpChannel(streamId, MplexMessageFlag.MessageReceiver, new ChannelRequest(), channelFactory, true, context, channel);
-                 _channels.TryAdd(streamId, newChannelState);
+                 _logger?.LogDebug("Stream {streamId} (receiver): Opening new stream", streamId);
+                 
+                 var newChannelState = CreateUpChannel(streamId, null, channelFactory, true, context, downChannel, peerState);
+                 peerState.ReceiverChannels.TryAdd(streamId, newChannelState);
             }
             else
             {
-                _logger?.LogDebug("Received a new stream request for existing stream {streamId}. Ignoring", streamId);
+                _logger?.LogDebug("Received a new stream request for existing stream ID {streamId}. Sending reset message", streamId);
+                
+                await WriteMessageAsync(downChannel, new MplexMessage
+                {
+                    Flag = MplexMessageFlag.ResetReceiver,
+                    StreamId = streamId,
+                    Data = default
+                });
             }
-        }
-
-        // Try to get the existing stream channel
-        if (!_channels.TryGetValue(streamId, out var channelState))
-        {
-            if (message.Data.Length > 0)
-            {
-                _logger?.LogDebug("Stream {streamId}: Drain the data if stream not found", streamId);
-                _ = channel.ReadAsync((int)message.Data.Length); // Drain the data if stream not found
-            }
-
-            _logger?.LogDebug("Received a message for unknown stream {streamId}. Ignoring", streamId);
+            
             return;
         }
-
+       
         switch (flag)
         {
             case MplexMessageFlag.MessageReceiver:
-                _logger?.LogDebug("Stream {streamId}: Received MessageReceiver. Writing data to channel for protocol {protocol}", streamId, channelState.Request.SubProtocol?.Id);
-                _channels[streamId].Channel?.WriteAsync(message.Data);
-                _logger?.LogDebug("Stream {streamId}: Wrote data to channel", streamId);
+                if (peerState.InitiatorChannels.TryGetValue(streamId, out ChannelState? messageReceiver))
+                {
+                    if (messageReceiver.IsClosed)
+                    {
+                        _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver for closed stream. Ignoring", streamId);
+                    }
+                    else
+                    {
+                        _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver. Writing data to channel", streamId);
+                        var writeTask = messageReceiver.Channel?.WriteAsync(message.Data);
+
+                        if (writeTask.HasValue)
+                        {
+                            IOResult result = await writeTask.Value;
+                        
+                            switch (result)
+                            {
+                                case IOResult.Ok:
+                                    _logger?.LogTrace("Stream {streamId} (initiator): Data written successfully", streamId);
+                                    break;
+                                case IOResult.InternalError:
+                                    _logger?.LogError("Stream {streamId} (initiator): Internal error occurred while writing data", streamId);
+                                    break;
+                                case IOResult.Ended:
+                                    _logger?.LogTrace("Stream {streamId} (initiator): Channel is closed. Unable to write data", streamId);
+                                    break;
+                                case IOResult.Cancelled:
+                                    _logger?.LogTrace("Stream {streamId} (initiator): Write operation was cancelled", streamId);
+                                    break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver for unknown stream. Ignoring", streamId);
+                }
                 break;
             case MplexMessageFlag.MessageInitiator:
-                _logger?.LogDebug("Stream {streamId}: Received MessageInitiator. Writing data to channel for protocol {protocol} ", streamId, channelState.Request.SubProtocol?.Id);
-                _channels[streamId].Channel?.WriteAsync(message.Data);
+                if (peerState.ReceiverChannels.TryGetValue(streamId, out ChannelState? messageInitiator))
+                {
+                    if (messageInitiator.IsClosed)
+                    {
+                        _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator for closed stream. Ignoring", streamId);
+                    }
+                    else
+                    {
+                        _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator. Writing data to channel", streamId);
+                        var writeTask = messageInitiator.Channel?.WriteAsync(message.Data);
+                    
+                        if (writeTask.HasValue)
+                        {
+                            IOResult result = await writeTask.Value;
+                        
+                            switch (result)
+                            {
+                                case IOResult.Ok:
+                                    _logger?.LogTrace("Stream {streamId} (receiver): Data written successfully", streamId);
+                                    break;
+                                case IOResult.InternalError:
+                                    _logger?.LogError("Stream {streamId} (receiver): Internal error occurred while writing data", streamId);
+                                    break;
+                                case IOResult.Ended:
+                                    _logger?.LogTrace("Stream {streamId} (receiver): Channel is closed. Unable to write data", streamId);
+                                    break;
+                                case IOResult.Cancelled:
+                                    _logger?.LogTrace("Stream {streamId} (receiver): Write operation was cancelled", streamId);
+                                    break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator for unknown stream. Ignoring", streamId);
+                }
                 break;
             case MplexMessageFlag.CloseReceiver:
-                _logger?.LogDebug("Stream {streamId}: Received CloseReceiver", streamId);
-                _channels[streamId].Channel?.WriteEofAsync();
+                if(!peerState.InitiatorChannels.TryGetValue(streamId, out ChannelState? closeReceiver))
+                {
+                    _logger?.LogDebug("Stream {streamId} (initiator): Received CloseReceiver for unknown stream. Ignoring", streamId);
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (initiator): Received CloseReceiver", streamId);
+                    closeReceiver.Channel?.WriteEofAsync();
+                }
                 break;
             case MplexMessageFlag.CloseInitiator:
-                _logger?.LogDebug("Stream {streamId}: Received CloseInitiator", streamId);
+                if(!peerState.ReceiverChannels.TryGetValue(streamId, out ChannelState? closeInitiator))
+                {
+                    _logger?.LogDebug("Stream {streamId} (receiver): Received CloseInitiator for unknown stream. Ignoring", streamId);
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (receiver): Received CloseInitiator", streamId);
+                    closeInitiator.Channel?.WriteEofAsync();
+                }
                 break;
             case MplexMessageFlag.ResetReceiver:
-                _logger?.LogDebug("Stream {streamId}: Received ResetReceiver", streamId);
+                if(!peerState.InitiatorChannels.TryGetValue(streamId, out var resetReceiver))
+                {
+                    _logger?.LogDebug("Stream {streamId} (initiator): Received ResetReceiver for unknown stream. Ignoring", streamId);
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (initiator): Received ResetReceiver", streamId);
+                    resetReceiver.IsClosed = true; 
+                }
                 break;
             case MplexMessageFlag.ResetInitiator:
-                _logger?.LogDebug("Stream {streamId}: Received ResetInitiator. Draining the data to reset", streamId);
-                _ = channel.ReadAsync((int)message.Data.Length); // Drain the data 
+                if(!peerState.ReceiverChannels.TryGetValue(streamId, out var resetInitiator))
+                {
+                    _logger?.LogDebug("Stream {streamId} (receiver): Received ResetInitiator for unknown stream. Ignoring", streamId);
+                }
+                else
+                {
+                    _logger?.LogDebug("Stream {streamId} (receiver): Received ResetInitiator", streamId);
+                    resetInitiator.IsClosed = true;
+                }
                 break;
         }
     }
@@ -256,7 +437,7 @@ public class MplexProtocol(ILoggerFactory? loggerFactory = null) : SymmetricProt
             await channel.WriteAsync(new ReadOnlySequence<byte>(lengthBytes));
             await channel.WriteAsync(message.Data);
             
-            _logger?.LogDebug("Stream {streamId}: Send flag={flag}, length={length}, data={data}", message.StreamId, message.Flag, message.Data.Length, Convert.ToHexString(message.Data.ToArray()));
+            _logger?.LogDebug("Stream {streamId}: Send flag={flag}, length={length}", message.StreamId, message.Flag, message.Data.Length);
         }
         catch (Exception e)
         {

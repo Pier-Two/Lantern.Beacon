@@ -29,6 +29,14 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILo
             receivedData.Add(readOnlySequence.ToArray());
         }
         
+        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+        {
+            // Log that we received an empty or null response
+            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+            return;
+        }
+        
         var flatData = receivedData.SelectMany(x => x).ToArray();
         
         try

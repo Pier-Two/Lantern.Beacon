@@ -1,11 +1,12 @@
+using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
+using Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols;
 using Nethermind.Libp2p.Protocols.Pubsub;
-using Nethermind.Libp2p.Stack;
 
 namespace Lantern.Beacon;
 
-public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClientPeerFactoryBuilder, Libp2pPeerFactory>,
+public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClientPeerFactoryBuilder, BeaconClientPeerFactory>,
     ILibp2pPeerFactoryBuilder
 {
     private bool enforcePlaintext;
@@ -27,14 +28,15 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
                 .Over<MultistreamProtocol>()
                 .Over<NoiseProtocol>()
                 .Over<MultistreamProtocol>()
-                .Over<YamuxProtocol>();//.Or<MplexProtocol>();
+                .Over<MplexProtocol>();//.Or<MplexProtocol>(); 
 
         return
             Over<MultiaddressBasedSelectorProtocol>()
-                .Over<QuicProtocol>().Or(tcpStack)
+                .Over(tcpStack)
                 .Over<MultistreamProtocol>()
-                .AddAppLayerProtocol<IdentifyProtocol>()
+                .AddAppLayerProtocol<PeerIdentifyProtocol>()
                 .AddAppLayerProtocol<GossipsubProtocol>()
+                .AddAppLayerProtocol<GossipsubProtocolV11>()
                 .AddAppLayerProtocol<FloodsubProtocol>();
     }
 }

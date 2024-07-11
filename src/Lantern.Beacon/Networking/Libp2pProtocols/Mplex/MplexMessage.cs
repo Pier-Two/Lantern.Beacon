@@ -4,7 +4,7 @@ namespace Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 
 public class MplexMessage
 {
-    public int StreamId { get; set; }
+    public long StreamId { get; set; }
     
     public MplexMessageFlag Flag { get; set; }
     
