@@ -89,7 +89,7 @@ jobs:
       - name: Restore NuGet packages with config
         shell: pwsh
         run: |
-          dotnet restore src/Lantern.Beacon/Lantern.Beacon.sln --configfile 
+          dotnet restore src/Lantern.Beacon/Lantern.Beacon.sln --configfile nuget.config
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
