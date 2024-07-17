@@ -34,7 +34,7 @@ public class CustomDiscoveryProtocolTests
             GenesisTime = 1606824023,
         };
         _syncProtocol = new SyncProtocol(syncProtocolOptions, _mockLoggerFactory.Object);
-        _syncProtocol.Init();
+        _syncProtocol.Init(null,null,null, null, null);
         _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), syncProtocolOptions, _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 

@@ -8,7 +8,7 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
 {
     [SszElement(14, "Vector[uint8, 32]")]
     public byte[] WithdrawalsRoot { get; protected init; }
-    
+
     public bool Equals(CapellaExecutionPayloadHeader? other)
     {
         return other != null && 

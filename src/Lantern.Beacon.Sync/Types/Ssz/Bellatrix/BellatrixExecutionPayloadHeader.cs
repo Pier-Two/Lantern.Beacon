@@ -46,6 +46,8 @@ public class BellatrixExecutionPayloadHeader : IEquatable<BellatrixExecutionPayl
 
     [SszElement(13, "Vector[uint8, 32]")]
     public byte[] TransactionsRoot { get; protected init; } 
+    
+    public virtual string CollectionName { get; } = nameof(BellatrixExecutionPayloadHeader);
 
     public bool Equals(BellatrixExecutionPayloadHeader? other)
     {

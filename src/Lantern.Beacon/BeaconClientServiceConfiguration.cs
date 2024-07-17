@@ -1,6 +1,7 @@
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Gossip;
+using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Discv5.WireProtocol;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class BeaconClientServiceConfiguration
         services.AddSingleton<ICustomDiscoveryProtocol, CustomDiscoveryProtocol>();
         services.AddSingleton<IBeaconClientManager, BeaconClientManager>();
         services.AddSingleton<ISyncProtocol, SyncProtocol>();
+        services.AddSingleton<ILiteDbService, LiteDbService>();
         services.AddSingleton<IPeerState, PeerState>();
         services.AddSingleton<IBeaconClient, BeaconClient>();
         services.AddSingleton<IGossipSubManager, GossipSubManager>();

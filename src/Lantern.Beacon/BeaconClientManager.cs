@@ -3,6 +3,7 @@ using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
+using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
@@ -40,7 +41,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
             if (!result) 
             { 
-                _logger.LogError("Failed to start peer manager"); 
+                _logger.LogError("Failed to start beacon client manager"); 
                 return; 
             } 
             
@@ -69,7 +70,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         } 
         catch (Exception e) 
         { 
-            _logger.LogError(e, "Failed to start peer manager"); 
+            _logger.LogError(e, "Failed to start beacon client manager"); 
         } 
     }
 
@@ -131,11 +132,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
             if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
             {
-                _logger.LogInformation("Target peer count reached. Stopping peer discovery...");
                 continue;
             }
 
-            if (_peersToDial.IsEmpty)
+            if (_peersToDial.IsEmpty && clientOptions.EnableDiscovery)
             {
                 if (LocalPeer == null)
                 {
@@ -153,7 +153,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     _logger.LogError(ex, "Error occurred during peer discovery");
                 }
             }
-            else
+            else if(!_peersToDial.IsEmpty)
             {
                 _logger.LogInformation("Dialing peers...");
                 var dialingTasks = new List<Task>();
@@ -273,7 +273,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     return;
                 }
 
-                // Make it so that if not the light client has not yet initialised then if the peer supports bootstrap protocol at least then still connect to it 
+                // Make it so that if not the light client is not initialised then if the peer supports bootstrap protocol at least then still connect to it 
                 var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
 
                 if (supportsLightClientProtocols)
@@ -308,12 +308,17 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     {
         try
         {
-            await peer.DialAsync<LightClientBootstrapProtocol>(token);
-
             if (!syncProtocol.IsInitialised)
             {
-                _logger.LogWarning("Failed to initialize light client. Disconnecting peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", 
-                    peer.Address.Get<IP4>().Value.ToString(), peer.Address.Get<TCP>().Value.ToString(), peer.Address.Get<P2P>().Value.ToString());
+                await peer.DialAsync<LightClientBootstrapProtocol>(token);
+            }
+            
+            if (!syncProtocol.IsInitialised)
+            {
+                _logger.LogWarning("Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...", 
+                    peer.Address.Get<IP4>().Value.ToString(), 
+                    peer.Address.Get<TCP>().Value.ToString(), 
+                    peer.Address.Get<P2P>().Value.ToString());
                 await peer.DialAsync<GoodbyeProtocol>(token);
             }
             else
@@ -360,8 +365,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
             if (denebFinalizedPeriod == denebOptimisticPeriod && !DenebHelpers.IsNextSyncCommitteeKnown(syncProtocol.DenebLightClientStore))
             {
-                syncProtocol.LightClientUpdatesByRangeRequest =
-                    LightClientUpdatesByRangeRequest.CreateFrom(denebFinalizedPeriod, 1);
+                syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(denebFinalizedPeriod, 1);
 
                 _logger.LogInformation(
                     "Next sync committee is not known. Requesting light client updates by range for period {Period}", 
@@ -376,12 +380,12 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 var startPeriod = denebFinalizedPeriod + 1;            
                 var count = denebCurrentPeriod - denebFinalizedPeriod - 1;
 
-                syncProtocol.LightClientUpdatesByRangeRequest =
-                    LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
+                syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
 
                 _logger.LogInformation(
                     "Requesting light client updates by range for period {Period} and count {Count}", 
-                    startPeriod, count
+                    startPeriod, 
+                    count
                 );
 
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
@@ -408,7 +412,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
             if (capellaFinalizedPeriod == capellaOptimisticPeriod && !AltairHelpers.IsNextSyncCommitteeKnown(syncProtocol.AltairLightClientStore))
             {
-                syncProtocol.LightClientUpdatesByRangeRequest= LightClientUpdatesByRangeRequest.CreateFrom(capellaFinalizedPeriod, 1);
+                syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(capellaFinalizedPeriod, 1);
 
                 _logger.LogInformation(
                     "Requesting light client updates by range for period {Period} as the next sync committee is not known", 
@@ -427,7 +431,8 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 _logger.LogInformation(
                     "Requesting light client updates by range for period {Period} and count {Count}", 
-                    startPeriod, count
+                    startPeriod, 
+                    count
                 );
 
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
@@ -454,8 +459,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
             if (altairFinalizedPeriod == altairOptimisticPeriod && !AltairHelpers.IsNextSyncCommitteeKnown(syncProtocol.AltairLightClientStore))
             {
-                syncProtocol.LightClientUpdatesByRangeRequest =
-                    LightClientUpdatesByRangeRequest.CreateFrom(altairFinalizedPeriod, 1);
+                syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(altairFinalizedPeriod, 1);
 
                 _logger.LogInformation(
                     "Requesting light client updates by range for period {Period} as next sync committee is not known", 
@@ -470,12 +474,12 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 var startPeriod = altairFinalizedPeriod + 1;            
                 var count = altairCurrentPeriod - altairFinalizedPeriod - 1;
 
-                syncProtocol.LightClientUpdatesByRangeRequest =
-                    LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
+                syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
 
                 _logger.LogInformation(
                     "Requesting light client updates by range for period {Period} and count {Count}", 
-                    startPeriod, count
+                    startPeriod, 
+                    count
                 );
 
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        

@@ -44,6 +44,33 @@ public static class ReqRespHelpers
         return resultArray;
     }
     
+    public static byte[] EncodeResponse(byte[] sszData, byte[] contextBytes, ResponseCodes responseCode)
+    {
+        if (contextBytes.Length != Constants.ContextBytesLength)
+        {
+            throw new ArgumentException($"Context bytes length must be {Constants.ContextBytesLength} bytes.");
+        }
+            
+        var compressedData = SnappyHelper.Compress(sszData);
+        var sszLength = sszData.Length;
+        var varintHeader = new byte[Varint.GetSizeInBytes(sszLength)];
+        var offset = 0;
+        Varint.Encode(sszLength, varintHeader, ref offset);
+            
+        byte result = (byte)responseCode;
+        var resultArray = new byte[1 + contextBytes.Length + varintHeader.Length + compressedData.Length];
+        var currentOffset = 0;
+        resultArray[currentOffset++] = result;
+            
+        Array.Copy(contextBytes, 0, resultArray, currentOffset, contextBytes.Length);
+        currentOffset += contextBytes.Length;
+        Array.Copy(varintHeader, 0, resultArray, currentOffset, varintHeader.Length);
+        currentOffset += varintHeader.Length;
+        Array.Copy(compressedData, 0, resultArray, currentOffset, compressedData.Length);
+            
+        return resultArray;
+    }
+    
     public static byte[] EncodeResponseChunk(byte[] sszData, byte[] contextBytes, ResponseCodes responseCode)
     {
         if (contextBytes.Length != Constants.ContextBytesLength)

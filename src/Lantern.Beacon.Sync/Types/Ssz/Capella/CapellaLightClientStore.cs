@@ -3,27 +3,21 @@ using SszSharp;
 
 namespace Lantern.Beacon.Sync.Types.Ssz.Capella;
 
-public class CapellaLightClientStore(CapellaLightClientHeader finalizedHeader,
-    AltairSyncCommittee currentAltairSyncCommittee,
-    AltairSyncCommittee nextAltairSyncCommittee,
-    CapellaLightClientUpdate? bestValidUpdate,
-    CapellaLightClientHeader optimisticHeader,
-    ulong previousMaxActiveParticipants,
-    ulong currentMaxActiveParticipants) : IEquatable<CapellaLightClientStore>
+public class CapellaLightClientStore : IEquatable<CapellaLightClientStore>
 {
-    public CapellaLightClientHeader FinalizedHeader { get; internal set; } = finalizedHeader;
+    public CapellaLightClientHeader FinalizedHeader { get; internal set; } 
         
-    public AltairSyncCommittee CurrentSyncCommittee { get;  internal set; } = currentAltairSyncCommittee;
+    public AltairSyncCommittee CurrentSyncCommittee { get;  internal set; }
         
-    public AltairSyncCommittee NextSyncCommittee { get; internal set; } = nextAltairSyncCommittee;
+    public AltairSyncCommittee NextSyncCommittee { get; internal set; }
         
-    public CapellaLightClientUpdate? BestValidUpdate { get; internal set; } = bestValidUpdate;
+    public CapellaLightClientUpdate? BestValidUpdate { get; internal set; } 
         
-    public CapellaLightClientHeader OptimisticHeader { get; internal set; } = optimisticHeader;
+    public CapellaLightClientHeader OptimisticHeader { get; internal set; } 
         
-    public ulong PreviousMaxActiveParticipants { get; internal set; } = previousMaxActiveParticipants;
+    public ulong PreviousMaxActiveParticipants { get; internal set; } 
         
-    public ulong CurrentMaxActiveParticipants { get; internal set; } = currentMaxActiveParticipants;
+    public ulong CurrentMaxActiveParticipants { get; internal set; } 
     
     public bool Equals(CapellaLightClientStore? other)
     {
@@ -76,7 +70,7 @@ public class CapellaLightClientStore(CapellaLightClientHeader finalizedHeader,
             bestValidUpdate = CapellaLightClientUpdate.CreateFromAltair(pre.BestValidUpdate);
         }
 
-        return new CapellaLightClientStore(
+        return CapellaLightClientStore.CreateFrom(
             CapellaLightClientHeader.CreateFromAltair(pre.FinalizedHeader),
             pre.CurrentSyncCommittee,
             pre.NextSyncCommittee,
@@ -88,7 +82,27 @@ public class CapellaLightClientStore(CapellaLightClientHeader finalizedHeader,
     
     public static CapellaLightClientStore CreateDefault()
     {
-        return new CapellaLightClientStore(CapellaLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), CapellaLightClientUpdate.CreateDefault(), CapellaLightClientHeader.CreateDefault(), 0, 0);
+        return CapellaLightClientStore.CreateFrom(CapellaLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), CapellaLightClientUpdate.CreateDefault(), CapellaLightClientHeader.CreateDefault(), 0, 0);
+    }
+
+    public static CapellaLightClientStore CreateFrom(CapellaLightClientHeader finalizedHeader,
+        AltairSyncCommittee currentAltairSyncCommittee,
+        AltairSyncCommittee nextAltairSyncCommittee,
+        CapellaLightClientUpdate? bestValidUpdate,
+        CapellaLightClientHeader optimisticHeader,
+        ulong previousMaxActiveParticipants,
+        ulong currentMaxActiveParticipants)
+    {
+        return new CapellaLightClientStore
+        {
+            CurrentSyncCommittee = currentAltairSyncCommittee,
+            FinalizedHeader = finalizedHeader,
+            NextSyncCommittee = nextAltairSyncCommittee,
+            BestValidUpdate = bestValidUpdate,
+            OptimisticHeader = optimisticHeader,
+            PreviousMaxActiveParticipants = previousMaxActiveParticipants,
+            CurrentMaxActiveParticipants = currentMaxActiveParticipants
+        };
     }
     
     public static byte[] Serialize(CapellaLightClientStore capellaLightClientStore, SizePreset preset)

@@ -19,6 +19,8 @@ public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
     [SszElement(4, "Vector[uint8, 32]")]
     public byte[] BodyRoot { get; private init; } 
     
+    public string HashTreeRootString => Convert.ToHexString(GetHashTreeRoot(SizePreset.MainnetPreset, this));
+    
     public bool Equals(Phase0BeaconBlockHeader? other)
     {
         return other != null && Slot.Equals(other.Slot) && ProposerIndex.Equals(other.ProposerIndex) && ParentRoot.SequenceEqual(other.ParentRoot) && StateRoot.SequenceEqual(other.StateRoot) && BodyRoot.SequenceEqual(other.BodyRoot);
@@ -43,6 +45,12 @@ public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
     {
         var container = SszContainer.GetContainer<Phase0BeaconBlockHeader>(preset);
         return container.HashTreeRoot(this);
+    }
+    
+    public static byte[] GetHashTreeRoot(SizePreset preset, Phase0BeaconBlockHeader blockHeader)
+    {
+        var container = SszContainer.GetContainer<Phase0BeaconBlockHeader>(preset);
+        return container.HashTreeRoot(blockHeader);
     }
     
     public static Phase0BeaconBlockHeader CreateFrom(ulong slot, ulong proposerIndex, byte[] parentRoot, byte[] stateRoot, byte[] bodyRoot)

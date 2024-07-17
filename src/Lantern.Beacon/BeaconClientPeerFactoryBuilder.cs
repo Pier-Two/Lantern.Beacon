@@ -28,7 +28,7 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
                 .Over<MultistreamProtocol>()
                 .Over<NoiseProtocol>()
                 .Over<MultistreamProtocol>()
-                .Over<YamuxProtocol>().Or<MplexProtocol>(); 
+                .Over<MplexProtocol>();//.Or<MplexProtocol>(); 
 
         return
             Over<MultiaddressBasedSelectorProtocol>()

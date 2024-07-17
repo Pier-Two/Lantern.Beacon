@@ -55,6 +55,12 @@ public class AltairLightClientBootstrap : IEquatable<AltairLightClientBootstrap>
         return container.HashTreeRoot(this);
     }
     
+    public static byte[] GetHashTreeRoot(SizePreset preset, AltairLightClientBootstrap altairLightClientBootstrap)
+    {
+        var container = SszContainer.GetContainer<AltairLightClientBootstrap>(preset);
+        return container.HashTreeRoot(altairLightClientBootstrap);
+    }
+    
     public override int GetHashCode()
     {
         return HashCode.Combine(Header, CurrentSyncCommittee, CurrentSyncCommitteeBranch);
