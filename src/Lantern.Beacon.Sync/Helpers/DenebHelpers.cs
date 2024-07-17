@@ -11,17 +11,17 @@ public static class DenebHelpers
     {
         bool result = default; 
         
-        if(update.FinalizedHeader.Beacon.Slot > syncProtocol.PreviousLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        if(update.FinalizedHeader.Beacon.Slot > syncProtocol.CurrentLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
         {
             result = true;
         }
 
-        if(update.FinalizedHeader.Beacon.Slot == syncProtocol.PreviousLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
+        if(update.FinalizedHeader.Beacon.Slot == syncProtocol.CurrentLightClientFinalityUpdate.FinalizedHeader.Beacon.Slot)
         {
             var newNumActiveParticipants = update.SyncAggregate.SyncCommitteeBits.Count(b => b);
-            var oldNumActiveParticipants = syncProtocol.PreviousLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count(b => b);
+            var oldNumActiveParticipants = syncProtocol.CurrentLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count(b => b);
             var newHasSuperMajority = newNumActiveParticipants * 3 >= update.SyncAggregate.SyncCommitteeBits.Count;
-            var oldHasSuperMajority = oldNumActiveParticipants * 3 >= syncProtocol.PreviousLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count;
+            var oldHasSuperMajority = oldNumActiveParticipants * 3 >= syncProtocol.CurrentLightClientFinalityUpdate.SyncAggregate.SyncCommitteeBits.Count;
             
             result = newHasSuperMajority && !oldHasSuperMajority;
         }
@@ -43,7 +43,7 @@ public static class DenebHelpers
     {
         bool result = default; 
         
-        if(update.AttestedHeader.Beacon.Slot > syncProtocol.PreviousLightClientOptimisticUpdate.AttestedHeader.Beacon.Slot)
+        if(update.AttestedHeader.Beacon.Slot > syncProtocol.CurrentLightClientOptimisticUpdate.AttestedHeader.Beacon.Slot)
         {
             result = true;
         }

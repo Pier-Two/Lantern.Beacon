@@ -11,28 +11,32 @@ namespace Lantern.Beacon.Sync;
 
 public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFactory) : ISyncProtocol
 {
-    public ILogger<SyncProtocol>? Logger { get; } = loggerFactory.CreateLogger<SyncProtocol>(); 
-    
-    public AltairLightClientStore AltairLightClientStore { get; private set; } 
+    public AltairLightClientStore AltairLightClientStore { get; private set; } = AltairLightClientStore.CreateDefault();
 
-    public CapellaLightClientStore CapellaLightClientStore { get; private set; }
+    public CapellaLightClientStore CapellaLightClientStore { get; private set; } = CapellaLightClientStore.CreateDefault();
 
-    public DenebLightClientStore DenebLightClientStore { get; private set; } 
+    public DenebLightClientStore DenebLightClientStore { get; private set; } = DenebLightClientStore.CreateDefault();
     
+    public DenebLightClientOptimisticUpdate CurrentLightClientOptimisticUpdate { get; set; } = DenebLightClientOptimisticUpdate.CreateDefault();
+    
+    public DenebLightClientFinalityUpdate CurrentLightClientFinalityUpdate { get; set; } = DenebLightClientFinalityUpdate.CreateDefault();
+    
+    public ILogger<SyncProtocol>? Logger { get; } = loggerFactory.CreateLogger<SyncProtocol>();
+
+    public ForkType ActiveFork { get; private set; } = ForkType.Phase0;
+
     public LightClientUpdatesByRangeRequest? LightClientUpdatesByRangeRequest { get; set; } 
     
-    public DenebLightClientOptimisticUpdate PreviousLightClientOptimisticUpdate { get; set; } 
+    public bool IsInitialised { get; private set; }
     
-    public DenebLightClientFinalityUpdate PreviousLightClientFinalityUpdate { get; set; } 
-
     public SyncProtocolOptions Options => options;
     
-    public ForkType ActiveFork { get; private set; } = ForkType.Phase0;
-    
-    public bool IsInitialised { get; private set; } = false;
-
-    public void Init() 
-    { 
+    public void Init(AltairLightClientStore? altairStore, 
+        CapellaLightClientStore? capellaStore, 
+        DenebLightClientStore? denebStore,
+        DenebLightClientFinalityUpdate? finalityUpdate,
+        DenebLightClientOptimisticUpdate? optimisticUpdate)
+    {
         if (options.Preset.Equals(SizePreset.MainnetPreset)) 
         { 
             Config.Config.InitializeWithMainnet(); 
@@ -50,11 +54,37 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             throw new Exception("Invalid preset type"); 
         } 
         
-        AltairLightClientStore = AltairLightClientStore.CreateDefault();
-        CapellaLightClientStore = CapellaLightClientStore.CreateDefault();
-        DenebLightClientStore = DenebLightClientStore.CreateDefault();
-        PreviousLightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.CreateDefault();
-        PreviousLightClientFinalityUpdate = DenebLightClientFinalityUpdate.CreateDefault();
+        if(altairStore != null)
+        {
+            AltairLightClientStore = altairStore;
+            IsInitialised = true;
+            SetActiveFork(ForkType.Altair);
+            Logger?.LogInformation("Light client store initialised");
+        }
+        else if(capellaStore != null)
+        {
+            CapellaLightClientStore = capellaStore;
+            IsInitialised = true;
+            SetActiveFork(ForkType.Capella);
+            Logger?.LogInformation("Light client store initialised");
+        }
+        else if(denebStore != null)
+        {
+            DenebLightClientStore = denebStore;
+            IsInitialised = true;
+            SetActiveFork(ForkType.Deneb);
+            Logger?.LogInformation("Light client store initialised");
+        }
+        
+        if(finalityUpdate != null)
+        {
+            CurrentLightClientFinalityUpdate = finalityUpdate;
+        }
+        
+        if(optimisticUpdate != null)
+        {
+            CurrentLightClientOptimisticUpdate = optimisticUpdate;
+        }
     }
     
     public bool InitialiseStoreFromAltairBootstrap(byte[] trustedBlockRoot, AltairLightClientBootstrap bootstrap)
@@ -83,7 +113,7 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             return false;
         } 
         
-        AltairLightClientStore = new AltairLightClientStore( 
+        AltairLightClientStore = AltairLightClientStore.CreateFrom( 
             bootstrap.Header, 
             bootstrap.CurrentSyncCommittee, 
             AltairSyncCommittee.CreateDefault(), 
@@ -124,7 +154,7 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             return false;
         } 
         
-        CapellaLightClientStore = new CapellaLightClientStore( 
+        CapellaLightClientStore = CapellaLightClientStore.CreateFrom( 
             bootstrap.Header, 
             bootstrap.CurrentSyncCommittee, 
             AltairSyncCommittee.CreateDefault(), 
@@ -165,7 +195,7 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             return false;
         } 
         
-        DenebLightClientStore = new DenebLightClientStore( 
+        DenebLightClientStore = DenebLightClientStore.CreateFrom( 
             bootstrap.Header, 
             bootstrap.CurrentSyncCommittee, 
             AltairSyncCommittee.CreateDefault(), 
@@ -181,12 +211,7 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
     }
     
     public void SetActiveFork(ForkType forkType) 
-    { 
-        if(ActiveFork != ForkType.Phase0) 
-        { 
-            throw new Exception("Fork already set"); 
-        }
-        
+    {
         ActiveFork = forkType;
     }
 }

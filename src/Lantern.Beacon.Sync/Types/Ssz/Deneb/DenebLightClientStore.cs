@@ -4,27 +4,21 @@ using SszSharp;
 
 namespace Lantern.Beacon.Sync.Types.Ssz.Deneb;
 
-public class DenebLightClientStore(DenebLightClientHeader finalizedHeader,
-    AltairSyncCommittee currentAltairSyncCommittee,
-    AltairSyncCommittee nextAltairSyncCommittee,
-    DenebLightClientUpdate? bestValidUpdate,
-    DenebLightClientHeader optimisticHeader,
-    ulong previousMaxActiveParticipants,
-    ulong currentMaxActiveParticipants) : IEquatable<DenebLightClientStore>
+public class DenebLightClientStore : IEquatable<DenebLightClientStore>
 {
-    public DenebLightClientHeader FinalizedHeader { get; internal set; } = finalizedHeader;
+    public DenebLightClientHeader FinalizedHeader { get; internal set; }
         
-    public AltairSyncCommittee CurrentSyncCommittee { get;  internal set; } = currentAltairSyncCommittee;
+    public AltairSyncCommittee CurrentSyncCommittee { get;  internal set; } 
         
-    public AltairSyncCommittee NextSyncCommittee { get; internal set; } = nextAltairSyncCommittee;
+    public AltairSyncCommittee NextSyncCommittee { get; internal set; } 
         
-    public DenebLightClientUpdate? BestValidUpdate { get; internal set; } = bestValidUpdate;
+    public DenebLightClientUpdate? BestValidUpdate { get; internal set; } 
         
-    public DenebLightClientHeader OptimisticHeader { get; internal set; } = optimisticHeader;
+    public DenebLightClientHeader OptimisticHeader { get; internal set; } 
+    
+    public ulong PreviousMaxActiveParticipants { get; internal set; } 
         
-    public ulong PreviousMaxActiveParticipants { get; internal set; } = previousMaxActiveParticipants;
-        
-    public ulong CurrentMaxActiveParticipants { get; internal set; } = currentMaxActiveParticipants;
+    public ulong CurrentMaxActiveParticipants { get; internal set; } 
     
     public bool Equals(DenebLightClientStore? other)
     {
@@ -77,7 +71,7 @@ public class DenebLightClientStore(DenebLightClientHeader finalizedHeader,
             bestValidUpdate = DenebLightClientUpdate.CreateFromCapella(pre.BestValidUpdate);
         }
 
-        return new DenebLightClientStore(
+        return CreateFrom(
             DenebLightClientHeader.CreateFromCapella(pre.FinalizedHeader),
             pre.CurrentSyncCommittee,
             pre.NextSyncCommittee,
@@ -89,7 +83,27 @@ public class DenebLightClientStore(DenebLightClientHeader finalizedHeader,
         
     public static DenebLightClientStore CreateDefault()
     {
-        return new DenebLightClientStore(DenebLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), DenebLightClientUpdate.CreateDefault(), DenebLightClientHeader.CreateDefault(), 0, 0);
+        return CreateFrom(DenebLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), DenebLightClientUpdate.CreateDefault(), DenebLightClientHeader.CreateDefault(), 0, 0);
+    }
+
+    public static DenebLightClientStore CreateFrom(DenebLightClientHeader finalizedHeader,
+        AltairSyncCommittee currentAltairSyncCommittee,
+        AltairSyncCommittee nextAltairSyncCommittee,
+        DenebLightClientUpdate? bestValidUpdate,
+        DenebLightClientHeader optimisticHeader,
+        ulong previousMaxActiveParticipants,
+        ulong currentMaxActiveParticipants)
+    {
+        return new DenebLightClientStore
+        {
+            CurrentSyncCommittee = currentAltairSyncCommittee,
+            NextSyncCommittee = nextAltairSyncCommittee,
+            BestValidUpdate = bestValidUpdate,
+            FinalizedHeader = finalizedHeader,
+            OptimisticHeader = optimisticHeader,
+            PreviousMaxActiveParticipants = previousMaxActiveParticipants,
+            CurrentMaxActiveParticipants = currentMaxActiveParticipants
+        };
     }
     
     public static byte[] Serialize(DenebLightClientStore denebLightClientStore, SizePreset preset)

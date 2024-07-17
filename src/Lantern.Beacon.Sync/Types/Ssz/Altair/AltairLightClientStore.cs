@@ -2,27 +2,21 @@ using SszSharp;
 
 namespace Lantern.Beacon.Sync.Types.Ssz.Altair;
 
-public class AltairLightClientStore(AltairLightClientHeader finalizedHeader,
-    AltairSyncCommittee currentAltairSyncCommittee,
-    AltairSyncCommittee nextAltairSyncCommittee,
-    AltairLightClientUpdate? bestValidUpdate,
-    AltairLightClientHeader optimisticHeader,
-    ulong previousMaxActiveParticipants,
-    ulong currentMaxActiveParticipants) : IEquatable<AltairLightClientStore>
+public class AltairLightClientStore : IEquatable<AltairLightClientStore>
 {
-    public AltairLightClientHeader FinalizedHeader { get; internal set; } = finalizedHeader;
+    public AltairLightClientHeader FinalizedHeader { get; internal set; } 
         
-    public AltairSyncCommittee CurrentSyncCommittee { get; internal set; } = currentAltairSyncCommittee;
+    public AltairSyncCommittee CurrentSyncCommittee { get; internal set; }
         
-    public AltairSyncCommittee NextSyncCommittee { get; internal set; } = nextAltairSyncCommittee;
+    public AltairSyncCommittee NextSyncCommittee { get; internal set; } 
         
-    public AltairLightClientUpdate? BestValidUpdate { get; internal set; } = bestValidUpdate;
+    public AltairLightClientUpdate? BestValidUpdate { get; internal set; } 
         
-    public AltairLightClientHeader OptimisticHeader { get; internal set; } = optimisticHeader;
+    public AltairLightClientHeader OptimisticHeader { get; internal set; } 
         
-    public ulong PreviousMaxActiveParticipants { get; internal set; } = previousMaxActiveParticipants;
+    public ulong PreviousMaxActiveParticipants { get; internal set; } 
         
-    public ulong CurrentMaxActiveParticipants { get; internal set; } = currentMaxActiveParticipants;
+    public ulong CurrentMaxActiveParticipants { get; internal set; } 
     
     public bool Equals(AltairLightClientStore? other)
     {
@@ -64,7 +58,27 @@ public class AltairLightClientStore(AltairLightClientHeader finalizedHeader,
         
     public static AltairLightClientStore CreateDefault()
     {
-        return new AltairLightClientStore(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairLightClientUpdate.CreateDefault(), AltairLightClientHeader.CreateDefault(), 0, 0);
+        return CreateFrom(AltairLightClientHeader.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairSyncCommittee.CreateDefault(), AltairLightClientUpdate.CreateDefault(), AltairLightClientHeader.CreateDefault(), 0, 0);
+    }
+
+    public static AltairLightClientStore CreateFrom(AltairLightClientHeader finalizedHeader,
+        AltairSyncCommittee currentAltairSyncCommittee,
+        AltairSyncCommittee nextAltairSyncCommittee,
+        AltairLightClientUpdate? bestValidUpdate,
+        AltairLightClientHeader optimisticHeader,
+        ulong previousMaxActiveParticipants,
+        ulong currentMaxActiveParticipants)
+    {
+        return new AltairLightClientStore
+        {
+            FinalizedHeader = finalizedHeader,
+            CurrentSyncCommittee = currentAltairSyncCommittee,
+            NextSyncCommittee = nextAltairSyncCommittee,
+            BestValidUpdate = bestValidUpdate,
+            OptimisticHeader = optimisticHeader,
+            PreviousMaxActiveParticipants = previousMaxActiveParticipants,
+            CurrentMaxActiveParticipants = currentMaxActiveParticipants
+        };
     }
     
     public static byte[] Serialize(AltairLightClientStore altairLightClientStore, SizePreset preset)

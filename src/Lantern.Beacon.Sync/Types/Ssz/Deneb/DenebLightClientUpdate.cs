@@ -1,4 +1,5 @@
 using Cortex.Containers;
+using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using SszSharp;
@@ -26,7 +27,9 @@ public class DenebLightClientUpdate : IEquatable<DenebLightClientUpdate>
     public AltairSyncAggregate SyncAggregate { get; internal set; } 
     
     [SszElement(6, "uint64")]
-    public ulong SignatureSlot { get; internal set; } 
+    public ulong SignatureSlot { get; internal set; }
+
+    public ulong SyncCommitteePeriod => AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(SignatureSlot));
     
     public bool Equals(DenebLightClientUpdate? other)
     {

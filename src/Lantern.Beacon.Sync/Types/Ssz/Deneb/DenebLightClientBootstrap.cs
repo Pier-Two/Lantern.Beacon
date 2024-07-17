@@ -8,13 +8,13 @@ namespace Lantern.Beacon.Sync.Types.Ssz.Deneb;
 public class DenebLightClientBootstrap : IEquatable<DenebLightClientBootstrap>
 {
     [SszElement(0, "Container")]
-    public DenebLightClientHeader Header { get; protected init; }
+    public DenebLightClientHeader Header { get; private init; }
     
     [SszElement(1, "Container")]
-    public AltairSyncCommittee CurrentSyncCommittee { get; protected init; } 
+    public AltairSyncCommittee CurrentSyncCommittee { get; private init; } 
     
     [SszElement(2, "Vector[Vector[uint8, 32], 5]")]
-    public byte[][] CurrentSyncCommitteeBranch { get; protected init; } 
+    public byte[][] CurrentSyncCommitteeBranch { get; private init; }
     
     public bool Equals(DenebLightClientBootstrap? other)
     {
@@ -60,6 +60,12 @@ public class DenebLightClientBootstrap : IEquatable<DenebLightClientBootstrap>
     {
         var container = SszContainer.GetContainer<DenebLightClientBootstrap>(preset);
         return container.HashTreeRoot(this);
+    }
+    
+    public static byte[] GetHashTreeRoot(SizePreset preset, DenebLightClientBootstrap denebLightClientBootstrap)
+    {
+        var container = SszContainer.GetContainer<DenebLightClientBootstrap>(preset);
+        return container.HashTreeRoot(denebLightClientBootstrap);
     }
     
     public static DenebLightClientBootstrap CreateFromCapella(CapellaLightClientBootstrap pre)

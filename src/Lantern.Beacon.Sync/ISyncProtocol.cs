@@ -19,9 +19,9 @@ public interface ISyncProtocol
     
     DenebLightClientStore DenebLightClientStore { get; }
     
-    DenebLightClientOptimisticUpdate PreviousLightClientOptimisticUpdate { get; set; }
+    DenebLightClientOptimisticUpdate CurrentLightClientOptimisticUpdate { get; set; }
     
-    DenebLightClientFinalityUpdate PreviousLightClientFinalityUpdate { get; set; }
+    DenebLightClientFinalityUpdate CurrentLightClientFinalityUpdate { get; set; }
     
     LightClientUpdatesByRangeRequest? LightClientUpdatesByRangeRequest { get; set; }
     
@@ -31,7 +31,7 @@ public interface ISyncProtocol
     
     bool IsInitialised { get; }
     
-    void Init();
+    void Init(AltairLightClientStore? altairStore, CapellaLightClientStore? capellaStore, DenebLightClientStore? denebStore, DenebLightClientFinalityUpdate? finalityUpdate, DenebLightClientOptimisticUpdate? optimisticUpdate);
 
     bool InitialiseStoreFromAltairBootstrap(byte[] trustedBlockRoot, AltairLightClientBootstrap bootstrap);
 
