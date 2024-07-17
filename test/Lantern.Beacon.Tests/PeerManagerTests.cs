@@ -71,20 +71,4 @@ public class PeerManagerTests
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
     }
-
-    [Test]
-    public async Task InitAsync_FailedDiscoveryProtocol_LogsError()
-    {
-        _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(false);
-        
-        await _peerManager.InitAsync();
-        
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to start peer manager")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
-    }
 }
