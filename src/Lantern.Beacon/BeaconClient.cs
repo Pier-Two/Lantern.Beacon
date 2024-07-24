@@ -6,7 +6,6 @@ using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Processors;
-using Lantern.Beacon.Sync.Types;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;

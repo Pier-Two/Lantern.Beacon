@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
-using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
-using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
@@ -278,10 +276,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 if (supportsLightClientProtocols)
                 {
-                    // _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    //
-                    // discoveryProtocol.OnAddPeer?.Invoke([peer]);
-                    // peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
+                    _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
+                    
+                    discoveryProtocol.OnAddPeer?.Invoke([peer]);
+                    peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
                 else
                 {

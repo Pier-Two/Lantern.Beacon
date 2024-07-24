@@ -148,7 +148,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                     }
                     else
                     {
-                        _logger?.LogDebug("Stream {streamId} (receiver): Collected data from upper channel for sending, length={length}, data={data}", streamId, upData.Length, Convert.ToHexString(upData.ToArray()));
+                        _logger?.LogDebug("Stream {streamId} (receiver): Collected data from upper channel for sending, length={length}", streamId, upData.Length);
                         await WriteMessageAsync(downChannel, new MplexMessage
                         {
                             Flag = MplexMessageFlag.MessageReceiver,
@@ -192,7 +192,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                         return;
                     }
 
-                    _logger?.LogDebug("Stream {streamId} (initiator): Collected data from upper channel for sending, length={length}, data={data}", streamId, upData.Length, Convert.ToHexString(upData.ToArray()));
+                    _logger?.LogDebug("Stream {streamId} (initiator): Collected data from upper channel for sending, length={length}", streamId, upData.Length);
                     await WriteMessageAsync(downChannel, new MplexMessage
                     {
                         Flag = MplexMessageFlag.MessageInitiator,
@@ -292,7 +292,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                     }
                     else
                     {
-                        _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver. Writing data to channel: {data}", streamId, Convert.ToHexString(message.Data.ToArray()));
+                        _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver. Writing data to upper channel", streamId);
 
                         if (messageReceiver.Channel != null)
                         {
@@ -314,7 +314,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                     }
                     else
                     {
-                        _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator. Writing data to channel: {data}", streamId, Convert.ToHexString(message.Data.ToArray()));
+                        _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator. Writing data to upper channel", streamId);
                         
                         if (messageInitiator.Channel != null)
                         {
@@ -434,8 +434,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
             
             if (_logger?.IsEnabled(LogLevel.Debug) ?? false)
             {
-                _logger.LogDebug("Stream {streamId}: Send flag={flag}, length={length}, data={data}", 
-                    message.StreamId, message.Flag, message.Data.Length, BitConverter.ToString(buffer).Replace("-", ""));
+                _logger.LogDebug("Stream {streamId}: Send flag={flag}, length={length}", message.StreamId, message.Flag, message.Data.Length);
             }
         }
         catch (Exception e)
