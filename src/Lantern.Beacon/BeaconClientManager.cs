@@ -64,7 +64,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
             
-            _logger.LogInformation("Peer manager started with address {Address}", LocalPeer.Address); 
+            _logger.LogInformation("Beacon client manager started with address {Address}", LocalPeer.Address); 
         } 
         catch (Exception e) 
         { 

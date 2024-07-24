@@ -66,7 +66,7 @@ public class BeaconClientManagerTests
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Beacon client manager started")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Beacon client manager started with")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);
