@@ -96,12 +96,12 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
         }
         
         var goodbyeResponse = Goodbye.Deserialize(result);
+        
         _logger?.LogInformation("Received goodbye response from {PeerId} with reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
         
-        var responseCode = (int)ResponseCodes.Success;
         var goodbye = Goodbye.CreateFrom(goodbyeResponse.Reason);
         var sszData = Goodbye.Serialize(goodbye);
-        var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
+        var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
         var rawData = new ReadOnlySequence<byte>(payload);
         
         await downChannel.WriteAsync(rawData);

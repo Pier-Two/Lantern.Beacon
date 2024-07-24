@@ -121,7 +121,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogDebug("Received light client update request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        _logger?.LogInformation("Received light client update request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
         
         var receivedData = new List<byte[]>();
         
@@ -142,8 +142,6 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
         
         var request = LightClientUpdatesByRangeRequest.Deserialize(result);
         
-        _logger?.LogDebug("Received light client update request from {PeerId} for sync period {startPeriod} and count {count}", context.RemotePeer.Address.Get<P2P>(), request.StartPeriod, request.Count);
-
         try
         {
             for (var i = request.StartPeriod; i < request.Count + request.StartPeriod; i++)
@@ -154,7 +152,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 
                 if (response == null)
                 {
-                    _logger?.LogWarning("Failed to find light client update response for sync period {startPeriod} and count {count}", request.StartPeriod, request.Count);
+                    _logger?.LogInformation("No light client update available for sync period {startPeriod} and count {count}", request.StartPeriod, request.Count);
              
                     var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest,ResponseCodes.ResourceUnavailable);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
@@ -163,11 +161,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 }
                 else
                 {
-                    _logger?.LogDebug("Sending light client update response to {PeerId}",
+                    _logger?.LogInformation("Sending light client update response to {PeerId}",
                         context.RemotePeer.Address.Get<P2P>());
                     var sszData = DenebLightClientUpdate.Serialize(response, syncProtocol.Options.Preset);
-                    var responseCode = (int)ResponseCodes.Success;
-                    var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, (ResponseCodes)responseCode);
+                    var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
                     await downChannel.WriteAsync(rawData);

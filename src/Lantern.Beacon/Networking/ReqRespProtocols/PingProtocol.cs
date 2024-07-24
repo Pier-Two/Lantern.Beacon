@@ -21,7 +21,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
         var payload = ReqRespHelpers.EncodeRequest(sszData);
         var rawData = new ReadOnlySequence<byte>(payload);
 
-        _logger?.LogDebug("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
+        _logger?.LogInformation("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
 
         await downChannel.WriteAsync(rawData);
         var receivedData = new List<byte[]>();
@@ -51,38 +51,49 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
         
         var pingResponse = Ping.Deserialize(result.Item1);
         
-        _logger?.LogDebug("Received pong from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
+        _logger?.LogInformation("Received pong from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogDebug("Listening for ping request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogInformation("Listening for ping request from {PeerId}", context.RemotePeer.Address);
         
         var receivedData = new List<byte[]>();
-        
-        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
-        {
-            receivedData.Add(readOnlySequence.ToArray());
-        }
-        
-        var flatData = receivedData.SelectMany(x => x).ToArray();
-        var result = ReqRespHelpers.DecodeRequest(flatData);
 
-        if (result == null)
+        try
         {
-            _logger?.LogError("Failed to decode ping request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-            await downChannel.CloseAsync();
-            return;
-        }
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync())
+            {
+                Console.WriteLine("Received data: " + Convert.ToHexString(readOnlySequence.ToArray()));
+                receivedData.Add(readOnlySequence.ToArray());
+            }
+            
+            Console.WriteLine("Finished receiving data...");
+        
+            var flatData = receivedData.SelectMany(x => x).ToArray();
+            
+            Console.WriteLine("Flat data: " + Convert.ToHexString(flatData));
+            var result = ReqRespHelpers.DecodeRequest(flatData);
 
-        var responseCode = (int)ResponseCodes.Success;
-        var ping = Ping.CreateFrom(peerState.MetaData.SeqNumber);
-        var sszData = Ping.Serialize(ping);
-        var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
-        var rawData = new ReadOnlySequence<byte>(payload);
+            if (result == null)
+            {
+                _logger?.LogError("Failed to decode ping request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                await downChannel.CloseAsync();
+                return;
+            }
         
-        await downChannel.WriteAsync(rawData);
+            var ping = Ping.CreateFrom(peerState.MetaData.SeqNumber);
+            var sszData = Ping.Serialize(ping);
+            var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
+            var rawData = new ReadOnlySequence<byte>(payload);
         
-        _logger?.LogDebug("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
+            await downChannel.WriteAsync(rawData);
+        
+            _logger?.LogInformation("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error while listening for ping request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        }
     }
 }

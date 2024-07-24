@@ -143,13 +143,14 @@ internal static class Program
                 });
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
-                    options.TcpPort = 9000;
-                    options.EnableDiscovery = true;
-                    options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
+                    options.TcpPort = 9005;
+                    options.EnableDiscovery = false;
+                    //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAm6R996q426GYUyExKSYdKxhbD5iYedbuqQovVPTJFVHPv"];
+                    //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
                     //options.Bootnodes = ["/ip4/54.38.80.34/tcp/9000/p2p/16Uiu2HAm8t1aQArVwrJ9fwHRGXL2sXumPGTvmsne14piPaFJ5FYi"]; // Lighthouse
                     //options.Bootnodes = ["/ip4/37.27.63.66/tcp/9115/p2p/16Uiu2HAm8BCbnKxJnsNq6uJAhGe3wNrUiiLCTete2vP5UUT99oNL"];
                     //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69", "/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"]; // Lodestar
-                    //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
+                    options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
                 });
                 beaconClientBuilder.WithSyncProtocolOptions(syncProtocol =>
                 {

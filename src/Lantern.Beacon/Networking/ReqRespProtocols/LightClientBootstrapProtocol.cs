@@ -59,7 +59,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
 
             var result = ReqRespHelpers.DecodeResponseChunk(flatData);
             var forkType = Phase0Helpers.ComputeForkType(result.Item2, syncProtocol.Options);
-
+            
             switch (forkType)
             {
                 case ForkType.Deneb:
@@ -67,24 +67,28 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     syncProtocol.InitialiseStoreFromDenebBootstrap(syncProtocol.Options.TrustedBlockRoot, denebLightClientBootstrap);
                     syncProtocol.SetActiveFork(ForkType.Deneb);
                     liteDbService.Store(nameof(DenebLightClientBootstrap), denebLightClientBootstrap);
+                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     break;
                 case ForkType.Capella:
                     var capellaLightClientBootstrap = CapellaLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     syncProtocol.InitialiseStoreFromCapellaBootstrap(syncProtocol.Options.TrustedBlockRoot, capellaLightClientBootstrap);
                     syncProtocol.SetActiveFork(ForkType.Capella);
                     liteDbService.Store(nameof(CapellaLightClientBootstrap), capellaLightClientBootstrap);
+                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, bellatrixLightClientBootstrap);
                     syncProtocol.SetActiveFork(ForkType.Bellatrix);
                     liteDbService.Store(nameof(AltairLightClientBootstrap), bellatrixLightClientBootstrap);
+                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     break;
                 case ForkType.Altair:
                     var altairLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
                     syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, altairLightClientBootstrap);
                     syncProtocol.SetActiveFork(ForkType.Altair);
                     liteDbService.Store(nameof(AltairLightClientBootstrap), altairLightClientBootstrap);
+                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client bootstrap response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());
@@ -146,8 +150,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                 _logger?.LogDebug("Sending light client bootstrap response to {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
                 var sszData = DenebLightClientBootstrap.Serialize(response, syncProtocol.Options.Preset);
-                var responseCode = (int)ResponseCodes.Success;
-                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, (ResponseCodes)responseCode);
+                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);
