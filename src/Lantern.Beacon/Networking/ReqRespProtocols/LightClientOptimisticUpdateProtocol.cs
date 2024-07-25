@@ -103,7 +103,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
 
             if (response == null || response.Equals(DenebLightClientOptimisticUpdate.CreateDefault()))
             {
-                _logger?.LogDebug("No light client optimistic update available to send to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogInformation("No light client optimistic update available to send to {PeerId}", context.RemotePeer.Address.Get<P2P>());
                 var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest,ResponseCodes.ResourceUnavailable);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
@@ -111,10 +111,9 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
             }
             else
             {
-                _logger?.LogDebug("Sending light client optimistic update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogInformation("Sending light client optimistic update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
                 var sszData = DenebLightClientOptimisticUpdate.Serialize(response, syncProtocol.Options.Preset);
-                var responseCode = (int)ResponseCodes.Success;
-                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, (ResponseCodes)responseCode);
+                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);

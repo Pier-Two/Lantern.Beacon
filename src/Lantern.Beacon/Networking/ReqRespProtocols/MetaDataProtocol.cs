@@ -53,7 +53,7 @@ public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactor
         
         var metaDataResponse = MetaData.Deserialize(result.Item1);
         
-        _logger?.LogDebug("Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}", 
+        _logger?.LogInformation("Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}", 
             context.RemotePeer.Address.Get<P2P>(), 
             metaDataResponse.SeqNumber, 
             Convert.ToHexString(metaDataResponse.Attnets.Select(b => b ? (byte)1 : (byte)0).ToArray()));
@@ -67,10 +67,9 @@ public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactor
 
         try
         {
-            var responseCode = (int)ResponseCodes.Success;
             var metaData = peerState.MetaData;
             var sszData = MetaData.Serialize(metaData);
-            var payload = ReqRespHelpers.EncodeResponse(sszData, (ResponseCodes)responseCode);
+            var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
             rawData = new ReadOnlySequence<byte>(payload);
         }
         catch (Exception e)
@@ -81,6 +80,6 @@ public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactor
         }
         
         await downChannel.WriteAsync(rawData);
-        _logger?.LogDebug("Sent MetaData to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(rawData.ToArray()));
+        _logger?.LogInformation("Sent MetaData to {PeerId} with data {Data}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(rawData.ToArray()));
     }
 }

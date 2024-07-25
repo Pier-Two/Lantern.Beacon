@@ -19,14 +19,11 @@ public class CoreTests
     [Test]
     public void Test()
     {
-        Span<byte> data = Convert.FromHexString("132F6D756C746973747265616D2F312E302E300A432F657468322F626561636F6E5F636861696E2F7265712F6C696768745F636C69656E745F6F7074696D69737469635F7570646174652F312F73737A5F736E617070790A");
-        var offset = 0;
-        var header = Decode(data, ref offset);
-        var flag = header & 0x07;
-        var id = header >> 3;
-        var payload = data.Slice(offset);
-        
-        Console.WriteLine($"Flag: {flag}, ID: {id}, Data: {Convert.ToHexString(payload.ToArray())}");
+        var data = Convert.FromHexString(
+            "54FF060000734E6150705900370000455DEC3E54106A95A1A9009A01009C4D611D5B93FDAB69013A7F0A2F961CACA0C853F87CFE9595FE500381630793600000000000000000");
+        var result = ReqRespHelpers.DecodeRequest(data);
+        var status = Status.Deserialize(result);
+        Console.WriteLine(status.FinalizedEpoch);
     }
 
     [Test]

@@ -16,7 +16,7 @@ using NUnit.Framework;
 
 namespace Lantern.Beacon.Tests;
 
-public class PeerManagerTests
+public class BeaconClientManagerTests
 {
     private Mock<ILocalPeer> _mockLocalPeer;
     private Mock<IEnr> _mockEnr;
@@ -28,7 +28,7 @@ public class PeerManagerTests
     private Mock<IPeerFactory> _mockPeerFactory;
     private Mock<ILoggerFactory> _mockLoggerFactory;
     private Mock<ILogger<BeaconClientManager>> _mockLogger;
-    private BeaconClientManager _peerManager;
+    private BeaconClientManager _beaconClientManager;
     
     [SetUp]
     public void Setup()
@@ -44,7 +44,7 @@ public class PeerManagerTests
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<BeaconClientManager>>();
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
-        _peerManager = new BeaconClientManager(new BeaconClientOptions(), _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
     }
 
     [Test]
@@ -61,12 +61,12 @@ public class PeerManagerTests
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
         
-        await _peerManager.InitAsync();
+        await _beaconClientManager.InitAsync();
         
         _mockLogger.Verify(log => log.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Peer manager started")),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Beacon client manager started with")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
             Times.Once);

@@ -104,7 +104,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
 
             if (response == null || response.Equals(DenebLightClientFinalityUpdate.CreateDefault()))
             {
-                _logger?.LogDebug("No light client finality update available to send to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogInformation("No light client finality update available to send to {PeerId}", context.RemotePeer.Address.Get<P2P>());
                 var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest,ResponseCodes.ResourceUnavailable);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
@@ -112,10 +112,9 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
             }
             else
             {
-                _logger?.LogDebug("Sending light client finality update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogInformation("Sending light client finality update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
                 var sszData = DenebLightClientFinalityUpdate.Serialize(response, syncProtocol.Options.Preset);
-                var responseCode = (int)ResponseCodes.Success;
-                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, (ResponseCodes)responseCode);
+                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);
