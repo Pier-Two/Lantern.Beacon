@@ -46,7 +46,6 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             var identity = new Identity();
             
             LocalPeer = peerFactory.Create(identity); 
-            
             LocalPeer.Address.ReplaceOrAdd<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
             LocalPeer.Address.ReplaceOrAdd<P2P>(identityManager.Record.ToPeerId());
             
@@ -271,7 +270,6 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     return;
                 }
 
-                // Make it so that if not the light client is not initialised then if the peer supports bootstrap protocol at least then still connect to it 
                 var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
 
                 if (supportsLightClientProtocols)
@@ -321,7 +319,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             }
             else
             {
-                _logger.LogInformation("Successfully initialised light client. Starting sync"); 
+                _logger.LogInformation("Successfully initialised light client. Started syncing"); 
                 var activeFork = syncProtocol.ActiveFork;
             
                 switch (activeFork)

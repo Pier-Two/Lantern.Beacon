@@ -113,7 +113,7 @@ internal static class Program
         var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Debug)
+                .SetMinimumLevel(LogLevel.Information)
                 // .AddFilter((category, level) =>
                 // {
                 //     if (category.StartsWith("Nethermind.Libp2p.Protocols.Pubsub.GossipsubProtocolV11") || category.StartsWith("Nethermind.Libp2p.Protocols.Pubsub.GossipsubProtocol"))
@@ -131,6 +131,18 @@ internal static class Program
                     l.UseUtcTimestamp = true;
                 });
         });
+        // var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
+        // {
+        //     builder
+        //         .SetMinimumLevel(LogLevel.Information)
+        //         .AddProvider(new CustomConsoleLoggerProvider(
+        //             config => config.EventId == 0, 
+        //             new CustomConsoleLogger.CustomConsoleLoggerConfiguration
+        //             {
+        //                 EventId = 0,
+        //                 TimestampPrefix = "[HH:mm:ss]"
+        //             }));
+        // });
         services.AddBeaconClient(beaconClientBuilder =>
             {
                 beaconClientBuilder.AddDiscoveryProtocol(discv5Builder =>
@@ -144,7 +156,10 @@ internal static class Program
                 beaconClientBuilder.WithBeaconClientOptions(options =>
                 {
                     options.TcpPort = 9005;
-                    options.EnableDiscovery = false;
+                    options.EnableDiscovery = true;
+                    //options.Bootnodes = ["/ip4/50.195.130.74/tcp/9000/p2p/16Uiu2HAkvSLFzPogiUZn1wFEskrUoJt9DGot3PbfeSE5zHqS32FM"];
+                    //options.Bootnodes = ["/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ"]; // Teku
+                    //options.Bootnodes = ["/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww"]; // Erigon
                     //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAm6R996q426GYUyExKSYdKxhbD5iYedbuqQovVPTJFVHPv"];
                     //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
                     //options.Bootnodes = ["/ip4/54.38.80.34/tcp/9000/p2p/16Uiu2HAm8t1aQArVwrJ9fwHRGXL2sXumPGTvmsne14piPaFJ5FYi"]; // Lighthouse
@@ -158,7 +173,7 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("0185a0716c173da858a048bfe9581c9329cd267fd086eb1f314166e503ec4a90");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("d3045825aa880bee480fb638f164e49bd887a599b3b89f37ea6bfc4c4f7aadd3");
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

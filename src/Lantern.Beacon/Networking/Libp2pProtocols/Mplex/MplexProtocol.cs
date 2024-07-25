@@ -65,12 +65,18 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
 
         foreach (var upChannel in peerState.InitiatorChannels.Values)
         {
-            _ = upChannel.Channel?.CloseAsync();
+            if (upChannel.Channel != null)
+            {
+                await upChannel.Channel.CloseAsync();
+            }
         }
         
         foreach (var upChannel in peerState.ReceiverChannels.Values)
         {
-            _ = upChannel.Channel?.CloseAsync();
+            if(upChannel.Channel != null)
+            {
+                await upChannel.Channel.CloseAsync();
+            }
         }
 
         peerState.InitiatorChannels.Clear();
@@ -422,7 +428,6 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
             var headerSize = VarInt.GetSizeInBytes(header);
             var lengthSize = VarInt.GetSizeInBytes((ulong)message.Data.Length);
             var totalSize = headerSize + lengthSize + (int)message.Data.Length;
-            
             var buffer = new byte[totalSize];
             var offset = 0;
             
