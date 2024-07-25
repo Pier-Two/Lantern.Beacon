@@ -16,42 +16,50 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
 
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        var ping = Ping.CreateFrom(peerState.MetaData.SeqNumber);
-        var sszData = Ping.Serialize(ping);
-        var payload = ReqRespHelpers.EncodeRequest(sszData);
-        var rawData = new ReadOnlySequence<byte>(payload);
-
-        _logger?.LogInformation("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
-
-        await downChannel.WriteAsync(rawData);
-        var receivedData = new List<byte[]>();
-
-        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
+        try
         {
-            receivedData.Add(readOnlySequence.ToArray());
-        }
+            var ping = Ping.CreateFrom(peerState.MetaData.SeqNumber);
+            var sszData = Ping.Serialize(ping);
+            var payload = ReqRespHelpers.EncodeRequest(sszData);
+            var rawData = new ReadOnlySequence<byte>(payload);
+
+            _logger?.LogInformation("Sending ping to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
+
+            await downChannel.WriteAsync(rawData);
+            var receivedData = new List<byte[]>();
+
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync())
+            {
+                receivedData.Add(readOnlySequence.ToArray());
+            }
         
-        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+            if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+            {
+                // Log that we received an empty or null response
+                _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                await downChannel.CloseAsync();
+                return;
+            }
+
+            var flatData = receivedData.SelectMany(x => x).ToArray();
+            var result = ReqRespHelpers.DecodeResponse(flatData);
+        
+            if(result.Item2 != ResponseCodes.Success)
+            {
+                _logger?.LogError("Failed to decode ping response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                await downChannel.CloseAsync();
+                return;
+            }
+        
+            var pingResponse = Ping.Deserialize(result.Item1);
+        
+            _logger?.LogInformation("Received pong response from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
+        }
+        catch (Exception ex)
         {
-            // Log that we received an empty or null response
-            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogError(ex, "Error while dialing for ping request to {PeerId}", context.RemotePeer.Address.Get<P2P>());
             await downChannel.CloseAsync();
-            return;
         }
-
-        var flatData = receivedData.SelectMany(x => x).ToArray();
-        var result = ReqRespHelpers.DecodeResponse(flatData);
-        
-        if(result.Item2 != ResponseCodes.Success)
-        {
-            _logger?.LogError("Failed to decode ping response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-            await downChannel.CloseAsync();
-            return;
-        }
-        
-        var pingResponse = Ping.Deserialize(result.Item1);
-        
-        _logger?.LogInformation("Received pong from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
@@ -64,15 +72,10 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
         {
             await foreach (var readOnlySequence in downChannel.ReadAllAsync())
             {
-                Console.WriteLine("Received data: " + Convert.ToHexString(readOnlySequence.ToArray()));
                 receivedData.Add(readOnlySequence.ToArray());
             }
-            
-            Console.WriteLine("Finished receiving data...");
         
             var flatData = receivedData.SelectMany(x => x).ToArray();
-            
-            Console.WriteLine("Flat data: " + Convert.ToHexString(flatData));
             var result = ReqRespHelpers.DecodeRequest(flatData);
 
             if (result == null)
@@ -89,11 +92,12 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
         
             await downChannel.WriteAsync(rawData);
         
-            _logger?.LogInformation("Sent pong to {PeerId} with SeqNumber {Value} and data {Data}", context.RemotePeer.Address.Get<P2P>(), peerState.MetaData.SeqNumber, Convert.ToHexString(payload));
+            _logger?.LogInformation("Sent pong response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         }
         catch (Exception ex)
         {
             _logger?.LogError(ex, "Error while listening for ping request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
         }
     }
 }

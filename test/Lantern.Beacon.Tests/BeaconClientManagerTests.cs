@@ -5,7 +5,6 @@ using Lantern.Beacon.Sync;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Identity;
-using Lantern.Discv5.WireProtocol.Utility;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Multiformats.Address;

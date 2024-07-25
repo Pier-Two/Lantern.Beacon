@@ -80,31 +80,64 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 {
                     case ForkType.Deneb:
                         var denebLightClientUpdate = DenebLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                        DenebProcessors.ProcessLightClientUpdate(syncProtocol.DenebLightClientStore, denebLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                        liteDbService.Store(nameof(DenebLightClientUpdate), denebLightClientUpdate);
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
-                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        var denebResult = DenebProcessors.ProcessLightClientUpdate(syncProtocol.DenebLightClientStore, denebLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+                        if (denebResult)
+                        {
+                            liteDbService.Store(nameof(DenebLightClientUpdate), denebLightClientUpdate);
+                            liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                            
+                            _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
+                        else
+                        {
+                            _logger?.LogError("Failed to process light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
                         break;
                     case ForkType.Capella:
                         var capellaLightClientUpdate = CapellaLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                        CapellaProcessors.ProcessLightClientUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                        liteDbService.Store(nameof(CapellaLightClientUpdate), capellaLightClientUpdate);
-                        liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore), syncProtocol.CapellaLightClientStore);
-                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        var capellaResult = CapellaProcessors.ProcessLightClientUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+                        if (capellaResult)
+                        {
+                            liteDbService.Store(nameof(CapellaLightClientUpdate), capellaLightClientUpdate);
+                            liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore), syncProtocol.CapellaLightClientStore);
+                            _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
+                        else
+                        {
+                            _logger?.LogError("Failed to process light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
                         break;
                     case ForkType.Bellatrix:
                         var bellatrixLightClientUpdate = AltairLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                        AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                        liteDbService.Store(nameof(AltairLightClientUpdate), bellatrixLightClientUpdate);
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
-                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        var bellatrixResult = AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+                        if (bellatrixResult)
+                        {
+                            liteDbService.Store(nameof(AltairLightClientUpdate), bellatrixLightClientUpdate);
+                            liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
+                            _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
+                        else
+                        {
+                            _logger?.LogError("Failed to process light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
                         break;
                     case ForkType.Altair:
                         var altairLightClientUpdate = AltairLightClientUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                        AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, altairLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-                        liteDbService.Store(nameof(AltairLightClientUpdate), altairLightClientUpdate);
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
-                        _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        var altairResult = AltairProcessors.ProcessLightClientUpdate(syncProtocol.AltairLightClientStore, altairLightClientUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+                        if (altairResult)
+                        {
+                            liteDbService.Store(nameof(AltairLightClientUpdate), altairLightClientUpdate);
+                            liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
+                            _logger?.LogInformation("Processed light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
+                        else
+                        {
+                            _logger?.LogError("Failed to process light client update response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        }
                         break;
                     case ForkType.Phase0:
                         _logger?.LogError("Received light client update response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());
@@ -161,13 +194,13 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 }
                 else
                 {
-                    _logger?.LogInformation("Sending light client update response to {PeerId}",
-                        context.RemotePeer.Address.Get<P2P>());
                     var sszData = DenebLightClientUpdate.Serialize(response, syncProtocol.Options.Preset);
                     var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
                     await downChannel.WriteAsync(rawData);
+                    _logger?.LogInformation("Sent light client update response to {PeerId} for sync period {startPeriod}",
+                        context.RemotePeer.Address.Get<P2P>(), request.StartPeriod);
                 }
             }
         }

@@ -64,31 +64,63 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
             {
                 case ForkType.Deneb:
                     var denebLightClientBootstrap = DenebLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    syncProtocol.InitialiseStoreFromDenebBootstrap(syncProtocol.Options.TrustedBlockRoot, denebLightClientBootstrap);
-                    syncProtocol.SetActiveFork(ForkType.Deneb);
-                    liteDbService.Store(nameof(DenebLightClientBootstrap), denebLightClientBootstrap);
-                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    var denebResult = syncProtocol.InitialiseStoreFromDenebBootstrap(syncProtocol.Options.TrustedBlockRoot, denebLightClientBootstrap);
+
+                    if (denebResult)
+                    {
+                        syncProtocol.SetActiveFork(ForkType.Deneb);
+                        liteDbService.Store(nameof(DenebLightClientBootstrap), denebLightClientBootstrap);
+                        _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
+                    else
+                    {
+                        _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
                     break;
                 case ForkType.Capella:
                     var capellaLightClientBootstrap = CapellaLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    syncProtocol.InitialiseStoreFromCapellaBootstrap(syncProtocol.Options.TrustedBlockRoot, capellaLightClientBootstrap);
-                    syncProtocol.SetActiveFork(ForkType.Capella);
-                    liteDbService.Store(nameof(CapellaLightClientBootstrap), capellaLightClientBootstrap);
-                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    var capellaResult = syncProtocol.InitialiseStoreFromCapellaBootstrap(syncProtocol.Options.TrustedBlockRoot, capellaLightClientBootstrap);
+
+                    if (capellaResult)
+                    {
+                        syncProtocol.SetActiveFork(ForkType.Capella);
+                        liteDbService.Store(nameof(CapellaLightClientBootstrap), capellaLightClientBootstrap);
+                        _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
+                    else
+                    {
+                        _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, bellatrixLightClientBootstrap);
-                    syncProtocol.SetActiveFork(ForkType.Bellatrix);
-                    liteDbService.Store(nameof(AltairLightClientBootstrap), bellatrixLightClientBootstrap);
-                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    var bellatrixResult = syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, bellatrixLightClientBootstrap);
+
+                    if (bellatrixResult)
+                    {
+                        syncProtocol.SetActiveFork(ForkType.Bellatrix);
+                        liteDbService.Store(nameof(AltairLightClientBootstrap), bellatrixLightClientBootstrap);
+                        _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
+                    else
+                    {
+                        _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
                     break;
                 case ForkType.Altair:
                     var altairLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, altairLightClientBootstrap);
-                    syncProtocol.SetActiveFork(ForkType.Altair);
-                    liteDbService.Store(nameof(AltairLightClientBootstrap), altairLightClientBootstrap);
-                    _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    var altairResult = syncProtocol.InitialiseStoreFromAltairBootstrap(syncProtocol.Options.TrustedBlockRoot, altairLightClientBootstrap);
+
+                    if (altairResult)
+                    {
+                        syncProtocol.SetActiveFork(ForkType.Altair);
+                        liteDbService.Store(nameof(AltairLightClientBootstrap), altairLightClientBootstrap);
+                        _logger?.LogInformation("Processed light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
+                    else
+                    {
+                        _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
+                    }
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client bootstrap response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());
@@ -147,13 +179,13 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
             }
             else
             {
-                _logger?.LogDebug("Sending light client bootstrap response to {PeerId}",
-                    context.RemotePeer.Address.Get<P2P>());
                 var sszData = DenebLightClientBootstrap.Serialize(response, syncProtocol.Options.Preset);
                 var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);
+                _logger?.LogDebug("Sent light client bootstrap response to {PeerId}",
+                    context.RemotePeer.Address.Get<P2P>());
             }
         }
         catch (Exception ex)
