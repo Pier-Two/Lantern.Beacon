@@ -94,9 +94,6 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
         await discv5Protocol.StopAsync();
     }
     
-    //
-
-    // Need to separate Discover and Refresh
     public Func<Multiaddress[], bool>? OnAddPeer { get; set; }
     
     public Func<Multiaddress[], bool>? OnRemovePeer { get; set; }

@@ -75,7 +75,6 @@ public class AltairSyncTests : FileFixtureBase
                 Assert.That(_syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["finalized_header"]["slot"])));
                 Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(_options.Preset), Is.EqualTo(TestUtility.HexToByteArray((string)step["process_update"]["checks"]["optimistic_header"]["beacon_root"])));
                 Assert.That(_syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot, Is.EqualTo(uint.Parse((string)step["process_update"]["checks"]["optimistic_header"]["slot"])));
-                
             }
         }
     }

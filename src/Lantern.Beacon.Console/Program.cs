@@ -16,62 +16,7 @@ public class NodeTableEntry {
 }
 
 internal static class Program
-{
-    // private static List<NodeTableEntry> bucket = new List<NodeTableEntry>();
-    // private static Dictionary<Guid, NodeTableEntry> routingTable = new Dictionary<Guid, NodeTableEntry>();
-    // private static List<HashSet<Guid>> _pathBuckets = new List<HashSet<Guid>>();
-    // private static HashSet<Guid> requestManager = new HashSet<Guid>();
-    //
-    // static void Main() {
-    //     // Setup a large number of nodes for the test
-    //     for (int i = 0; i < 10000; i++) {
-    //         var id = Guid.NewGuid();
-    //         bucket.Add(new NodeTableEntry { Id = id });
-    //         if (i % 2 == 0) routingTable[id] = new NodeTableEntry { Id = id };
-    //         if (i % 3 == 0) requestManager.Add(id);
-    //         if (i % 4 == 0) _pathBuckets.Add(new HashSet<Guid> { id });
-    //     }
-    //     
-    //     var senderNodeId = 0;  // Simulate the senderNodeId
-    //     var queryCount = 1000;
-    //     
-    //     var sw = Stopwatch.StartNew();
-    //     
-    //     // LINQ approach
-    //     sw.Restart();
-    //     var nodesToQueryLinq = bucket
-    //         .Where(node => routingTable.ContainsKey(node.Id))
-    //         .Where(node => !_pathBuckets.Any(pathBucket => pathBucket.Contains(node.Id)))
-    //         .Where(node => !requestManager.Contains(node.Id))
-    //         .Take(queryCount)
-    //         .ToList();
-    //     sw.Stop();
-    //     var linqTime = sw.ElapsedMilliseconds;
-    //     System.Console.WriteLine($"LINQ approach took: {linqTime} ms");
-    //     
-    //     // Manual loop approach
-    //     sw.Restart();
-    //     var nodesToQueryLoop = new List<NodeTableEntry>();
-    //     foreach (var node in bucket) {
-    //         if (nodesToQueryLoop.Count >= queryCount)
-    //             break;
-    //         
-    //         if (!routingTable.ContainsKey(node.Id))
-    //             continue;
-    //
-    //         if (_pathBuckets.Any(pathBucket => pathBucket.Contains(node.Id)))
-    //             continue;
-    //
-    //         if (requestManager.Contains(node.Id))
-    //             continue;
-    //
-    //         nodesToQueryLoop.Add(node);
-    //     }
-    //     sw.Stop();
-    //     var loopTime = sw.ElapsedMilliseconds;
-    //     System.Console.WriteLine($"Manual loop approach took: {loopTime} ms");
-    // }
-    
+{ 
     public static async Task Main()
     {
         var bootstrapEnrs = new[]
@@ -113,7 +58,7 @@ internal static class Program
         var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Information)
+                .SetMinimumLevel(LogLevel.Debug)
                 // .AddFilter((category, level) =>
                 // {
                 //     if (category.StartsWith("Nethermind.Libp2p.Protocols.Pubsub.GossipsubProtocolV11") || category.StartsWith("Nethermind.Libp2p.Protocols.Pubsub.GossipsubProtocol"))
@@ -173,7 +118,7 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("d3045825aa880bee480fb638f164e49bd887a599b3b89f37ea6bfc4c4f7aadd3");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("b6ae5813712eb99c84c3e53a7e91b5cf5e82722297e03432be3de6e4da05f1a4");
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

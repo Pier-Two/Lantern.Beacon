@@ -36,7 +36,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try 
         { 
             var result = await customDiscoveryProtocol.InitAsync(); 
-
+     
             if (!result) 
             { 
                 _logger.LogError("Failed to start beacon client manager"); 
@@ -51,14 +51,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             
             if(clientOptions.Bootnodes.Length > 0) 
             { 
-                _logger.LogInformation("Adding bootnodes to the queue");
                 foreach (var bootnode in clientOptions.Bootnodes) 
-                { 
+                {
                     var peerAddress = Multiaddress.Decode(bootnode); 
                     _peersToDial.Enqueue(peerAddress); 
                 } 
-                
-                _logger.LogInformation("Bootnodes added to the queue");
+       
+                _logger.LogInformation("Added bootnodes for dialing");
             }
             
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
@@ -97,6 +96,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         
         await _cancellationTokenSource.CancelAsync();
         await customDiscoveryProtocol.StopAsync();
+        
         _cancellationTokenSource.Dispose();
         _cancellationTokenSource = null;
     }
@@ -185,13 +185,24 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     {
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(1000, token);
-            
-            if (peerState.LivePeers.IsEmpty) 
-                continue;
-            
-            var peer = peerState.LivePeers.First();
-            await RunSyncProtocolAsync(peer.Value, token);
+            try
+            {
+                await Task.Delay(1000, token);
+
+                if (peerState.LivePeers.IsEmpty)
+                    continue;
+
+                var peer = peerState.LivePeers.First();
+                await RunSyncProtocolAsync(peer.Value, token);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogDebug("Cancelled monitoring peer count for sync");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while monitoring peer count for sync");
+            }
         }
     }
 

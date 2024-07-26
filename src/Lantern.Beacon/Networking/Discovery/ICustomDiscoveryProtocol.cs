@@ -11,7 +11,7 @@ public interface ICustomDiscoveryProtocol
     
     Task StopAsync();
     
-    Func<Multiaddress[], bool>? OnAddPeer { set; }
+    Func<Multiaddress[], bool>? OnAddPeer { set; get; }
     
-    Func<Multiaddress[], bool>? OnRemovePeer { set; }
+    Func<Multiaddress[], bool>? OnRemovePeer { set; get; }
 }
