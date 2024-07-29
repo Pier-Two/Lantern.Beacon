@@ -189,7 +189,6 @@ public class BeaconClientManagerTests
         var cts = new CancellationTokenSource();
         var startTask = _beaconClientManager.StartAsync(cts.Token);
         
-        await Task.Delay(500, cts.Token);
         await _beaconClientManager.StopAsync();
     
         Assert.That(startTask.IsCompleted, Is.True, "StartAsync should be canceled when the cancellation token is triggered");
