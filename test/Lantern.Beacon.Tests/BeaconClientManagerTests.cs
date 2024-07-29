@@ -6,7 +6,6 @@ using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Presets;
-using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
@@ -193,8 +192,6 @@ public class BeaconClientManagerTests
         
         await Task.Delay(500, cts.Token);
         await _beaconClientManager.StopAsync();
-        
-        await cts.CancelAsync();
     
         Assert.That(startTask.IsCompleted, Is.True, "StartAsync should be canceled when the cancellation token is triggered");
     }
