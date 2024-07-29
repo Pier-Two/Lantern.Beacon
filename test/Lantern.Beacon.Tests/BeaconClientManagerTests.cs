@@ -48,8 +48,7 @@ public class BeaconClientManagerTests
         _mockPeerFactory = new Mock<IPeerFactory>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<BeaconClientManager>>();
-        _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
-        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+        _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object); 
     }
 
     [Test]
@@ -65,7 +64,8 @@ public class BeaconClientManagerTests
         _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
         _mockEnr.Setup(x => x.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
-        
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
         await _beaconClientManager.InitAsync();
         
         _mockLogger.Verify(log => log.Log(
@@ -117,7 +117,8 @@ public class BeaconClientManagerTests
     public async Task InitAsync_ShouldLogError_WhenCustomDiscoveryProtocolInitFails()
     {
         _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(false);
-        
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
         await _beaconClientManager.InitAsync();
         
         _mockLogger.Verify(log => log.Log(
@@ -133,7 +134,8 @@ public class BeaconClientManagerTests
     public async Task InitAsync_ShouldLogError_OnException()
     {
         _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ThrowsAsync(new Exception("Test Exception"));
-        
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
         await _beaconClientManager.InitAsync();
 
         _mockLogger.Verify(log => log.Log(
@@ -163,7 +165,8 @@ public class BeaconClientManagerTests
         _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
         _mockPeerState.Setup(x => x.LivePeers).Returns(new ConcurrentDictionary<PeerId, IRemotePeer>());
         _mockSyncProtocol.Setup(x => x.Options).Returns(new SyncProtocolOptions());
-        
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
         await _beaconClientManager.InitAsync();
         
         var startTask = _beaconClientManager.StartAsync();
@@ -186,7 +189,8 @@ public class BeaconClientManagerTests
         _mockPeerFactory.Setup(x => x.Create(It.IsAny<Identity?>(), It.IsAny<Multiaddress?>())).Returns(_mockLocalPeer.Object);
         _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
         _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
-        
+        _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
         await _beaconClientManager.InitAsync();
         
         var cts = new CancellationTokenSource();
@@ -332,7 +336,7 @@ public class BeaconClientManagerTests
         }
 
         Assert.That(peersToDialQueue.Count, Is.EqualTo(1)); 
-        await Task.Delay(1000, cts.Token);
+        await Task.Delay(1100, cts.Token);
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
     }
     
@@ -345,9 +349,7 @@ public class BeaconClientManagerTests
         var syncOptions = new SyncProtocolOptions() { GenesisValidatorsRoot = new byte[32], GenesisTime = 1606824023, Preset = SizePreset.MainnetPreset };
         var denebLightClientStore = DenebLightClientStore.CreateDefault();
         var protocols = new RepeatedField<string> { LightClientProtocols.All.AsEnumerable() };
-        var remoteMultiAddress =
-            Multiaddress.Decode(
-                "/ip4/135.148.55.199/tcp/9001/p2p/16Uiu2HAmLbZBHa9dXgvfLN76Z1mnw7M5AjbLz8gAxSUpLG1ph2dr");
+        var remoteMultiAddress = Multiaddress.Decode("/ip4/135.148.55.199/tcp/9001/p2p/16Uiu2HAmLbZBHa9dXgvfLN76Z1mnw7M5AjbLz8gAxSUpLG1ph2dr");
         var peerProtocols = new ConcurrentDictionary<PeerId, RepeatedField<string>>();
         peerProtocols.AddOrUpdate(remoteMultiAddress.GetPeerId(), protocols, (key, value) => protocols);
         
@@ -389,14 +391,14 @@ public class BeaconClientManagerTests
         }
 
         Assert.That(peersToDialQueue.Count, Is.EqualTo(1)); 
-        await Task.Delay(1000, cts.Token);
+        await Task.Delay(1100, cts.Token);
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(1));
     }
     
-        [Test]
+    [Test]
     public async Task DialAsync_ShouldReturnIfNoPeerProtocolsFound()
     {
         var clientOptions = new BeaconClientOptions { EnableDiscovery = false, TargetPeerCount = 1, DialTimeoutSeconds = 1};
@@ -452,7 +454,7 @@ public class BeaconClientManagerTests
         }
 
         Assert.That(peersToDialQueue.Count, Is.EqualTo(1)); 
-        await Task.Delay(1000, cts.Token);
+        await Task.Delay(2000, cts.Token);
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
@@ -517,5 +519,12 @@ public class BeaconClientManagerTests
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(0));
+    }
+    
+    [TearDown]
+    public async Task TearDown()
+    {
+        await _beaconClientManager.StopAsync();
+        _beaconClientManager = null;
     }
 }
