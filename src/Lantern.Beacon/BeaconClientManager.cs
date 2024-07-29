@@ -301,7 +301,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    Console.WriteLine("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols");
+
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
