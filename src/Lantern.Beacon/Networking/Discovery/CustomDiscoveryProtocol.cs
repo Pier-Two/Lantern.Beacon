@@ -78,8 +78,6 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                 
                 if (!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)) || !node.HasKey(EnrEntryKey.Eth2))
                     continue;
-                        
-                _logger.LogInformation("Discovered node: {Node}", node);
  
                 var multiAddress = BeaconClientUtility.ConvertToMultiAddress(node);
                     
