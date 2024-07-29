@@ -4,6 +4,10 @@ using System.Reflection;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Config;
+using Lantern.Beacon.Sync.Presets;
+using Lantern.Beacon.Sync.Types.Ssz.Altair;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Identity;
@@ -13,6 +17,7 @@ using Multiformats.Address;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
 using NUnit.Framework;
+using SszSharp;
 
 namespace Lantern.Beacon.Tests;
 
@@ -185,19 +190,17 @@ public class BeaconClientManagerTests
         
         var cts = new CancellationTokenSource();
         var startTask = _beaconClientManager.StartAsync(cts.Token);
-    
-
-        await Task.Delay(500);
+        
+        await Task.Delay(500, cts.Token);
         await _beaconClientManager.StopAsync();
         
-        cts.Cancel();
-        await Task.Delay(500); // Give a small buffer for cancellation to propagate
+        await cts.CancelAsync();
     
         Assert.That(startTask.IsCompleted, Is.True, "StartAsync should be canceled when the cancellation token is triggered");
     }
     
     [Test]
-    public async Task DisplaySyncStatus_ShouldLogInformationRegardlessOfTextContent()
+    public async Task DisplaySyncStatus_ShouldLogInformation()
     {
         var bootnodes = new[] { "/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww", "/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ" };
         var clientOptions = new BeaconClientOptions { Bootnodes = bootnodes };
@@ -226,5 +229,40 @@ public class BeaconClientManagerTests
                 null, 
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()), 
             Times.AtLeastOnce);
+    }
+    
+    [Test]
+    public async Task ProcessPeerDiscoveryAsync_ShouldRunCorrectly()
+    {
+        var clientOptions = new BeaconClientOptions { EnableDiscovery = true, TargetPeerCount = 1 };
+        var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
+        var syncOptions = new SyncProtocolOptions()
+        {
+            GenesisValidatorsRoot = new byte[32],
+            GenesisTime = 1606824023,
+            Preset = SizePreset.MainnetPreset,
+        };
+        var denebLightClientStore = DenebLightClientStore.CreateDefault();
+        
+        Phase0Preset.InitializeWithMainnet();
+        AltairPreset.InitializeWithMainnet();
+        Config.InitializeWithMainnet(); 
+        
+        _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(true);
+        _mockLocalPeer.Setup(x => x.Address).Returns(multiAddress);
+        _mockPeerFactory.Setup(x => x.Create(It.IsAny<Identity?>(), It.IsAny<Multiaddress?>())).Returns(_mockLocalPeer.Object);
+        _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
+        _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
+        _mockPeerState.Setup(x => x.LivePeers).Returns(new ConcurrentDictionary<PeerId, IRemotePeer>());
+        _mockSyncProtocol.Setup(x => x.DenebLightClientStore).Returns(denebLightClientStore);
+        _mockSyncProtocol.Setup(x => x.Options).Returns(syncOptions);
+        _beaconClientManager = new BeaconClientManager(clientOptions, _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
+        await _beaconClientManager.InitAsync();
+
+        var cts = new CancellationTokenSource(2000); 
+        await _beaconClientManager.StartAsync(cts.Token);
+    
+        _mockCustomDiscoveryProtocol.Verify(x => x.GetDiscoveredNodesAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 }

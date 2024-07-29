@@ -45,6 +45,13 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
         try
         {
             var nodes = discv5Protocol.GetActiveNodes;
+            
+            if(!discv5Protocol.GetActiveNodes.Any())
+            {
+                _logger.LogInformation("No active nodes found. Skipping discovery");
+                return;
+            }
+            
             var discoveredNodes = new List<IEnr?>();
             var randomNodeId = new byte[32];
             
@@ -58,7 +65,7 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                 {
                     continue;
                 }
-                
+
                 discoveredNodes.AddRange(nodesResponse);
             }
             
@@ -68,10 +75,12 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
             {
                 if(node == null)
                     continue;
-                    
+                
                 if (!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)) || !node.HasKey(EnrEntryKey.Eth2))
                     continue;
                         
+                _logger.LogInformation("Discovered node: {Node}", node);
+ 
                 var multiAddress = BeaconClientUtility.ConvertToMultiAddress(node);
                     
                 if(multiAddress == null)
@@ -79,9 +88,12 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                     
                 multiaddresses.Add(multiAddress);  
             }
-                
-            OnAddPeer?.Invoke(multiaddresses.ToArray());
-            _logger.LogInformation("Collected {Count} peers to dial", multiaddresses.Count);
+
+            if (multiaddresses.Count != 0)
+            {
+                OnAddPeer?.Invoke(multiaddresses.ToArray());
+                _logger.LogInformation("Collected {Count} peers to dial", multiaddresses.Count);
+            }
         }
         catch (Exception ex)
         {
