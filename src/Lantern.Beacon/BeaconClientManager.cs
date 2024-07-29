@@ -161,9 +161,8 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 }
                 else if(!_peersToDial.IsEmpty)
                 {
-                    _logger.LogInformation("Attempting to dialing peers...");
                     var dialingTasks = new List<Task>();
-
+                    
                     while (_peersToDial.TryDequeue(out var peerAddress))
                     {
                         await semaphore.WaitAsync(token);
@@ -263,7 +262,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             _logger.LogError("Peer's address is null. Cannot dial discovered peer");
             return;
         }
-
+        
         var ip4 = peer.Get<IP4>().Value.ToString();
         var tcpPort = peer.Get<TCP>().Value.ToString();
         var peerId = peer.GetPeerId();
@@ -279,7 +278,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try
         {
             _logger.LogDebug("Dialing peer at address: {PeerAddress}, {Count} peers remaining for dialing", peer, _peersToDial.Count);
-
+            
             var dialTask = LocalPeer.DialAsync(peer, token);
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
             var completedTask = await Task.WhenAny(dialTask, timeoutTask);
@@ -302,7 +301,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    
+                    Console.WriteLine("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols");
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
