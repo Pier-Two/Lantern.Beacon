@@ -387,7 +387,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
             var denebOptimisticPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot));
             var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-
+            
             if (denebFinalizedPeriod == denebOptimisticPeriod && !DenebHelpers.IsNextSyncCommitteeKnown(syncProtocol.DenebLightClientStore))
             {
                 syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(denebFinalizedPeriod, 1);
@@ -396,7 +396,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     "Next sync committee is not known. Requesting light client updates by range for period {Period}", 
                     denebOptimisticPeriod
                 );
-
+                
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
             }
             
@@ -435,7 +435,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 capellaCurrentPeriod
             );
 
-            if (capellaFinalizedPeriod == capellaOptimisticPeriod && !AltairHelpers.IsNextSyncCommitteeKnown(syncProtocol.AltairLightClientStore))
+            if (capellaFinalizedPeriod == capellaOptimisticPeriod && !CapellaHelpers.IsNextSyncCommitteeKnown(syncProtocol.CapellaLightClientStore))
             {
                 syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(capellaFinalizedPeriod, 1);
 
