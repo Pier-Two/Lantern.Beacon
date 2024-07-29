@@ -252,17 +252,11 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         return true;
     }
 
-    private async Task DialPeer(Multiaddress? peer, CancellationToken token = default)
+    private async Task DialPeer(Multiaddress peer, CancellationToken token = default)
     {
         if (LocalPeer == null)
         {
             _logger.LogError("Local peer is null. Cannot dial peer");
-            return;
-        }
-
-        if (peer == null)
-        {
-            _logger.LogError("Peer's address is null. Cannot dial discovered peer");
             return;
         }
         
