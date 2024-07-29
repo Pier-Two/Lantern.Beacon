@@ -92,7 +92,6 @@ public class BeaconClientManagerTests
         
         await _beaconClientManager.InitAsync();
         
-        // Use reflection to access the private _peersToDial field
         var fieldInfo = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance)!;
         var peersToDial = (ConcurrentQueue<Multiaddress>)fieldInfo.GetValue(_beaconClientManager)!;
         
