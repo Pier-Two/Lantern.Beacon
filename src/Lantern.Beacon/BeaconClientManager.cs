@@ -293,6 +293,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 if (!result)
                 {
                     _logger.LogInformation("No protocols found for peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
+                    await dialTask.Result.DisconnectAsync();
                     return;
                 }
 
