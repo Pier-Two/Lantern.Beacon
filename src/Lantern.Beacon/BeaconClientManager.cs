@@ -28,7 +28,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 {
     private readonly ILogger<BeaconClientManager> _logger = loggerFactory.CreateLogger<BeaconClientManager>();
     private readonly ConcurrentQueue<Multiaddress> _peersToDial = new(); 
-    private CancellationTokenSource? _cancellationTokenSource; 
+    public CancellationTokenSource? CancellationTokenSource { get; private set; }
     public ILocalPeer? LocalPeer { get; private set; } 
 
     public async Task InitAsync(CancellationToken token = default) 
@@ -77,28 +77,28 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             throw new Exception("Local peer is not initialized. Cannot start peer manager");
         }
         
-        _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+        CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         
-        var syncTask = Task.Run(async () => await DisplaySyncStatus(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-        var peerDiscoveryTask = Task.Run(() => ProcessPeerDiscoveryAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-        var runSyncTask = Task.Run(() => MonitorPeerCountForSync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+        var syncTask = Task.Run(async () => await DisplaySyncStatus(CancellationTokenSource.Token), CancellationTokenSource.Token);
+        var peerDiscoveryTask = Task.Run(() => ProcessPeerDiscoveryAsync(CancellationTokenSource.Token), CancellationTokenSource.Token);
+        var runSyncTask = Task.Run(() => MonitorPeerCountForSync(CancellationTokenSource.Token), CancellationTokenSource.Token);
 
         await Task.WhenAll(syncTask, peerDiscoveryTask, runSyncTask);
     }
 
     public async Task StopAsync()
     {
-        if (_cancellationTokenSource == null)
+        if (CancellationTokenSource == null)
         {
             _logger.LogWarning("Peer manager is not running. Nothing to stop");
             return;
         }
         
-        await _cancellationTokenSource.CancelAsync();
+        await CancellationTokenSource.CancelAsync();
         await customDiscoveryProtocol.StopAsync();
         
-        _cancellationTokenSource.Dispose();
-        _cancellationTokenSource = null;
+        CancellationTokenSource.Dispose();
+        CancellationTokenSource = null;
     }
     
     private async Task DisplaySyncStatus(CancellationToken token)
@@ -118,9 +118,9 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 await Task.Delay(Config.SecondsPerSlot * 1000, token);
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                _logger.LogDebug("Cancelled displaying sync status");
+                _logger.LogDebug("Stopping sync status logging");
             }
         }
     }
@@ -186,13 +186,11 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     _logger.LogInformation("Finished dialing all peers");
                 }
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                _logger.LogDebug("Cancelled peer discovery");
+                _logger.LogDebug("Stopping peer discovery");
             }
         }
-        
-        _logger.LogInformation("Stopping peer discovery...");
     }
     
     private async Task MonitorPeerCountForSync(CancellationToken token)
@@ -211,7 +209,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             }
             catch (OperationCanceledException)
             {
-                _logger.LogDebug("Cancelled monitoring peer count for sync");
+                _logger.LogDebug("Stopping monitoring peer count for sync");
             }
             catch (Exception ex)
             {
@@ -225,6 +223,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try
         {
             await DialPeer(peerAddress, token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Stopping dialing peer: {Peer}", peerAddress);
         }
         finally
         {
@@ -333,20 +335,21 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             {
                 await peer.DialAsync<LightClientBootstrapProtocol>(token);
             }
-            
+
             if (!syncProtocol.IsInitialised)
             {
-                _logger.LogWarning("Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...", 
-                    peer.Address.Get<IP4>().Value.ToString(), 
-                    peer.Address.Get<TCP>().Value.ToString(), 
+                _logger.LogWarning(
+                    "Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...",
+                    peer.Address.Get<IP4>().Value.ToString(),
+                    peer.Address.Get<TCP>().Value.ToString(),
                     peer.Address.Get<P2P>().Value.ToString());
                 await peer.DialAsync<GoodbyeProtocol>(token);
             }
             else
             {
-                _logger.LogInformation("Successfully initialised light client. Started syncing"); 
+                _logger.LogInformation("Successfully initialised light client. Started syncing");
                 var activeFork = syncProtocol.ActiveFork;
-            
+
                 switch (activeFork)
                 {
                     case ForkType.Deneb:
@@ -366,6 +369,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                         break;
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Stopping sync protocol...");
         }
         catch (Exception ex)
         {

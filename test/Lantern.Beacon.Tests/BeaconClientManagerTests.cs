@@ -203,6 +203,45 @@ public class BeaconClientManagerTests
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()), 
             Times.AtLeastOnce);
     }
+
+    [Test]
+    public async Task StopAsync_ShouldStopCorrectly()
+    {
+        var clientOptions = new BeaconClientOptions { EnableDiscovery = true, TargetPeerCount = 1 };
+        var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
+        var syncOptions = new SyncProtocolOptions()
+        {
+            GenesisValidatorsRoot = new byte[32],
+            GenesisTime = 1606824023,
+            Preset = SizePreset.MainnetPreset,
+        };
+        var denebLightClientStore = DenebLightClientStore.CreateDefault();
+                
+        Phase0Preset.InitializeWithMainnet();
+        AltairPreset.InitializeWithMainnet();
+        Config.InitializeWithMainnet(); 
+        
+        _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(true);
+        _mockLocalPeer.Setup(x => x.Address).Returns(multiAddress);
+        _mockPeerFactory.Setup(x => x.Create(It.IsAny<Identity?>(), It.IsAny<Multiaddress?>())).Returns(_mockLocalPeer.Object);
+        _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryIp>())).Returns(new EntryIp(IPAddress.Parse("192.168.1.1")));
+        _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
+        _mockPeerState.Setup(x => x.LivePeers).Returns(new ConcurrentDictionary<PeerId, IRemotePeer>());
+        _mockSyncProtocol.Setup(x => x.DenebLightClientStore).Returns(denebLightClientStore);
+        _mockSyncProtocol.Setup(x => x.Options).Returns(syncOptions);
+        _beaconClientManager = new BeaconClientManager(clientOptions, _manualDiscoveryProtocolMock.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
+
+        await _beaconClientManager.InitAsync();
+        
+        _beaconClientManager.StartAsync();
+        
+        Assert.That(_beaconClientManager.LocalPeer, Is.Not.Null);
+
+        await Task.Delay(1000);
+        await _beaconClientManager.StopAsync();
+        
+        Assert.That(_beaconClientManager.CancellationTokenSource, Is.Null);
+    }
     
     [Test]
     public async Task ProcessPeerDiscoveryAsync_ShouldRunCorrectly()

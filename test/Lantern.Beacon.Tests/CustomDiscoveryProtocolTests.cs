@@ -163,5 +163,4 @@ public class CustomDiscoveryProtocolTests
         
         Assert.That(onAddPeerInvoked, Is.True, "OnAddPeer was not invoked.");
     }
-    
 }
