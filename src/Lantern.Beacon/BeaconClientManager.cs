@@ -201,9 +201,12 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 await Task.Delay(1000, token);
 
                 if (peerState.LivePeers.IsEmpty)
-                    continue;
+                {
+                    continue; 
+                }
 
                 var peer = peerState.LivePeers.First();
+  
                 await RunSyncProtocolAsync(peer.Value, token);
             }
             catch (OperationCanceledException)
