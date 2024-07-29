@@ -108,18 +108,12 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             try
             {
                 _logger.LogInformation(
+                    "Slot: {CurrentSlot}, Finalized Period: {FinalizedPeriod}, Optimistic Period: {OptimisticPeriod}, Current Period: {CurrentPeriod}, Head Block: 0x{HeadBlock}, Peer Count: {PeerCount}",
                     Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime),
-                    AltairHelpers.ComputeSyncCommitteePeriod(
-                        Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon
-                            .Slot)),
-                    AltairHelpers.ComputeSyncCommitteePeriod(
-                        Phase0Helpers.ComputeEpochAtSlot(
-                            syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
-                    AltairHelpers.ComputeSyncCommitteePeriod(
-                        Phase0Helpers.ComputeEpochAtSlot(
-                            Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
-                    Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon
-                        .GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
+                    Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(),
                     peerState.LivePeers.Count);
 
                 await Task.Delay(Config.SecondsPerSlot * 1000, token);
