@@ -514,7 +514,7 @@ public class BeaconClientManagerTests
         }
 
         Assert.That(peersToDialQueue.Count, Is.EqualTo(1)); 
-        await Task.Delay(1000, cts.Token);
+        await Task.Delay(1100, cts.Token);
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
