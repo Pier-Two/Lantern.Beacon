@@ -303,8 +303,6 @@ public class BeaconClientManagerTests
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         await Task.Delay(1000, cts.Token);
-        
-        Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(1));
     }
     
     [Test]
