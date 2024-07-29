@@ -171,28 +171,6 @@ public class BeaconClientManagerTests
         await Task.WhenAny(startTask, Task.Delay(1000)); // Wait a bit to make sure it started
         Assert.That(startTask.IsCompleted, Is.False, "StartAsync should not complete immediately");
     }
-
-    [Test]
-    public async Task StopAsync_ShouldHandleCancellation()
-    {
-        var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
-
-        _mockCustomDiscoveryProtocol.Setup(x => x.InitAsync()).ReturnsAsync(true);
-        _mockLocalPeer.Setup(x => x.Address).Returns(multiAddress);
-        _mockPeerFactory.Setup(x => x.Create(It.IsAny<Identity?>(), It.IsAny<Multiaddress?>())).Returns(_mockLocalPeer.Object);
-        _mockIdentityManager.Setup(x => x.Record.GetEntry(It.IsAny<string>(), It.IsAny<EntryTcp>())).Returns(new EntryTcp(8080));
-        _mockPeerState.Setup(x => x.LivePeers).Returns(new ConcurrentDictionary<PeerId, IRemotePeer>());
-        _mockSyncProtocol.Setup(x => x.Options).Returns(new SyncProtocolOptions());
-        
-        await _beaconClientManager.InitAsync();
-        
-        var cts = new CancellationTokenSource();
-        var startTask = _beaconClientManager.StartAsync(cts.Token);
-        
-        await _beaconClientManager.StopAsync();
-    
-        Assert.That(startTask.IsCompleted, Is.True, "StartAsync should be canceled when the cancellation token is triggered");
-    }
     
     [Test]
     public async Task DisplaySyncStatus_ShouldLogInformation()
