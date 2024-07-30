@@ -4,8 +4,6 @@ using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
-using Lantern.Beacon.Sync.Helpers;
-using Lantern.Beacon.Sync.Processors;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
@@ -19,7 +17,9 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
-    public async Task InitAsync(CancellationToken token = default)
+    public CancellationTokenSource? CancellationTokenSource { get; private set; }
+    
+    public async Task InitAsync()
     {
         try
         {
@@ -35,12 +35,12 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
             peerState.Init(peerFactoryBuilder.AppLayerProtocols);
             gossipSubManager.Init();
 
-            if (gossipSubManager.LightClientFinalityUpdate == null || gossipSubManager.LightClientOptimisticUpdate == null)
+            if (gossipSubManager.LightClientFinalityUpdate == null && gossipSubManager.LightClientOptimisticUpdate == null)
             {
                 return;
             }
             
-            await beaconClientManager.InitAsync(token);
+            await beaconClientManager.InitAsync();
         }
         catch (Exception e)
         {
@@ -53,6 +53,8 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
     {
         try
         { 
+            CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+            
             await gossipSubManager.StartAsync(token);
             await beaconClientManager.StartAsync(token); 
         }
@@ -65,8 +67,18 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
     
     public async Task StopAsync()
     {
+        if (CancellationTokenSource == null)
+        {
+            _logger.LogWarning("Beacon client is not running. Nothing to stop");
+            return;
+        }
+        
+        await CancellationTokenSource.CancelAsync();
         await gossipSubManager.StopAsync();
         await beaconClientManager.StopAsync();
+        
         liteDbService.Dispose();
+        CancellationTokenSource.Dispose();
+        CancellationTokenSource = null;
     }
 }

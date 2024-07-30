@@ -680,7 +680,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         
         _beaconClientManager.StartAsync(cts.Token);
         
@@ -743,7 +743,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         
         _beaconClientManager.StartAsync(cts.Token);
         
@@ -808,7 +808,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         _beaconClientManager.StartAsync(cts.Token);
         await Task.Delay(1000, cts.Token);
         
@@ -870,7 +870,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         _beaconClientManager.StartAsync(cts.Token);
         await Task.Delay(1000, cts.Token);
         
@@ -932,7 +932,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         _beaconClientManager.StartAsync(cts.Token);
         await Task.Delay(1000, cts.Token);
         
@@ -994,7 +994,7 @@ public class BeaconClientManagerTests
         var peersToDialField = typeof(BeaconClientManager).GetField("_peersToDial", BindingFlags.NonPublic | BindingFlags.Instance);
         var peersToDialQueue = (ConcurrentQueue<Multiaddress>)peersToDialField.GetValue(_beaconClientManager);
         
-        await _beaconClientManager.InitAsync(cts.Token);
+        await _beaconClientManager.InitAsync();
         _beaconClientManager.StartAsync(cts.Token);
         await Task.Delay(1000, cts.Token);
         

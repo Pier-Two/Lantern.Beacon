@@ -15,11 +15,11 @@ namespace Lantern.Beacon;
 
 public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconClientServiceBuilder
 {
-    private readonly IDiscv5ProtocolBuilder? _discv5ProtocolBuilder = new Discv5ProtocolBuilder(services);
     private SyncProtocolOptions _syncProtocolOptions = new();
     private BeaconClientOptions _beaconClientOptions = new();
-    private ILoggerFactory _loggerFactory = LoggingOptions.Default;
+    private IDiscv5ProtocolBuilder _discv5ProtocolBuilder = new Discv5ProtocolBuilder(services);
     private IServiceProvider? _serviceProvider;
+    private ILoggerFactory _loggerFactory = LoggingOptions.Default;
     
     public IBeaconClientServiceBuilder AddDiscoveryProtocol(Action<IDiscv5ProtocolBuilder> configure)
     {
@@ -27,8 +27,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
         return this;
     }
 
-    public IBeaconClientServiceBuilder AddLibp2pProtocol(
-        Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup)
+    public IBeaconClientServiceBuilder AddLibp2pProtocol(Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup)
     {
         services.AddScoped(sp => factorySetup(new BeaconClientPeerFactoryBuilder(sp)))
             .AddScoped<PubsubRouter>()
@@ -75,11 +74,6 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
     
     public IBeaconClient Build()
     {
-        if(_discv5ProtocolBuilder == null)
-        {
-            throw new ArgumentNullException(nameof(_discv5ProtocolBuilder));
-        }
-        
         services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions, _syncProtocolOptions, _loggerFactory);
         _serviceProvider = services.BuildServiceProvider();
         

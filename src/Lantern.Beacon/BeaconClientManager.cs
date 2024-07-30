@@ -31,7 +31,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     public CancellationTokenSource? CancellationTokenSource { get; private set; }
     public ILocalPeer? LocalPeer { get; private set; } 
 
-    public async Task InitAsync(CancellationToken token = default) 
+    public async Task InitAsync() 
     { 
         try 
         { 
