@@ -1,5 +1,6 @@
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
+using Lantern.Beacon.Networking.ReqRespProtocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols;
 using Nethermind.Libp2p.Protocols.Pubsub;
@@ -37,6 +38,15 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
                 .AddAppLayerProtocol<PeerIdentifyProtocol>()
                 .AddAppLayerProtocol<GossipsubProtocol>()
                 .AddAppLayerProtocol<GossipsubProtocolV11>()
-                .AddAppLayerProtocol<FloodsubProtocol>();
+                .AddAppLayerProtocol<GossipsubProtocolV12>()
+                .AddAppLayerProtocol<FloodsubProtocol>()
+                .AddAppLayerProtocol<PingProtocol>()
+                .AddAppLayerProtocol<StatusProtocol>()
+                .AddAppLayerProtocol<MetaDataProtocol>()
+                .AddAppLayerProtocol<GoodbyeProtocol>()
+                .AddAppLayerProtocol<LightClientBootstrapProtocol>()
+                .AddAppLayerProtocol<LightClientFinalityUpdateProtocol>()
+                .AddAppLayerProtocol<LightClientOptimisticUpdateProtocol>()
+                .AddAppLayerProtocol<LightClientUpdatesByRangeProtocol>();
     }
 }

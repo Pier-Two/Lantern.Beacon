@@ -28,7 +28,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 {
     private readonly ILogger<BeaconClientManager> _logger = loggerFactory.CreateLogger<BeaconClientManager>();
     private readonly ConcurrentQueue<Multiaddress> _peersToDial = new(); 
-    private CancellationTokenSource? _cancellationTokenSource; 
+    public CancellationTokenSource? CancellationTokenSource { get; private set; }
     public ILocalPeer? LocalPeer { get; private set; } 
 
     public async Task InitAsync(CancellationToken token = default) 
@@ -36,7 +36,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try 
         { 
             var result = await customDiscoveryProtocol.InitAsync(); 
-
+     
             if (!result) 
             { 
                 _logger.LogError("Failed to start beacon client manager"); 
@@ -51,14 +51,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             
             if(clientOptions.Bootnodes.Length > 0) 
             { 
-                _logger.LogInformation("Adding bootnodes to the queue");
                 foreach (var bootnode in clientOptions.Bootnodes) 
-                { 
+                {
                     var peerAddress = Multiaddress.Decode(bootnode); 
                     _peersToDial.Enqueue(peerAddress); 
                 } 
-                
-                _logger.LogInformation("Bootnodes added to the queue");
+       
+                _logger.LogInformation("Added bootnodes for dialing");
             }
             
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
@@ -78,43 +77,51 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             throw new Exception("Local peer is not initialized. Cannot start peer manager");
         }
         
-        _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+        CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         
-        var syncTask = Task.Run(async () => await DisplaySyncStatus(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-        var peerDiscoveryTask = Task.Run(() => ProcessPeerDiscoveryAsync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
-        var runSyncTask = Task.Run(() => MonitorPeerCountForSync(_cancellationTokenSource.Token), _cancellationTokenSource.Token);
+        var syncTask = Task.Run(async () => await DisplaySyncStatus(CancellationTokenSource.Token), CancellationTokenSource.Token);
+        var peerDiscoveryTask = Task.Run(() => ProcessPeerDiscoveryAsync(CancellationTokenSource.Token), CancellationTokenSource.Token);
+        var runSyncTask = Task.Run(() => MonitorPeerCountForSync(CancellationTokenSource.Token), CancellationTokenSource.Token);
 
         await Task.WhenAll(syncTask, peerDiscoveryTask, runSyncTask);
     }
 
     public async Task StopAsync()
     {
-        if (_cancellationTokenSource == null)
+        if (CancellationTokenSource == null)
         {
             _logger.LogWarning("Peer manager is not running. Nothing to stop");
             return;
         }
         
-        await _cancellationTokenSource.CancelAsync();
+        await CancellationTokenSource.CancelAsync();
         await customDiscoveryProtocol.StopAsync();
-        _cancellationTokenSource.Dispose();
-        _cancellationTokenSource = null;
+        
+        CancellationTokenSource.Dispose();
+        CancellationTokenSource = null;
     }
     
     private async Task DisplaySyncStatus(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
-            _logger.LogInformation(
-                "Slot: {CurrentSlot}, Finalized Period: {FinalizedPeriod}, Optimistic Period: {OptimisticPeriod}, Current Period: {CurrentPeriod}, Head Block: 0x{HeadBlock}, Peer Count: {PeerCount}", 
-                Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime),
-                AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
-                AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
-                AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
-                Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(), 
-                peerState.LivePeers.Count);
+            try
+            {
+                _logger.LogInformation(
+                    "Slot: {CurrentSlot}, Finalized Period: {FinalizedPeriod}, Optimistic Period: {OptimisticPeriod}, Current Period: {CurrentPeriod}, Head Block: 0x{HeadBlock}, Peer Count: {PeerCount}",
+                    Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
+                    AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
+                    Convert.ToHexString(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.GetHashTreeRoot(syncProtocol.Options.Preset).AsSpan(0, 4).ToArray()).ToLower(),
+                    peerState.LivePeers.Count);
 
-            await Task.Delay(Config.SecondsPerSlot * 1000, token);
+                await Task.Delay(Config.SecondsPerSlot * 1000, token);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogDebug("Stopping sync status logging");
+            }
         }
     }
 
@@ -125,73 +132,91 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(1000, token);
-
-            if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
+            try
             {
-                continue;
-            }
+                await Task.Delay(1000, token);
 
-            if (_peersToDial.IsEmpty && clientOptions.EnableDiscovery)
-            {
-                if (LocalPeer == null)
+                if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
                 {
-                    _logger.LogError("Local peer is null. Cannot discover new peers");
-                    return;
+                    continue;
                 }
 
-                try
+                if (_peersToDial.IsEmpty && clientOptions.EnableDiscovery)
                 {
-                    _logger.LogInformation("Discovering more peers...");
-                    await customDiscoveryProtocol.GetDiscoveredNodesAsync(LocalPeer.Address, token);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error occurred during peer discovery");
-                }
-            }
-            else if(!_peersToDial.IsEmpty)
-            {
-                _logger.LogInformation("Dialing peers...");
-                var dialingTasks = new List<Task>();
-
-                while (_peersToDial.TryDequeue(out var peerAddress))
-                {
-                    await semaphore.WaitAsync(token);
-                    
-                    if (peerAddress == null)
+                    if (LocalPeer == null)
                     {
-                        semaphore.Release();
-                        continue;
+                        _logger.LogError("Local peer is null. Cannot discover new peers");
+                        return;
                     }
                     
-                    var dialTask = DialPeerWithThrottling(peerAddress, semaphore, token);
-                    dialingTasks.Add(dialTask); 
+                    try
+                    {
+                        _logger.LogInformation("Discovering more peers...");
+                        await customDiscoveryProtocol.GetDiscoveredNodesAsync(LocalPeer.Address, token);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error occurred during peer discovery");
+                    }
                 }
-                
-                if (dialingTasks.Count > 0)
+                else if(!_peersToDial.IsEmpty)
                 {
-                    _logger.LogDebug("Waiting for {Count} dialing tasks to complete", dialingTasks.Count);
+                    var dialingTasks = new List<Task>();
+                    
+                    while (_peersToDial.TryDequeue(out var peerAddress))
+                    {
+                        await semaphore.WaitAsync(token);
+                    
+                        if (peerAddress == null)
+                        {
+                            semaphore.Release();
+                            continue;
+                        }
+                    
+                        var dialTask = DialPeerWithThrottling(peerAddress, semaphore, token);
+                        dialingTasks.Add(dialTask); 
+                    }
+
+                    if (dialingTasks.Count <= 0) 
+                        continue;
+                
                     await Task.WhenAll(dialingTasks);
+                    
                     _logger.LogInformation("Finished dialing all peers");
                 }
             }
+            catch (OperationCanceledException)
+            {
+                _logger.LogDebug("Stopping peer discovery");
+            }
         }
-        
-        _logger.LogInformation("Stopping peer discovery...");
     }
     
     private async Task MonitorPeerCountForSync(CancellationToken token)
     {
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(1000, token);
-            
-            if (peerState.LivePeers.IsEmpty) 
-                continue;
-            
-            var peer = peerState.LivePeers.First();
-            await RunSyncProtocolAsync(peer.Value, token);
+            try
+            {
+                await Task.Delay(1000, token);
+
+                if (peerState.LivePeers.IsEmpty)
+                {
+                    continue; 
+                }
+
+                var peer = peerState.LivePeers.First();
+  
+                await RunSyncProtocolAsync(peer.Value, token);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogDebug("Stopping monitoring peer count for sync");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while monitoring peer count for sync");
+            }
         }
     }
 
@@ -200,6 +225,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try
         {
             await DialPeer(peerAddress, token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Stopping dialing peer: {Peer}", peerAddress);
         }
         finally
         {
@@ -216,27 +245,21 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         
         foreach (var peer in newPeers)
         {
-            _logger.LogDebug("New peer added: {Peer}", peer);
+            _logger.LogDebug("Discovered new peer: {Peer}", peer);
             _peersToDial.Enqueue(peer);
         }
         
         return true;
     }
 
-    private async Task DialPeer(Multiaddress? peer, CancellationToken token = default)
+    private async Task DialPeer(Multiaddress peer, CancellationToken token = default)
     {
         if (LocalPeer == null)
         {
             _logger.LogError("Local peer is null. Cannot dial peer");
             return;
         }
-
-        if (peer == null)
-        {
-            _logger.LogError("Peer's address is null. Cannot dial discovered peer");
-            return;
-        }
-
+        
         var ip4 = peer.Get<IP4>().Value.ToString();
         var tcpPort = peer.Get<TCP>().Value.ToString();
         var peerId = peer.GetPeerId();
@@ -252,7 +275,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         try
         {
             _logger.LogDebug("Dialing peer at address: {PeerAddress}, {Count} peers remaining for dialing", peer, _peersToDial.Count);
-
+            
             var dialTask = LocalPeer.DialAsync(peer, token);
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
             var completedTask = await Task.WhenAny(dialTask, timeoutTask);
@@ -267,6 +290,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 if (!result)
                 {
                     _logger.LogInformation("No protocols found for peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
+                    await dialTask.Result.DisconnectAsync();
                     return;
                 }
 
@@ -275,7 +299,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation("Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort, peerIdString);
-                    
+
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
                     peerState.LivePeers.TryAdd(peer.GetPeerId()!, dialTask.Result);
                 }
@@ -308,20 +332,21 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             {
                 await peer.DialAsync<LightClientBootstrapProtocol>(token);
             }
-            
+
             if (!syncProtocol.IsInitialised)
             {
-                _logger.LogWarning("Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...", 
-                    peer.Address.Get<IP4>().Value.ToString(), 
-                    peer.Address.Get<TCP>().Value.ToString(), 
+                _logger.LogWarning(
+                    "Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...",
+                    peer.Address.Get<IP4>().Value.ToString(),
+                    peer.Address.Get<TCP>().Value.ToString(),
                     peer.Address.Get<P2P>().Value.ToString());
                 await peer.DialAsync<GoodbyeProtocol>(token);
             }
             else
             {
-                _logger.LogInformation("Successfully initialised light client. Started syncing"); 
+                _logger.LogInformation("Successfully initialised light client. Started syncing");
                 var activeFork = syncProtocol.ActiveFork;
-            
+
                 switch (activeFork)
                 {
                     case ForkType.Deneb:
@@ -342,6 +367,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogDebug("Stopping sync protocol...");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred while running the sync protocol for peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", 
@@ -358,7 +387,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
             var denebOptimisticPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot));
             var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-
+            
             if (denebFinalizedPeriod == denebOptimisticPeriod && !DenebHelpers.IsNextSyncCommitteeKnown(syncProtocol.DenebLightClientStore))
             {
                 syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(denebFinalizedPeriod, 1);
@@ -367,7 +396,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     "Next sync committee is not known. Requesting light client updates by range for period {Period}", 
                     denebOptimisticPeriod
                 );
-
+                
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
             }
             
@@ -406,7 +435,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 capellaCurrentPeriod
             );
 
-            if (capellaFinalizedPeriod == capellaOptimisticPeriod && !AltairHelpers.IsNextSyncCommitteeKnown(syncProtocol.AltairLightClientStore))
+            if (capellaFinalizedPeriod == capellaOptimisticPeriod && !CapellaHelpers.IsNextSyncCommitteeKnown(syncProtocol.CapellaLightClientStore))
             {
                 syncProtocol.LightClientUpdatesByRangeRequest = LightClientUpdatesByRangeRequest.CreateFrom(capellaFinalizedPeriod, 1);
 

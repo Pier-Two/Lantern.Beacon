@@ -71,73 +71,93 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         _cancellationTokenSource = null;
     }
     
-        private void HandleLightClientFinalityUpdate(byte[] update)
+    private void HandleLightClientFinalityUpdate(byte[] update)
     {
-        var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
-        var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-        var decompressedData = Snappy.Decode(update);
-        var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
-        var lightClientFinalityUpdate = DenebLightClientFinalityUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
-
-        _logger.LogInformation("Received light client finality update from gossip for slot {Slot}", lightClientFinalityUpdate.SignatureSlot);
-
-        if (denebFinalizedPeriod + 1 < denebCurrentPeriod) 
-            return;
-        
-        var oldFinalizedHeader = syncProtocol.DenebLightClientStore.FinalizedHeader;
-        var result = DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore, lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-        _logger.LogInformation("Processed light client finality update from gossip");
-
-        if (result)
+        try
         {
-            if (!DenebHelpers.ShouldForwardFinalizedLightClientUpdate(lightClientFinalityUpdate, oldFinalizedHeader, syncProtocol))
+            var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+                Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
+            var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
+                Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
+            var decompressedData = Snappy.Decode(update);
+            var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
+            var lightClientFinalityUpdate =
+                DenebLightClientFinalityUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
+
+            _logger.LogInformation("Received light client finality update from gossip for slot {Slot}",
+                lightClientFinalityUpdate.SignatureSlot);
+
+            if (denebFinalizedPeriod + 1 < denebCurrentPeriod)
                 return;
-            
-            LightClientFinalityUpdate!.Publish(update);
-            _logger.LogInformation("Forwarded light client finality update to gossip");
-            
-            syncProtocol.CurrentLightClientFinalityUpdate = lightClientFinalityUpdate;
-            liteDbService.Store(nameof(DenebLightClientFinalityUpdate), lightClientFinalityUpdate);
-            liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+
+            var oldFinalizedHeader = syncProtocol.DenebLightClientStore.FinalizedHeader;
+            var result = DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore,
+                lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+            _logger.LogInformation("Processed light client finality update from gossip");
+
+            if (result)
+            {
+                if (!DenebHelpers.ShouldForwardFinalizedLightClientUpdate(lightClientFinalityUpdate, oldFinalizedHeader,
+                        syncProtocol))
+                    return;
+
+                LightClientFinalityUpdate!.Publish(update);
+                _logger.LogDebug("Forwarded light client finality update to gossip");
+
+                syncProtocol.CurrentLightClientFinalityUpdate = lightClientFinalityUpdate;
+                liteDbService.Store(nameof(DenebLightClientFinalityUpdate), lightClientFinalityUpdate);
+                liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to process light client finality update from gossip. Ignoring...");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogWarning("Failed to process light client finality update from gossip. Ignoring...");
+            _logger.LogError(ex, "Failed to process light client finality update from gossip");
         }
     }
     
     private void HandleLightClientOptimisticUpdate(byte[] update)
     {
-        var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
-        var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-        var decompressedData = Snappy.Decode(update);
-        var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
-        var lightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
-        
-        _logger.LogInformation("Received light client optimistic update from gossip for slot {Slot}", lightClientOptimisticUpdate.SignatureSlot);
-
-        if (denebFinalizedPeriod + 1 < denebCurrentPeriod) 
-            return;
-        
-        var oldOptimisticHeader = syncProtocol.DenebLightClientStore.OptimisticHeader;
-        var result = DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-
-        if (result)
+        try
         {
-            _logger.LogInformation("Processed light client optimistic update from gossip");
-            if (!DenebHelpers.ShouldForwardLightClientOptimisticUpdate(lightClientOptimisticUpdate, oldOptimisticHeader, syncProtocol))
+            var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
+            var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
+            var decompressedData = Snappy.Decode(update);
+            var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
+            var lightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
+            
+            _logger.LogInformation("Received light client optimistic update from gossip for slot {Slot}", lightClientOptimisticUpdate.SignatureSlot);
+
+            if (denebFinalizedPeriod + 1 < denebCurrentPeriod) 
                 return;
             
-            LightClientFinalityUpdate!.Publish(update);
-            _logger.LogInformation("Forwarded light client optimistic update to gossip");
+            var oldOptimisticHeader = syncProtocol.DenebLightClientStore.OptimisticHeader;
+            var result = DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, lightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+
+            if (result)
+            {
+                _logger.LogInformation("Processed light client optimistic update from gossip");
+                if (!DenebHelpers.ShouldForwardLightClientOptimisticUpdate(lightClientOptimisticUpdate, oldOptimisticHeader, syncProtocol))
+                    return;
                 
-            syncProtocol.CurrentLightClientOptimisticUpdate = lightClientOptimisticUpdate;
-            liteDbService.Store(nameof(DenebLightClientOptimisticUpdate), lightClientOptimisticUpdate); 
-            liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                LightClientFinalityUpdate!.Publish(update);
+                _logger.LogDebug("Forwarded light client optimistic update to gossip");
+                    
+                syncProtocol.CurrentLightClientOptimisticUpdate = lightClientOptimisticUpdate;
+                liteDbService.Store(nameof(DenebLightClientOptimisticUpdate), lightClientOptimisticUpdate); 
+                liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to process light client optimistic update from gossip. Ignoring...");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _logger.LogWarning("Failed to process light client optimistic update from gossip. Ignoring...");
+            _logger.LogError(ex, "Failed to process light client optimistic update from gossip");
         }
     }
 }

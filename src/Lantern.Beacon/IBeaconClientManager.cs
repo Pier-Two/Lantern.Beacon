@@ -4,6 +4,8 @@ namespace Lantern.Beacon;
 
 public interface IBeaconClientManager
 { 
+    CancellationTokenSource? CancellationTokenSource { get; }
+    
     ILocalPeer? LocalPeer { get; }
     
     Task InitAsync(CancellationToken token = default);

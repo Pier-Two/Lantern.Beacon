@@ -63,6 +63,29 @@ public class Config
         GenesisForkVersion = MainnetConfig.GenesisForkVersion;
     }
     
+    public static void InitializeWithHolesky()
+    {
+        MinGenesisTime = HoleskyConfig.MinGenesisTime;
+        GenesisDelay = HoleskyConfig.GenesisDelay;
+        SecondsPerSlot = HoleskyConfig.SecondsPerSlot;
+        TimeToFirstByteTimeout = HoleskyConfig.TimeToFirstByteTimeout;
+        RespTimeout = HoleskyConfig.RespTimeout;
+        AttestationSubnetCount = HoleskyConfig.AttestationSubnetCount;
+        SyncCommitteeSubnetCount = HoleskyConfig.SyncCommitteeSubnetCount;
+        GossipMaxSize = HoleskyConfig.GossipMaxSize;
+        MaxRequestLightClientUpdates = HoleskyConfig.MaxRequestLightClientUpdates;
+        AltairForkVersion = HoleskyConfig.AltairForkVersion;
+        AltairForkEpoch = HoleskyConfig.AltairForkEpoch;
+        BellatrixForkVersion = HoleskyConfig.BellatrixForkVersion;
+        BellatrixForkEpoch = HoleskyConfig.BellatrixForkEpoch;
+        CapellaForkVersion = HoleskyConfig.CapellaForkVersion;
+        CapellaForkEpoch = HoleskyConfig.CapellaForkEpoch;
+        DenebForkVersion = HoleskyConfig.DenebForkVersion;
+        DenebForkEpoch = HoleskyConfig.DenebForkEpoch;
+        ElectraForkVersion = HoleskyConfig.ElectraForkVersion;
+        GenesisForkVersion = HoleskyConfig.GenesisForkVersion;
+    }
+
     public static void InitializeWithMinimal()
     {
         MinGenesisTime = MinimalConfig.MinGenesisTime;
@@ -84,5 +107,28 @@ public class Config
         DenebForkEpoch = MinimalConfig.DenebForkEpoch;
         ElectraForkVersion = MinimalConfig.ElectraForkVersion;
         GenesisForkVersion = MinimalConfig.GenesisForkVersion;
+    }
+    
+    public static void InitializeWithCustom(ConfigSettings config)
+    {
+        MinGenesisTime = config.MinGenesisTime;
+        GenesisDelay = config.GenesisDelay;
+        SecondsPerSlot = config.SecondsPerSlot;
+        TimeToFirstByteTimeout = config.TimeToFirstByteTimeout;
+        RespTimeout = config.RespTimeout;
+        AttestationSubnetCount = config.AttestationSubnetCount;
+        SyncCommitteeSubnetCount = config.SyncCommitteeSubnetCount;
+        GossipMaxSize = config.GossipMaxSize;
+        MaxRequestLightClientUpdates = config.MaxRequestLightClientUpdates;
+        AltairForkVersion = config.AltairForkVersion;
+        AltairForkEpoch = config.AltairForkEpoch;
+        BellatrixForkVersion = config.BellatrixForkVersion;
+        BellatrixForkEpoch = config.BellatrixForkEpoch;
+        CapellaForkVersion = config.CapellaForkVersion;
+        CapellaForkEpoch = config.CapellaForkEpoch;
+        DenebForkVersion = config.DenebForkVersion;
+        DenebForkEpoch = config.DenebForkEpoch;
+        ElectraForkVersion = config.ElectraForkVersion;
+        GenesisForkVersion = config.GenesisForkVersion;
     }
 }
