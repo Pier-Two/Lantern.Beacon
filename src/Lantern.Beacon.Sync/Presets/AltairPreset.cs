@@ -14,10 +14,24 @@ public static class AltairPreset
         MinSyncCommitteeParticipants = Mainnet.AltairPresetValues.MinSyncCommitteeParticipants;
     }
 
+    public static void InitializeWithHolesky()
+    {
+        SyncCommitteeSize = Holesky.AltairPresetValues.SyncCommitteeSize;
+        EpochsPerSyncCommitteePeriod = Holesky.AltairPresetValues.EpochsPerSyncCommitteePeriod;
+        MinSyncCommitteeParticipants = Holesky.AltairPresetValues.MinSyncCommitteeParticipants;
+    }
+    
     public static void InitializeWithMinimal()
     {
         SyncCommitteeSize = Minimal.AltairPresetValues.SyncCommitteeSize;
         EpochsPerSyncCommitteePeriod = Minimal.AltairPresetValues.EpochsPerSyncCommitteePeriod;
         MinSyncCommitteeParticipants = Minimal.AltairPresetValues.MinSyncCommitteeParticipants;
+    }
+    
+    public static void InitializeWithCustom(PresetSettings preset)
+    {
+        SyncCommitteeSize = preset.SyncCommitteeSize;
+        EpochsPerSyncCommitteePeriod = preset.EpochsPerSyncCommitteePeriod;
+        MinSyncCommitteeParticipants = preset.MinSyncCommitteeParticipants;
     }
 }

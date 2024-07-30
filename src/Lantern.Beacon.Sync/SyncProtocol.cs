@@ -5,7 +5,6 @@ using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
-using SszSharp;
 
 namespace Lantern.Beacon.Sync;
 
@@ -37,18 +36,31 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
         DenebLightClientFinalityUpdate? finalityUpdate,
         DenebLightClientOptimisticUpdate? optimisticUpdate)
     {
-        if (options.Preset.Equals(SizePreset.MainnetPreset)) 
+        if (options.Network.Equals(NetworkType.Mainnet)) 
         { 
             Config.Config.InitializeWithMainnet(); 
             Phase0Preset.InitializeWithMainnet(); 
             AltairPreset.InitializeWithMainnet(); 
         } 
-        else if (options.Preset.Equals(SizePreset.MinimalPreset)) 
+        else if (options.Network.Equals(NetworkType.Holesky)) 
         { 
-            Config.Config.InitializeWithMinimal(); 
-            Phase0Preset.InitializeWithMinimal(); 
-            AltairPreset.InitializeWithMinimal(); 
+            Config.Config.InitializeWithHolesky(); 
+            Phase0Preset.InitializeWithHolesky(); 
+            AltairPreset.InitializeWithHolesky(); 
         } 
+        else if (options.Network.Equals(NetworkType.Custom))
+        {
+            if(options is { ConfigSettings: not null, PresetSettings: not null })
+            {
+                Config.Config.InitializeWithCustom(options.ConfigSettings);
+                Phase0Preset.InitializeWithCustom(options.PresetSettings);
+                AltairPreset.InitializeWithCustom(options.PresetSettings);
+            }
+            else
+            {
+                throw new Exception("Custom config and preset settings not provided");
+            }
+        }
         else 
         { 
             throw new Exception("Invalid preset type"); 

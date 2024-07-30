@@ -1,6 +1,6 @@
-﻿using Lantern.Discv5.Enr;
+﻿using Lantern.Beacon.Sync.Types;
+using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
-using Lantern.Discv5.Enr.Identity.V4;
 using Lantern.Discv5.WireProtocol.Connection;
 using Lantern.Discv5.WireProtocol.Session;
 using Lantern.Discv5.WireProtocol.Table;
@@ -10,10 +10,6 @@ using Microsoft.Extensions.Logging.Console;
 using SszSharp;
 
 namespace Lantern.Beacon.Console;
-
-public class NodeTableEntry {
-    public Guid Id { get; set; }
-}
 
 internal static class Program
 { 
@@ -109,7 +105,7 @@ internal static class Program
                     //options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"];
                     //options.Bootnodes = ["/ip4/54.38.80.34/tcp/9000/p2p/16Uiu2HAm8t1aQArVwrJ9fwHRGXL2sXumPGTvmsne14piPaFJ5FYi"]; // Lighthouse
                     //options.Bootnodes = ["/ip4/37.27.63.66/tcp/9115/p2p/16Uiu2HAm8BCbnKxJnsNq6uJAhGe3wNrUiiLCTete2vP5UUT99oNL"];
-                    options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"]; // Lodestar
+                    options.Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm1iCnKSNGhee2RKa1EYbazz4JJ8CDVVCPLyXS9PFYPG1A"]; // Lodestar
                     //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmQW7R658hXDAGvR9mRr56JyX4UJpcB5KiGoDv4ENyBFX1"];
                     //options.Bootnodes = ["/ip4/0.0.0.0/tcp/9000/p2p/16Uiu2HAm6R996q426GYUyExKSYdKxhbD5iYedbuqQovVPTJFVHPv"];
                 });
@@ -118,7 +114,8 @@ internal static class Program
                     syncProtocol.Preset = SizePreset.MainnetPreset;
                     syncProtocol.GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95");
                     syncProtocol.GenesisTime = 1606824023;
-                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("b6ae5813712eb99c84c3e53a7e91b5cf5e82722297e03432be3de6e4da05f1a4");
+                    syncProtocol.TrustedBlockRoot = Convert.FromHexString("9344d07abccaa481cb301e804c99d9b3102fb70c0d950354c8d22f6f0f389ef2");
+                    syncProtocol.Network = NetworkType.Mainnet;
                 });
                 beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
                 beaconClientBuilder.WithLoggerFactory(libp2p2LoggerFactory);

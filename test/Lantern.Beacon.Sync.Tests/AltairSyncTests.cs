@@ -30,6 +30,7 @@ public class AltairSyncTests : FileFixtureBase
         _options = new SyncProtocolOptions();
         _options.Preset = SizePreset.MinimalPreset;
         _syncProtocol = new SyncProtocol(_options, LoggingOptions.Default);
+        
         Config.Config.InitializeWithMinimal();
         Phase0Preset.InitializeWithMinimal();
         AltairPreset.InitializeWithMinimal();

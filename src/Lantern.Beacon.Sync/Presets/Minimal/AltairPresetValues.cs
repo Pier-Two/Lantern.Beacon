@@ -1,6 +1,6 @@
 namespace Lantern.Beacon.Sync.Presets.Minimal;
 
-public static class AltairPresetValues 
+public class AltairPresetValues
 {
     public const int SyncCommitteeSize = 32;
     
