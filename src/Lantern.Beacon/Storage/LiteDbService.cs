@@ -93,7 +93,12 @@ public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory lo
             return collection.FindOne(predicate);
         }
     }
-
+    
+    public void Dispose()
+    {
+        Dispose(true);
+    }
+    
     private void Dispose(bool disposing)
     {
         lock (_lock)
@@ -103,10 +108,5 @@ public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory lo
                 _liteDatabase?.Dispose();
             }
         }
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
     }
 }
