@@ -11,7 +11,6 @@ using Moq;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols.Pubsub;
 
-
 namespace Lantern.Beacon.Tests;
 
 [TestFixture]

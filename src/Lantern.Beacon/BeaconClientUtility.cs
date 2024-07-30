@@ -56,8 +56,23 @@ public static class BeaconClientUtility
             return false;
         }
         
-        ip = enr.GetEntry<EntryIp>(ipKey).Value;
-        port = enr.GetEntry<EntryTcp>(portKey).Value;
+        if(ipKey == EnrEntryKey.Ip)
+        {
+            ip = enr.GetEntry<EntryIp>(ipKey).Value;
+        }
+        else if(ipKey == EnrEntryKey.Ip6)
+        {
+            ip = enr.GetEntry<EntryIp6>(ipKey).Value;
+        }
+        
+        if(portKey == EnrEntryKey.Tcp)
+        {
+            port = enr.GetEntry<EntryTcp>(portKey).Value;
+        }
+        else if(portKey == EnrEntryKey.Tcp6)
+        {
+            port = enr.GetEntry<EntryTcp6>(portKey).Value;
+        }
         
         return true;
     }
