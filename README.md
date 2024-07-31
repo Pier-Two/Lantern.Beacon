@@ -2,7 +2,7 @@
   <h1 align="center">Lantern.Beacon</h1>
 </div>
 
-Lantern.Beacon is a .NET library that allows connecting with Ethereum's consensus layer nodes using [Libp2p](https://github.com/NethermindEth/dotnet-libp2p) and [Discv5](https://github.com/Pier-Two/Lantern.Discv5) for running a [syncing protocol](https://github.com/ethereum/consensus-specs/blob/dev/specs/altair/light-client/sync-protocol.md).
+Lantern.Beacon is a .NET library that allows lightweight verification of Ethereum's consensus, built using [Libp2p](https://github.com/NethermindEth/dotnet-libp2p) and [Discv5](https://github.com/Pier-Two/Lantern.Discv5).
 
 ## Installation
 
@@ -32,6 +32,12 @@ Lantern.Beacon is a .NET library that allows connecting with Ethereum's consensu
    ```bash
    dotnet test
    ```
+
+## Usage
+To integrate this library in a C# project, please refer to the [GitBook](https://piertwo.gitbook.io/lantern.beacon/) documentation. 
+
+## Contributing
+We welcome contributions to this library. To get involved, please read our [Contributing Guidelines](https://piertwo.gitbook.io/lantern.beacon/contribution-guidelines) for the process for submitting pull requests to this repository.
 
 ## License
 This project is licensed under the [MIT License](https://github.com/Pier-Two/Lantern.Beacon/blob/main/LICENSE).

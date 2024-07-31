@@ -1,5 +1,3 @@
-using System.Text;
-using IronSnappy;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Storage;
@@ -18,6 +16,8 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
     public CancellationTokenSource? CancellationTokenSource { get; private set; }
+    
+    public ISyncProtocol SyncProtocol => syncProtocol;
     
     public async Task InitAsync()
     {
