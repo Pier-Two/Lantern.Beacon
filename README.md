@@ -13,7 +13,7 @@ Lantern.Beacon is a .NET library that allows lightweight verification of Ethereu
 2. Clone the repository:
 
    ```bash
-   git clone https://github.com/Pier-Two/Lantern.Beacon.git
+   git clone https://github.com/Pier-Two/Lantern.Beacon.git --recursive
    ```
 
 3. Change to the `Lantern.Beacon` directory:
