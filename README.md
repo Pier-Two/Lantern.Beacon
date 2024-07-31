@@ -2,7 +2,7 @@
   <h1 align="center">Lantern.Beacon</h1>
 </div>
 
-Lantern.Beacon is a .NET library that allows tracking Ethereum's consensus layer in a lightweight manner using [Libp2p](https://github.com/NethermindEth/dotnet-libp2p) and [Discv5](https://github.com/Pier-Two/Lantern.Discv5).
+Lantern.Beacon is a .NET library that allows lightweight verification of Ethereum's consensus, built using [Libp2p](https://github.com/NethermindEth/dotnet-libp2p) and [Discv5](https://github.com/Pier-Two/Lantern.Discv5).
 
 ## Installation
 
