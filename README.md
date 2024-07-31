@@ -36,5 +36,8 @@ Lantern.Beacon is a .NET library that allows tracking Ethereum's consensus layer
 ## Usage
 To integrate this library in a C# project, please refer to the [GitBook](https://piertwo.gitbook.io/lantern.beacon/) documentation. 
 
+## Contributing
+We welcome contributions to this library. To get involved, please read our [Contributing Guidelines](https://piertwo.gitbook.io/lantern.beacon/contribution-guidelines) for the process for submitting pull requests to this repository.
+
 ## License
 This project is licensed under the [MIT License](https://github.com/Pier-Two/Lantern.Beacon/blob/main/LICENSE).
