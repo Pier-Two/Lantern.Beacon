@@ -28,7 +28,30 @@ Lantern.Beacon is a .NET library that allows lightweight verification of Ethereu
    dotnet build
    ```
 
-5. Execute tests:
+5. **If you are using Linux, run the following commands before executing the tests:**
+
+   For **Debian/Ubuntu-based** distributions:
+   ```bash
+   sudo apt-get update && sudo apt-get install -y libc6-dev
+
+   sudo ln -s /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libdl.so
+   ```
+
+   For **Red Hat-based** distributions (such as Fedora or CentOS):
+   ```bash
+   sudo yum install glibc-devel
+
+   sudo ln -s /usr/lib64/libdl.so.2 /usr/lib64/libdl.so
+   ```
+
+   For **Arch Linux**:
+   ```bash
+   sudo pacman -Sy glibc
+
+   sudo ln -s /usr/lib/libdl.so.2 /usr/lib/libdl.so
+   ```
+   
+6. Execute tests:
    ```bash
    dotnet test
    ```
