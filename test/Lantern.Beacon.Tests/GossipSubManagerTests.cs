@@ -1,3 +1,4 @@
+using System.Reflection;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Storage;
@@ -73,7 +74,7 @@ public class GossipSubManagerTests
         _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
             _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
 
-        Assert.Throws<Exception>(() => _gossipSubManager.StartAsync());
+        Assert.Throws<Exception>(() => _gossipSubManager.Start());
     }
     
     [Test]
@@ -93,6 +94,31 @@ public class GossipSubManagerTests
         _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
             _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
 
-        Assert.DoesNotThrow(() => _gossipSubManager.StartAsync());
+        Assert.DoesNotThrow(() => _gossipSubManager.Start());
+    }
+    
+    [Test]
+    public void StopAsync_ShouldStopGossipSubProtocol()
+    {
+        _syncProtocolOptions = new SyncProtocolOptions
+        {
+            GenesisTime = 3999999999,
+            GenesisValidatorsRoot =
+                Convert.FromHexString("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef")
+        };
+        Config.InitializeWithMainnet();
+        Phase0Preset.InitializeWithMainnet();
+        AltairPreset.InitializeWithMainnet();
+
+        _beaconClientManager.Setup(x => x.LocalPeer).Returns(new Mock<ILocalPeer>().Object);
+        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
+            _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
+
+        Assert.DoesNotThrow(() => _gossipSubManager.Start());
+        var cancellationTokenSource1 = (CancellationTokenSource)typeof(GossipSubManager).GetField("_cancellationTokenSource", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(_gossipSubManager);
+        Assert.That(cancellationTokenSource1, Is.Not.Null);
+        Assert.DoesNotThrow(() => _gossipSubManager.StopAsync());
+        var cancellationTokenSource2 = (CancellationTokenSource)typeof(GossipSubManager).GetField("_cancellationTokenSource", BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(_gossipSubManager);
+        Assert.That(cancellationTokenSource2, Is.Null);
     }
 }

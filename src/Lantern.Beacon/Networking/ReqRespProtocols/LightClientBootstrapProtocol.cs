@@ -3,6 +3,7 @@ using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Types;
 using Lantern.Beacon.Sync.Types.Basic;
@@ -24,35 +25,36 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
     
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        var trustedBlockRoot = syncProtocol.Options.TrustedBlockRoot;
-        var request = LightClientBootstrapRequest.CreateFrom(trustedBlockRoot);
-        var sszData = LightClientBootstrapRequest.Serialize(request);
-        var payload = ReqRespHelpers.EncodeRequest(sszData);
-        var rawData = new ReadOnlySequence<byte>(payload);
-        
-        await downChannel.WriteAsync(rawData);
-        var receivedData = new List<byte[]>();
-        
-        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
-        {
-            receivedData.Add(readOnlySequence.ToArray());
-        }
-        
-        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
-        {
-            // Log that we received an empty or null response
-            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-            await downChannel.CloseAsync();
-            return;
-        }
-        
-        var flatData = receivedData.SelectMany(x => x).ToArray();
- 
         try
         {
+            var trustedBlockRoot = syncProtocol.Options.TrustedBlockRoot;
+            var request = LightClientBootstrapRequest.CreateFrom(trustedBlockRoot);
+            var sszData = LightClientBootstrapRequest.Serialize(request);
+            var payload = ReqRespHelpers.EncodeRequest(sszData);
+            var rawData = new ReadOnlySequence<byte>(payload);
+        
+            await downChannel.WriteAsync(rawData);
+            
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.RespTimeout));
+            var receivedData = new List<byte[]>();
+        
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
+            {
+                receivedData.Add(readOnlySequence.ToArray());
+            }
+        
+            if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+            {
+                _logger?.LogDebug("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                await downChannel.CloseAsync();
+                return;
+            }
+        
+            var flatData = receivedData.SelectMany(x => x).ToArray();
+
             if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
             {
-                _logger?.LogInformation("Failed to handle light client bootstrap response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                _logger?.LogDebug("Failed to handle light client bootstrap response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
                 await downChannel.CloseAsync();
                 return;
             }
@@ -128,9 +130,14 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     break;
             }
         }
-        catch (Exception e)
+        catch (OperationCanceledException)
         {
-            _logger?.LogError(e, "Error occured when trying to handle light client bootstrap response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogDebug("Timeout occured while listening for light client bootstrap response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug("Error occured while listening for light client bootstrap response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }
@@ -138,43 +145,49 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
         _logger?.LogInformation("Received light client bootstrap request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-        
-        var receivedData = new List<byte[]>();
-        
-        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
-        {
-            receivedData.Add(readOnlySequence.ToArray());
-        }
-        
-        var flatData = receivedData.SelectMany(x => x).ToArray();
-        var result = ReqRespHelpers.DecodeRequest(flatData);
-
-        if (result == null)
-        {
-            _logger?.LogError("Failed to decode light client bootstrap request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-            await downChannel.CloseAsync();
-            return;
-        }
-        
-        var request = LightClientBootstrapRequest.Deserialize(result);
-        
-        _logger?.LogInformation("Received light client bootstrap request from {PeerId} with trustedBlockRoot {trustedBlockRoot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(request.BlockRoot));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.TimeToFirstByteTimeout));
 
         try
         {
-            var currentVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
+            var receivedData = new List<byte[]>();
+
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
+            {
+                receivedData.Add(readOnlySequence.ToArray());
+            }
+
+            var flatData = receivedData.SelectMany(x => x).ToArray();
+            var result = ReqRespHelpers.DecodeRequest(flatData);
+
+            if (result == null)
+            {
+                _logger?.LogError("Failed to decode light client bootstrap request from {PeerId}",
+                    context.RemotePeer.Address.Get<P2P>());
+                await downChannel.CloseAsync();
+                return;
+            }
+
+            var request = LightClientBootstrapRequest.Deserialize(result);
+
+            _logger?.LogInformation(
+                "Received light client bootstrap request from {PeerId} with trustedBlockRoot {trustedBlockRoot}",
+                context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(request.BlockRoot));
+
+            var currentVersion = Phase0Helpers.ComputeForkVersion(
+                Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
             var forkDigest = Phase0Helpers.ComputeForkDigest(currentVersion, syncProtocol.Options);
             var requestedRoot = Convert.ToHexString(request.BlockRoot);
-            var response = liteDbService.FetchByPredicate<DenebLightClientBootstrap>(nameof(DenebLightClientBootstrap), x => x.Header.Beacon.HashTreeRootString == requestedRoot);
+            var response = liteDbService.FetchByPredicate<DenebLightClientBootstrap>(nameof(DenebLightClientBootstrap),
+                x => x.Header.Beacon.HashTreeRootString == requestedRoot);
 
             if (response == null)
             {
                 _logger?.LogDebug(
                     "No light client bootstrap available for block root {trustedBlockRoot}",
                     Convert.ToHexString(request.BlockRoot));
-                var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest,ResponseCodes.ResourceUnavailable);
+                var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest, ResponseCodes.ResourceUnavailable);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
-                
+
                 await downChannel.WriteAsync(rawData);
             }
             else
@@ -188,9 +201,15 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     context.RemotePeer.Address.Get<P2P>());
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger?.LogDebug("Timeout occured while listening for light client bootstrap request from {PeerId}",
+                context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+        }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Failed to handle light client bootstrap request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogDebug("Error occured while listening for light client bootstrap request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }

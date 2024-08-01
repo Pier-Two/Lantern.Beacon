@@ -38,13 +38,12 @@ internal static class Program
             Preset = SizePreset.MainnetPreset,
             GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
             GenesisTime = 1606824023,
-            TrustedBlockRoot = Convert.FromHexString("9344d07abccaa481cb301e804c99d9b3102fb70c0d950354c8d22f6f0f389ef2"),
+            TrustedBlockRoot = Convert.FromHexString("3ac8204d53232244aa60752ed7e28e786babfd0dc0b0a8de59f2308d49be64d1"),
             Network = NetworkType.Mainnet
         };
         var beaconClientOptions = new BeaconClientOptions
         {
             TcpPort = 9005,
-            //Bootnodes = ["/ip4/50.195.130.74/tcp/9000/p2p/16Uiu2HAkvSLFzPogiUZn1wFEskrUoJt9DGot3PbfeSE5zHqS32FM"],
             //Bootnodes = ["/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ"], // Teku
             //Bootnodes = ["/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww"], // Erigon
             //Bootnodes = ["/ip4/136.243.72.174/tcp/9000/p2p/16Uiu2HAkvTExpESzdQfYg6N3RtX6YNerBXTeg6vXzTMAws3tUQCA"],
@@ -57,14 +56,7 @@ internal static class Program
         {
             builder
                 .SetMinimumLevel(LogLevel.Information)
-                .AddFilter((category, level) =>
-                {
-                    if (category.StartsWith("Nethermind.Libp2p.Core.ChannelFactory"))
-                    {
-                        return false;
-                    }
-                    return level >= LogLevel.Information;
-                })
+                .AddFilter("Nethermind.Libp2p.Core.ChannelFactory", LogLevel.None)
                 .AddSimpleConsole(l =>
                 {
                     l.SingleLine = true;

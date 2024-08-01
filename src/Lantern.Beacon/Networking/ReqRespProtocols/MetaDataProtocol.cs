@@ -2,6 +2,7 @@ using System.Buffers;
 using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
@@ -19,50 +20,62 @@ public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactor
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
         var receivedData = new List<byte[]>();
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.RespTimeout));
 
         try
         {
-            await foreach (var readOnlySequence in downChannel.ReadAllAsync())
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
             {
                 receivedData.Add(readOnlySequence.ToArray());
             }
-        
+
             if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
             {
-                _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogDebug("Received an empty or null response from {PeerId}",
+                    context.RemotePeer.Address.Get<P2P>());
                 await downChannel.CloseAsync();
                 return;
             }
 
             var flatData = receivedData.SelectMany(x => x).ToArray();
-        
-            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+
+            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable ||
+                flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
             {
-                _logger?.LogInformation("Failed to handle metadata response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                _logger?.LogInformation("Failed to handle metadata response from {PeerId} due to reason {Reason}",
+                    context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
                 await downChannel.CloseAsync();
                 return;
             }
-        
+
             var result = ReqRespHelpers.DecodeResponse(flatData);
-        
-            if(result.Item2 != ResponseCodes.Success)
+
+            if (result.Item2 != ResponseCodes.Success)
             {
-                _logger?.LogError("Failed to decode metadata response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                _logger?.LogDebug("Failed to decode metadata response from {PeerId}",
+                    context.RemotePeer.Address.Get<P2P>());
                 await downChannel.CloseAsync();
                 return;
             }
-        
+
             var metaDataResponse = MetaData.Deserialize(result.Item1);
-        
-            _logger?.LogDebug("Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}", 
-                context.RemotePeer.Address.Get<P2P>(), 
-                metaDataResponse.SeqNumber, 
+
+            _logger?.LogDebug(
+                "Received metadata response from {PeerId} with seq number {SeqNumber} and attnets {Attnets}",
+                context.RemotePeer.Address.Get<P2P>(),
+                metaDataResponse.SeqNumber,
                 Convert.ToHexString(metaDataResponse.Attnets.Select(b => b ? (byte)1 : (byte)0).ToArray()));
         }
-        catch (Exception e)
+        catch (OperationCanceledException)
         {
-            _logger?.LogError(e, "Error while dialing for MetaData request from {PeerId}. Exception: {Message}", 
-                context.RemotePeer.Address.Get<P2P>(), e.Message);
+            _logger?.LogDebug("Timeout occured while listening for MetaData response from {PeerId}",
+                context.RemotePeer.Address.Get<P2P>());
+            await downChannel.CloseAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug("Error occured while listening for MetaData response from {PeerId}. Exception: {Message}", 
+                context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }
@@ -81,10 +94,10 @@ public class MetaDataProtocol(IPeerState peerState, ILoggerFactory? loggerFactor
             await downChannel.WriteAsync(rawData);
             _logger?.LogInformation("Sent MetaData response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            _logger?.LogError(e, "Error while listening for MetaData request from {PeerId}. Exception: {Message}", 
-                context.RemotePeer.Address.Get<P2P>(), e.Message);
+            _logger?.LogDebug("Error occured while listening for MetaData request from {PeerId}. Exception: {Message}", 
+                context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }

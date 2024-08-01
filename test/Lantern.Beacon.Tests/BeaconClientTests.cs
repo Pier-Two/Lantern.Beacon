@@ -122,7 +122,7 @@ namespace Lantern.Beacon.Tests;
         
         await _beaconClient.StartAsync();
 
-        _mockGossipSubManager.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGossipSubManager.Verify(x => x.Start(It.IsAny<CancellationToken>()), Times.Once);
         _mockBeaconClientManager.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
     
@@ -132,13 +132,13 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Setup(bc => bc.InitAsync());
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
-        _mockGossipSubManager.Setup(x => x.StartAsync(new CancellationToken())).Throws(new Exception());
+        _mockGossipSubManager.Setup(x => x.Start(new CancellationToken())).Throws(new Exception());
 
         _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         Assert.ThrowsAsync<Exception>(async () => await _beaconClient.StartAsync());
 
-        _mockGossipSubManager.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockGossipSubManager.Verify(x => x.Start(It.IsAny<CancellationToken>()), Times.Once);
         _mockBeaconClientManager.Verify(x => x.StartAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
     

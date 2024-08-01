@@ -55,7 +55,7 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
         { 
             CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
             
-            await gossipSubManager.StartAsync(token);
+            gossipSubManager.Start(token);
             await beaconClientManager.StartAsync(token); 
         }
         catch (Exception e)
