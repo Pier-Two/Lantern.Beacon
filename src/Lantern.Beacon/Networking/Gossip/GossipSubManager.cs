@@ -30,7 +30,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         _logger.LogDebug("Subscribed to topic: {LightClientOptimisticUpdate}", LightClientOptimisticUpdateTopic.GetTopicString(syncProtocolOptions));
     }
     
-    public Task StartAsync(CancellationToken token = default)
+    public void Start(CancellationToken token = default)
     {
         if(beaconClientManager.LocalPeer == null)
         {
@@ -55,8 +55,6 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         
         _ = Task.Run(() => router.RunAsync(beaconClientManager.LocalPeer, discoveryProtocol, settings, token), token);
         _logger.LogInformation("Running GossipSub protocol");
-      
-        return Task.CompletedTask;
     }
     
     public async Task StopAsync()
@@ -93,10 +91,11 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
             var oldFinalizedHeader = syncProtocol.DenebLightClientStore.FinalizedHeader;
             var result = DenebProcessors.ProcessLightClientFinalityUpdate(syncProtocol.DenebLightClientStore,
                 lightClientFinalityUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
-            _logger.LogInformation("Processed light client finality update from gossip");
 
             if (result)
             {
+                _logger.LogInformation("Processed light client finality update from gossip");
+                
                 if (!DenebHelpers.ShouldForwardFinalizedLightClientUpdate(lightClientFinalityUpdate, oldFinalizedHeader,
                         syncProtocol))
                     return;
@@ -140,6 +139,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
             if (result)
             {
                 _logger.LogInformation("Processed light client optimistic update from gossip");
+                
                 if (!DenebHelpers.ShouldForwardLightClientOptimisticUpdate(lightClientOptimisticUpdate, oldOptimisticHeader, syncProtocol))
                     return;
                 

@@ -10,7 +10,7 @@ public interface IGossipSubManager
     
     void Init();
     
-    Task StartAsync(CancellationToken token = default);
+    void Start(CancellationToken token = default);
     
     Task StopAsync();
 }

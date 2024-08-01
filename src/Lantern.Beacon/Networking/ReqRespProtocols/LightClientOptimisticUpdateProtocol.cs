@@ -3,6 +3,7 @@ using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Processors;
 using Lantern.Beacon.Sync.Types;
@@ -23,102 +24,141 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
     
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        var receivedData = new List<byte[]>();
-        
-        await foreach (var readOnlySequence in downChannel.ReadAllAsync())
-        {
-            receivedData.Add(readOnlySequence.ToArray());
-        }
-        
-        if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
-        {
-            // Log that we received an empty or null response
-            _logger?.LogWarning("Received an empty or null response from {PeerId}", context.RemotePeer.Address.Get<P2P>());
-            await downChannel.CloseAsync();
-            return;
-        }
-        
-        var flatData = receivedData.SelectMany(x => x).ToArray();
-        
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.RespTimeout));
+
         try
         {
-            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+            var receivedData = new List<byte[]>();
+
+            await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
             {
-                _logger?.LogInformation("Failed to handle light client optimistic update response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                receivedData.Add(readOnlySequence.ToArray());
+            }
+
+            if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
+            {
+                _logger?.LogDebug("Received an empty or null response from {PeerId}",
+                    context.RemotePeer.Address.Get<P2P>());
                 await downChannel.CloseAsync();
                 return;
             }
-            
+
+            var flatData = receivedData.SelectMany(x => x).ToArray();
+
+            if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable ||
+                flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
+            {
+                _logger?.LogInformation(
+                    "Failed to handle light client optimistic update response from {PeerId} due to reason {Reason}",
+                    context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                await downChannel.CloseAsync();
+                return;
+            }
+
             var result = ReqRespHelpers.DecodeResponseChunk(flatData);
             var forkType = Phase0Helpers.ComputeForkType(result.Item2, syncProtocol.Options);
             var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
-        
+
             switch (forkType)
             {
                 case ForkType.Deneb:
-                    var denebLightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    var denebResult = DenebProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.DenebLightClientStore, denebLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                    var denebLightClientOptimisticUpdate =
+                        DenebLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
+                    var denebResult = DenebProcessors.ProcessLightClientOptimisticUpdate(
+                        syncProtocol.DenebLightClientStore, denebLightClientOptimisticUpdate, currentSlot,
+                        syncProtocol.Options, syncProtocol.Logger);
 
                     if (denebResult)
                     {
                         liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
-                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
                     else
                     {
-                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
+
                     break;
                 case ForkType.Capella:
-                    var capellaLightClientOptimisticUpdate = CapellaLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    var capellaResult = CapellaProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.CapellaLightClientStore, capellaLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                    var capellaLightClientOptimisticUpdate =
+                        CapellaLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
+                    var capellaResult = CapellaProcessors.ProcessLightClientOptimisticUpdate(
+                        syncProtocol.CapellaLightClientStore, capellaLightClientOptimisticUpdate, currentSlot,
+                        syncProtocol.Options, syncProtocol.Logger);
 
                     if (capellaResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore), syncProtocol.CapellaLightClientStore);
-                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore),
+                            syncProtocol.CapellaLightClientStore);
+                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
                     else
                     {
-                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
+
                     break;
                 case ForkType.Bellatrix:
-                    var bellatrixLightClientOptimisticUpdate = AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    var bellatrixResult = AltairProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.AltairLightClientStore, bellatrixLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                    var bellatrixLightClientOptimisticUpdate =
+                        AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
+                    var bellatrixResult = AltairProcessors.ProcessLightClientOptimisticUpdate(
+                        syncProtocol.AltairLightClientStore, bellatrixLightClientOptimisticUpdate, currentSlot,
+                        syncProtocol.Options, syncProtocol.Logger);
 
                     if (bellatrixResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
-                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                            syncProtocol.AltairLightClientStore);
+                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
                     else
                     {
-                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
+
                     break;
                 case ForkType.Altair:
-                    var altairLightClientOptimisticUpdate = AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
-                    var altairResult = AltairProcessors.ProcessLightClientOptimisticUpdate(syncProtocol.AltairLightClientStore, altairLightClientOptimisticUpdate, currentSlot, syncProtocol.Options, syncProtocol.Logger);
+                    var altairLightClientOptimisticUpdate =
+                        AltairLightClientOptimisticUpdate.Deserialize(result.Item3, syncProtocol.Options.Preset);
+                    var altairResult = AltairProcessors.ProcessLightClientOptimisticUpdate(
+                        syncProtocol.AltairLightClientStore, altairLightClientOptimisticUpdate, currentSlot,
+                        syncProtocol.Options, syncProtocol.Logger);
 
                     if (altairResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore), syncProtocol.AltairLightClientStore);
-                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                            syncProtocol.AltairLightClientStore);
+                        _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
                     else
                     {
-                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                        _logger?.LogError("Failed to process light client optimistic update from {PeerId}",
+                            context.RemotePeer.Address.Get<P2P>());
                     }
+
                     break;
                 case ForkType.Phase0:
-                    _logger?.LogError("Received light client optimistic update response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    _logger?.LogError(
+                        "Received light client optimistic update response with unexpected fork type from {PeerId}",
+                        context.RemotePeer.Address.Get<P2P>());
                     break;
             }
         }
-        catch (Exception e)
+        catch (OperationCanceledException)
         {
-            _logger?.LogError(e, "Failed to receive light client optimistic update from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogDebug("Timeout occured while listening for light client optimistic update response from {PeerId}",
+                context.RemotePeer.Address.Get<P2P>());
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug("Error occured while listening for light client optimistic update response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }
@@ -154,7 +194,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
         }
         catch (Exception ex)
         {
-            _logger?.LogError(ex, "Failed to handle light client optimistic update request from {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogDebug("Error occured while listening for light client optimistic update request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
             await downChannel.CloseAsync();
         }
     }

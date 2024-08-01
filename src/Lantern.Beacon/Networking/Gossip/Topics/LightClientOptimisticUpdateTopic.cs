@@ -5,7 +5,7 @@ namespace Lantern.Beacon.Networking.Gossip.Topics;
 
 public static class LightClientOptimisticUpdateTopic 
 {
-    public static string Name => "light_client_optimistic_update";
+    private static string Name => "light_client_optimistic_update";
     
     public static string GetTopicString(SyncProtocolOptions options)
     { 
