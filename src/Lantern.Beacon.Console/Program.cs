@@ -43,10 +43,9 @@ internal static class Program
         var beaconClientOptions = new BeaconClientOptions
         {
             TcpPort = 9005,
-            DialTimeoutSeconds = 30,
-            MaxParallelDials = 1,
-            EnableDiscovery = false,
-            Bootnodes = ["/ip4/194.33.40.72/tcp/9001/p2p/16Uiu2HAmKnikHhMXdEYzDqXDAUuqnjQNwmTZuWNVyo73aHePjgvq"] // Public Nimbus Full Client
+            DialTimeoutSeconds = 5,
+            MaxParallelDials = 5,
+            //Bootnodes = ["/ip4/194.33.40.72/tcp/9001/p2p/16Uiu2HAmKnikHhMXdEYzDqXDAUuqnjQNwmTZuWNVyo73aHePjgvq"] // Public Nimbus Full Client
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmH5mNHiU3nepLqhUQ5gZvYK7EcJi5BYBV4XzUBuTcxGw4"] // Local Nimbus Full Client
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9014/p2p/16Uiu2HAm8fBXikjEJnzSvjwuSRozFacyLQQWg8ajHxqN3HGbs2zT"] // Local Lodestar Full Client
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmSift7QRDZg1TP9Epw5Ae5nz66Nv7hQry4bx4zFkMFr2W"] // Local Nimbus Light Client
@@ -61,7 +60,7 @@ internal static class Program
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Debug)
+                .SetMinimumLevel(LogLevel.Information)
                 .AddFilter("Nethermind.Libp2p.Core.ChannelFactory", LogLevel.None)
                 .AddSimpleConsole(l =>
                 {

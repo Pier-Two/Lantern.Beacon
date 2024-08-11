@@ -118,7 +118,7 @@ public class CustomDiscoveryProtocolTests
         var enrString = "enr:-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
         var enrEntryRegistry = new EnrEntryRegistry();
         var enr = new EnrFactory(enrEntryRegistry).CreateFromString(enrString, new IdentityVerifierV4());
-        _mockDiscv5Protocol.Setup(p => p.GetActiveNodes).Returns(new List<IEnr>{ enr });
+        _mockDiscv5Protocol.Setup(p => p.GetAllNodes).Returns(new List<IEnr>{ enr });
 
         _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), _syncProtocolOptions, _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
 
@@ -145,7 +145,7 @@ public class CustomDiscoveryProtocolTests
         var enrEntryRegistry = new EnrEntryRegistry();
         var enr = new EnrFactory(enrEntryRegistry).CreateFromString(enrString, new IdentityVerifierV4());
         
-        _mockDiscv5Protocol.Setup(p => p.GetActiveNodes).Returns(new List<IEnr>{ Mock.Of<IEnr>() });
+        _mockDiscv5Protocol.Setup(p => p.GetAllNodes).Returns(new List<IEnr>{ Mock.Of<IEnr>() });
         _mockDiscv5Protocol.Setup(p => p.SendFindNodeAsync(It.IsAny<IEnr>(), It.IsAny<byte[]>())).ReturnsAsync(new List<IEnr>{ enr });
         _customDiscoveryProtocol = new CustomDiscoveryProtocol(new BeaconClientOptions(), _syncProtocolOptions, _mockDiscv5Protocol.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
 

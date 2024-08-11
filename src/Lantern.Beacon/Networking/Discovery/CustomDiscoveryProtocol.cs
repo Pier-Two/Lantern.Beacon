@@ -44,14 +44,7 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
 
         try
         {
-            var nodes = discv5Protocol.GetActiveNodes;
-            
-            if(!discv5Protocol.GetActiveNodes.Any())
-            {
-                _logger.LogInformation("No active nodes found. Skipping discovery");
-                return;
-            }
-            
+            var nodes = discv5Protocol.GetAllNodes;
             var discoveredNodes = new List<IEnr?>();
             var randomNodeId = new byte[32];
             
@@ -90,7 +83,7 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
             if (multiaddresses.Count != 0)
             {
                 OnAddPeer?.Invoke(multiaddresses.ToArray());
-                _logger.LogInformation("Collected {Count} peers to dial", multiaddresses.Count);
+                _logger.LogInformation("Found {Count} peers to dial", multiaddresses.Count);
             }
         }
         catch (Exception ex)
