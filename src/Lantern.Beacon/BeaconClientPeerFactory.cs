@@ -1,4 +1,5 @@
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
+using Lantern.Beacon.Networking.ReqRespProtocols;
 using Multiformats.Address;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;

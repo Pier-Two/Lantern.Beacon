@@ -25,12 +25,12 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
     {
         if (context == null)
         {
-            throw new ArgumentException("Context cannot be null", nameof(context));
+            throw new ArgumentNullException("Context cannot be null", nameof(context));
         }
 
         if (channelFactory == null)
         {
-            throw new ArgumentException("ChannelFactory should be available for a muxer", nameof(channelFactory));
+            throw new ArgumentNullException("ChannelFactory should be available for a muxer", nameof(channelFactory));
         }
 
         var peerState = new PeerConnectionState();
@@ -239,7 +239,6 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         var streamId = message.StreamId;
         var flag = message.Flag;
         
-        // Check the size of the data 
         if (message.Data.Length > MaxMessageSize)
         {
             _logger?.LogError("Stream {streamId} ({isReceiver}): Received message with data size exceeding the limit of {maxSize} bytes. Resetting stream", 

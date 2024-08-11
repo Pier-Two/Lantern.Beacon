@@ -11,6 +11,7 @@ using Lantern.Beacon.Sync.Types.Basic;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
@@ -176,7 +177,8 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
             if (response == null || response.Equals(DenebLightClientOptimisticUpdate.CreateDefault()))
             {
                 _logger?.LogInformation("No light client optimistic update available to send to {PeerId}", context.RemotePeer.Address.Get<P2P>());
-                var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest,ResponseCodes.ResourceUnavailable);
+                var sszData = ErrorMessage.Serialize(ErrorMessage.CreateFrom($"Light client optimistic update is unavailable"));
+                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData,ResponseCodes.ResourceUnavailable);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
                 await downChannel.WriteAsync(rawData);

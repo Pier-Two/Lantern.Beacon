@@ -1,5 +1,7 @@
+using System.Net;
 using Google.Protobuf;
 using Microsoft.Extensions.Logging;
+using Multiformats.Address;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Core.Dto;
@@ -35,14 +37,20 @@ public class PeerIdentifyProtocol(IPeerState peerState, IdentifyProtocolSettings
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
         _logger?.LogDebug("Listen");
-
+        
+        var listenAddress = context.LocalEndpoint;
+        listenAddress.Remove<P2P>();
+        
+        var observedAddress = context.RemoteEndpoint;
+        observedAddress.Remove<P2P>();
+        
         Nethermind.Libp2p.Protocols.Identify.Dto.Identify identify = new()
         {
             ProtocolVersion = _protocolVersion,
             AgentVersion = _agentVersion,
             PublicKey = context.LocalPeer.Identity.PublicKey.ToByteString(),
-            ListenAddrs = { ByteString.CopyFrom(context.LocalEndpoint.Get<IP>().ToBytes()) },
-            ObservedAddr = ByteString.CopyFrom(context.RemoteEndpoint.Get<IP>().ToBytes()), 
+            ListenAddrs = { ByteString.CopyFrom(GetFilteredBytes(listenAddress)) },
+            ObservedAddr = ByteString.CopyFrom(GetFilteredBytes(observedAddress)), 
             Protocols = { peerState.AppLayerProtocols.Select(p => p.Id) }
         };
         
@@ -51,5 +59,27 @@ public class PeerIdentifyProtocol(IPeerState peerState, IdentifyProtocolSettings
 
         await downChannel.WriteSizeAndDataAsync(ar);
         _logger?.LogDebug("Sent peer info {identify}", identify);
+    }
+    
+    private static byte[] GetFilteredBytes(Multiaddress multiaddress) 
+    {
+        multiaddress.Remove<P2P>();
+        
+        var bytes = multiaddress.ToBytes();
+        var len = bytes.Length;
+        
+        if (len < 4) 
+            return bytes;
+        
+        if (bytes[len - 4] == 0 && bytes[len - 3] == 0) 
+        {
+            var filteredBytes = new byte[len - 2];
+            Array.Copy(bytes, 0, filteredBytes, 0, len - 4);
+            filteredBytes[len - 4] = bytes[len - 2];
+            filteredBytes[len - 3] = bytes[len - 1];
+            return filteredBytes;
+        }
+        
+        return bytes;
     }
 }

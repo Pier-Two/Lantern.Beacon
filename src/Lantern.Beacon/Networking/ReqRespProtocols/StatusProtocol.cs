@@ -4,6 +4,7 @@ using Lantern.Beacon.Networking.Encoding;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Helpers;
+using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
@@ -112,17 +113,17 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             _logger?.LogDebug(
                 "Received status request from {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
                 context.RemotePeer.Address.Get<P2P>(),
-                Convert.ToHexString(statusResponse.ForkDigest), Convert.ToHexString(statusResponse.FinalizedRoot),
-                statusResponse.FinalizedEpoch, Convert.ToHexString(statusResponse.HeadRoot), statusResponse.HeadSlot);
+                Convert.ToHexString(statusResponse.ForkDigest),
+                Convert.ToHexString(statusResponse.FinalizedRoot),
+                statusResponse.FinalizedEpoch,
+                Convert.ToHexString(statusResponse.HeadRoot), 
+                statusResponse.HeadSlot);
 
             var forkDigest = BeaconClientUtility.GetForkDigestBytes(syncProtocol.Options);
-            var finalisedRoot =
-                syncProtocol.CapellaLightClientStore.FinalizedHeader.GetHashTreeRoot(syncProtocol.Options.Preset);
-            var finalizedEpoch =
-                Phase0Helpers.ComputeEpochAtSlot(syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot);
-            var headRoot =
-                syncProtocol.CapellaLightClientStore.OptimisticHeader.GetHashTreeRoot(syncProtocol.Options.Preset);
-            var headSlot = syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot;
+            var finalisedRoot = Convert.FromHexString("0000000000000000000000000000000000000000000000000000000000000000");
+            var finalizedEpoch = (ulong)0;
+            var headRoot = Convert.FromHexString("4d611d5b93fdab69013a7f0a2f961caca0c853f87cfe9595fe50038163079360");
+            var headSlot = (ulong)0;
             var localStatus = Status.CreateFrom(forkDigest, finalisedRoot, finalizedEpoch, headRoot, headSlot);
             var sszData = Status.Serialize(localStatus);
             var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
@@ -130,7 +131,13 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
 
             await downChannel.WriteAsync(rawData);
 
-            _logger?.LogInformation("Sent status response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogInformation("Sent status response to {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
+                context.RemotePeer.Address.Get<P2P>(),
+                Convert.ToHexString(forkDigest), 
+                Convert.ToHexString(finalisedRoot),
+                statusResponse.FinalizedEpoch, 
+                Convert.ToHexString(statusResponse.HeadRoot), 
+                statusResponse.HeadSlot);
         }
         catch (OperationCanceledException)
         {

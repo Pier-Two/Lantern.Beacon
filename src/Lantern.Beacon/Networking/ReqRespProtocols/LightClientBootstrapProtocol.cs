@@ -185,8 +185,10 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                 _logger?.LogDebug(
                     "No light client bootstrap available for block root {trustedBlockRoot}",
                     Convert.ToHexString(request.BlockRoot));
-                var encodedResponse = ReqRespHelpers.EncodeResponse([], forkDigest, ResponseCodes.ResourceUnavailable);
+                var sszData = ErrorMessage.Serialize(ErrorMessage.CreateFrom($"Light client bootstrap is unavailable for the requested block root {Convert.ToHexString(request.BlockRoot)}"));
+                var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.ResourceUnavailable);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
+                _logger.LogDebug("Sending response with data: {0}", Convert.ToHexString(encodedResponse.ToArray()));
 
                 await downChannel.WriteAsync(rawData);
             }
@@ -209,7 +211,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
         }
         catch (Exception ex)
         {
-            _logger?.LogDebug("Error occured while listening for light client bootstrap request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
+            _logger?.LogDebug("Error occured while listening for light client bootstrap request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
             await downChannel.CloseAsync();
         }
     }
