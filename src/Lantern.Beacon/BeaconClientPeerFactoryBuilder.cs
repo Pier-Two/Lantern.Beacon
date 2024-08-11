@@ -1,5 +1,6 @@
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
+using Lantern.Beacon.Networking.Libp2pProtocols.Secp256k1Noise;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols;
@@ -27,7 +28,7 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
         ProtocolStack tcpStack =
             Over<IpTcpProtocol>()
                 .Over<MultistreamProtocol>()
-                .Over<NoiseProtocol>()
+                .Over<Secp256K1NoiseProtocol>()
                 .Over<MultistreamProtocol>()
                 .Over<MplexProtocol>();
 

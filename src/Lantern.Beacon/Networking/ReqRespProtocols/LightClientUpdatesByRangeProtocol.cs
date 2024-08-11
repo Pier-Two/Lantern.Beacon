@@ -11,6 +11,7 @@ using Lantern.Beacon.Sync.Types.Basic;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
+using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
@@ -42,7 +43,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
             {
                 receivedData.Add(readOnlySequence.ToArray());
             }
-
+            
             if (receivedData.Count == 0 || receivedData[0] == null || receivedData[0].Length == 0)
             {
                 _logger?.LogDebug("Received an empty or null response from {PeerId}",
@@ -63,16 +64,23 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 return;
             }
 
-            foreach (var data in receivedData)
+            foreach (var data in receivedData) 
             {
-                if (data is [(byte)ResponseCodes.Success])
+                if (data is [(byte)ResponseCodes.Success] || data[0] == (byte)ResponseCodes.Success) 
                 {
                     responses.Add(data);
                     index++;
-                }
-                else
+                } 
+                else 
                 {
-                    responses[index - 1] = responses[index - 1].Concat(data).ToArray();
+                    if (index > 0) 
+                    {
+                        responses[index - 1] = responses[index - 1].Concat(data).ToArray();
+                    } 
+                    else 
+                    {
+                        _logger?.LogWarning("Received non-success data without prior success response. PeerId: {PeerId}", context.RemotePeer.Address.Get<P2P>());
+                    }
                 }
             }
 
@@ -188,7 +196,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
         }
         catch (Exception ex)
         {
-            _logger?.LogDebug("Error occured while listening for light client update response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
+            _logger?.LogDebug("Error occured while listening for light client update response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
             await downChannel.CloseAsync();
         }
     }
@@ -235,8 +243,9 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                         "No light client update available for sync period {startPeriod} and count {count}",
                         request.StartPeriod, request.Count);
 
+                    var sszData = ErrorMessage.Serialize(ErrorMessage.CreateFrom($"Light client update is unavailable for sync period {request.StartPeriod}"));
                     var encodedResponse =
-                        ReqRespHelpers.EncodeResponse([], forkDigest, ResponseCodes.ResourceUnavailable);
+                        ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.ResourceUnavailable);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                     await downChannel.WriteAsync(rawData);
@@ -262,7 +271,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
         }
         catch (Exception ex)
         {
-            _logger?.LogDebug("Error occured while listening for light client update request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex.Message);
+            _logger?.LogDebug("Error occured while listening for light client update request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
             await downChannel.CloseAsync();
         }
     }

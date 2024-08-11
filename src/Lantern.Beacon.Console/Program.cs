@@ -2,7 +2,6 @@
 using Lantern.Beacon.Sync.Types;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
-using Lantern.Discv5.WireProtocol;
 using Lantern.Discv5.WireProtocol.Connection;
 using Lantern.Discv5.WireProtocol.Session;
 using Lantern.Discv5.WireProtocol.Table;
@@ -38,12 +37,19 @@ internal static class Program
             Preset = SizePreset.MainnetPreset,
             GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
             GenesisTime = 1606824023,
-            TrustedBlockRoot = Convert.FromHexString("3ac8204d53232244aa60752ed7e28e786babfd0dc0b0a8de59f2308d49be64d1"),
+            TrustedBlockRoot = Convert.FromHexString("50344e0f03151e3edce334698b59eaf7ba40270984e1c0cde9393879564b40b6"),
             Network = NetworkType.Mainnet
         };
         var beaconClientOptions = new BeaconClientOptions
         {
             TcpPort = 9005,
+            DialTimeoutSeconds = 30,
+            MaxParallelDials = 1,
+            EnableDiscovery = false,
+            Bootnodes = ["/ip4/194.33.40.72/tcp/9001/p2p/16Uiu2HAmKnikHhMXdEYzDqXDAUuqnjQNwmTZuWNVyo73aHePjgvq"] // Public Nimbus Full Client
+            //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmH5mNHiU3nepLqhUQ5gZvYK7EcJi5BYBV4XzUBuTcxGw4"] // Local Nimbus Full Client
+            //Bootnodes = ["/ip4/0.0.0.0/tcp/9014/p2p/16Uiu2HAm8fBXikjEJnzSvjwuSRozFacyLQQWg8ajHxqN3HGbs2zT"] // Local Lodestar Full Client
+            //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmSift7QRDZg1TP9Epw5Ae5nz66Nv7hQry4bx4zFkMFr2W"] // Local Nimbus Light Client
             //Bootnodes = ["/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ"], // Teku
             //Bootnodes = ["/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww"], // Erigon
             //Bootnodes = ["/ip4/136.243.72.174/tcp/9000/p2p/16Uiu2HAkvTExpESzdQfYg6N3RtX6YNerBXTeg6vXzTMAws3tUQCA"],
@@ -55,7 +61,7 @@ internal static class Program
         var loggerFactory = LoggerFactory.Create(builder =>
         {
             builder
-                .SetMinimumLevel(LogLevel.Information)
+                .SetMinimumLevel(LogLevel.Debug)
                 .AddFilter("Nethermind.Libp2p.Core.ChannelFactory", LogLevel.None)
                 .AddSimpleConsole(l =>
                 {

@@ -8,10 +8,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Cryptography.ECDSA.Secp256K1" Version="1.1.3" />
       <PackageReference Include="IronSnappy" Version="1.3.1" />
       <PackageReference Include="libsodium" Version="1.0.20" />
       <PackageReference Include="LiteDB" Version="5.0.21" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+      <PackageReference Include="NBitcoin.Secp256k1" Version="3.1.5" />
       <PackageReference Include="Nethermind.Libp2p" Version="1.0.0-preview.6" />
       <PackageReference Include="Nethermind.Multiformats.Address" Version="1.1.2" />
       <PackageReference Include="PierTwo.Lantern.Discv5.Enr" Version="1.0.0-preview.4" />

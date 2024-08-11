@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Google.Protobuf;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.ReqRespProtocols;
@@ -10,10 +11,14 @@ using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Identity;
+using Lantern.Discv5.WireProtocol.Session;
+using Lantern.Discv5.WireProtocol.Utility;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
+using Nethermind.Libp2p.Core.Dto;
+using NBitcoin.Secp256k1; 
 
 namespace Lantern.Beacon;
 
@@ -43,12 +48,12 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                 return; 
             } 
             
-            var identity = new Identity();
+            var identity = new Identity(null, KeyType.Secp256K1);
             
-            LocalPeer = peerFactory.Create(identity); 
+            LocalPeer = peerFactory.Create(identity);
             LocalPeer.Address.ReplaceOrAdd<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
             LocalPeer.Address.ReplaceOrAdd<P2P>(identityManager.Record.ToPeerId());
-            
+
             if(clientOptions.Bootnodes.Length > 0) 
             { 
                 foreach (var bootnode in clientOptions.Bootnodes) 
