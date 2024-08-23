@@ -102,6 +102,9 @@ public class Secp256K1NoiseProtocol(MultiplexerSettings? multiplexerSettings = n
         IChannel upChannel = upChannelFactory.SubDial(context);
 
         await ExchangeData(transport, downChannel, upChannel);
+        
+        _ = upChannel.CloseAsync();
+        _logger?.LogDebug("Closed");
     }
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
@@ -168,6 +171,9 @@ public class Secp256K1NoiseProtocol(MultiplexerSettings? multiplexerSettings = n
         IChannel upChannel = upChannelFactory.SubListen(context);
 
         await ExchangeData(transport, downChannel, upChannel);
+        
+        _ = upChannel.CloseAsync();
+        _logger?.LogDebug("Closed");
     }
 
     private static Task ExchangeData(Transport transport, IChannel downChannel, IChannel upChannel)

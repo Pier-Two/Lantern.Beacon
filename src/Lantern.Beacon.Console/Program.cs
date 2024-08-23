@@ -37,7 +37,7 @@ internal static class Program
             Preset = SizePreset.MainnetPreset,
             GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
             GenesisTime = 1606824023,
-            TrustedBlockRoot = Convert.FromHexString("50344e0f03151e3edce334698b59eaf7ba40270984e1c0cde9393879564b40b6"),
+            TrustedBlockRoot = Convert.FromHexString("c68bbba89d5b3fb54c522e7c356347f3da95d7aa8de474a11593b1a2c1e49060"),
             Network = NetworkType.Mainnet
         };
         var beaconClientOptions = new BeaconClientOptions
@@ -45,16 +45,20 @@ internal static class Program
             TcpPort = 9005,
             DialTimeoutSeconds = 5,
             MaxParallelDials = 5,
+            EnableDiscovery = true,
+            Bootnodes = ["/ip4/94.242.234.108/tcp/10600/p2p/16Uiu2HAmVY7DDvgPfUTwjiYtJi5Jyg7dFFNeFLhzig9ZSeJ8rnq4"] // Public
+            //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm5gxMetkmRcLq9ZcJVaVkaGLt8jhncbqpvWLKZTxJG9Xk"] // Internal OVH Nimbus Client
+            //Bootnodes = ["/ip4/65.109.107.102/tcp/10001/p2p/16Uiu2HAkx9x6q9artkr11wXzvJ55Sv74c6SamAQmjmFDyd1hvYyu"] //Discovered Nimbus Client (Holesky)
+            //Bootnodes = ["/ip4/51.222.154.214/tcp/9000/p2p/16Uiu2HAkufXWr6CB5RVMrHFN8rgERp86fUrmMM352YtQgY4f2qxr"] // Discovered Nimbus Client (Syncing)
             //Bootnodes = ["/ip4/194.33.40.72/tcp/9001/p2p/16Uiu2HAmKnikHhMXdEYzDqXDAUuqnjQNwmTZuWNVyo73aHePjgvq"] // Public Nimbus Full Client
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmH5mNHiU3nepLqhUQ5gZvYK7EcJi5BYBV4XzUBuTcxGw4"] // Local Nimbus Full Client
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9014/p2p/16Uiu2HAm8fBXikjEJnzSvjwuSRozFacyLQQWg8ajHxqN3HGbs2zT"] // Local Lodestar Full Client
-            //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAmSift7QRDZg1TP9Epw5Ae5nz66Nv7hQry4bx4zFkMFr2W"] // Local Nimbus Light Client
+            //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAkvFPuyKCb1LS68v2ezaFk7uRPw72afm4F2TttEv8uJk32"] // Local Nimbus Light Client
             //Bootnodes = ["/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ"], // Teku
             //Bootnodes = ["/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww"], // Erigon
             //Bootnodes = ["/ip4/136.243.72.174/tcp/9000/p2p/16Uiu2HAkvTExpESzdQfYg6N3RtX6YNerBXTeg6vXzTMAws3tUQCA"],
             //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAkwvVXtZj6u3R2F7hEXpnbDUom3rDepABdDCSzyzAM2k69"],
             //Bootnodes = ["/ip4/54.38.80.34/tcp/9000/p2p/16Uiu2HAm8t1aQArVwrJ9fwHRGXL2sXumPGTvmsne14piPaFJ5FYi"], // Lighthouse
-            //Bootnodes = ["/ip4/37.27.63.66/tcp/9115/p2p/16Uiu2HAm8BCbnKxJnsNq6uJAhGe3wNrUiiLCTete2vP5UUT99oNL"],
             //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm1iCnKSNGhee2RKa1EYbazz4JJ8CDVVCPLyXS9PFYPG1A"] // Lodestar
         };
         var loggerFactory = LoggerFactory.Create(builder =>
