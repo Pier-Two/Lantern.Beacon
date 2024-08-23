@@ -71,12 +71,15 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                 
                 if (!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)) || !node.HasKey(EnrEntryKey.Eth2))
                     continue;
- 
+
+                if (!node.GetEntry<EntryEth2>(EnrEntryKey.Eth2).Value[..4].SequenceEqual(BeaconClientUtility.GetForkDigestBytes(syncProtocolOptions)))
+                    continue;
+                
                 var multiAddress = BeaconClientUtility.ConvertToMultiAddress(node);
                     
                 if(multiAddress == null)
                     continue;
-                    
+                
                 multiaddresses.Add(multiAddress);  
             }
 

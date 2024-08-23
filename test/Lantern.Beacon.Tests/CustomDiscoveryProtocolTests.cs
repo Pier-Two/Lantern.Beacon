@@ -141,7 +141,7 @@ public class CustomDiscoveryProtocolTests
     public async Task GetDiscoveredNodesAsync_ShouldReturnDiscoveredNodes()
     {
         var localPeerAddr = Multiaddress.Decode("/ip4/127.0.0.1/tcp/4001");
-        var enrString = "enr:-Ly4QOS00hvPDddEcCpwA1cMykWNdJUK50AjbRgbLZ9FLPyBa78i0NwsQZLSV67elpJU71L1Pt9yqVmE1C6XeSI-LV8Bh2F0dG5ldHOIAAAAAAAAAACEZXRoMpDuKNezAAAAckYFAAAAAAAAgmlkgnY0gmlwhEDhTgGJc2VjcDI1NmsxoQIgMUMFvJGlr8dI1TEQy-K78u2TJE2rWvah9nGqLQCEGohzeW5jbmV0cwCDdGNwgiMog3VkcIIjKA";
+        var enrString = "enr:-MK4QLBBqydIzLwrp3C2LNW0CtyxVizIGyfDYu2aMJ4kjhY2VjMLaZVmEq_Z79bFTwDl9AXxBZDZnLaSeQzPItYLdg6GAZFEuUfJh2F0dG5ldHOIwAAAAAAAAACEZXRoMpBqlaGpBAAAAP__________gmlkgnY0gmlwhNtKmZeJc2VjcDI1NmsxoQO9kKdRjjeRr7aVh02EAHzjoKZw0jWsNJqMqP2QJIcAu4hzeW5jbmV0cwCDdGNwgjLIg3VkcIIu4A";
         var enrEntryRegistry = new EnrEntryRegistry();
         var enr = new EnrFactory(enrEntryRegistry).CreateFromString(enrString, new IdentityVerifierV4());
         

@@ -135,9 +135,9 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
                 context.RemotePeer.Address.Get<P2P>(),
                 Convert.ToHexString(forkDigest), 
                 Convert.ToHexString(finalisedRoot),
-                statusResponse.FinalizedEpoch, 
-                Convert.ToHexString(statusResponse.HeadRoot), 
-                statusResponse.HeadSlot);
+                finalizedEpoch, 
+                Convert.ToHexString(headRoot), 
+                headSlot);
         }
         catch (OperationCanceledException)
         {

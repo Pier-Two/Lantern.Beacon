@@ -297,10 +297,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                     }
                     else
                     {
-                        _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver. Writing data to upper channel", streamId);
-
                         if (messageReceiver.Channel != null)
                         {
+                            _logger?.LogDebug("Stream {streamId} (initiator): Received MessageReceiver. Writing data to upper channel", streamId);
                             await messageReceiver.Channel.WriteAsync(message.Data);
                         }
                     }
@@ -319,10 +318,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                     }
                     else
                     {
-                        _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator. Writing data to upper channel", streamId);
-                        
                         if (messageInitiator.Channel != null)
                         {
+                            _logger?.LogDebug("Stream {streamId} (receiver): Received MessageInitiator. Writing data to upper channel", streamId);
                             await messageInitiator.Channel.WriteAsync(message.Data);
                         }
                     }
@@ -339,10 +337,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                 }
                 else
                 {
-                    _logger?.LogDebug("Stream {streamId} (initiator): Received CloseReceiver", streamId);
-
                     if (closeReceiver.Channel != null)
                     {
+                        _logger?.LogDebug("Stream {streamId} (initiator): Received CloseReceiver. Writing EOF", streamId);
                         await closeReceiver.Channel.WriteEofAsync();
                     }
                 }
@@ -355,10 +352,9 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                 }
                 else
                 {
-                    _logger?.LogDebug("Stream {streamId} (receiver): Received CloseInitiator", streamId);
-
                     if (closeInitiator.Channel != null)
                     {
+                        _logger?.LogDebug("Stream {streamId} (receiver): Received CloseInitiator. Writing EOF", streamId);
                         await closeInitiator.Channel.WriteEofAsync();
                     }
                 }

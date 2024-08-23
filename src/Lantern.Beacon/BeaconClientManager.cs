@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Google.Protobuf;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
+using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
@@ -134,18 +135,18 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     {
         _logger.LogInformation("Running peer discovery...");
         var semaphore = new SemaphoreSlim(clientOptions.MaxParallelDials);
-
+        
         while (!token.IsCancellationRequested)
         {
             try
             {
                 await Task.Delay(1000, token);
-
+                
                 if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
                 {
                     continue;
                 }
-
+                
                 if (_peersToDial.IsEmpty && clientOptions.EnableDiscovery)
                 {
                     if (LocalPeer == null)
@@ -164,30 +165,46 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                         _logger.LogError(ex, "Error occurred during peer discovery");
                     }
                 }
-                else if(!_peersToDial.IsEmpty)
+                else if (!_peersToDial.IsEmpty)
                 {
                     var dialingTasks = new List<Task>();
-                    
+                    var pendingPeersToDial = new ConcurrentQueue<Multiaddress>();
+
                     while (_peersToDial.TryDequeue(out var peerAddress))
                     {
+                        if (peerState.LivePeers.Count >= clientOptions.TargetPeerCount)
+                        {
+                            pendingPeersToDial.Enqueue(peerAddress);
+                            continue;
+                        }
+
                         await semaphore.WaitAsync(token);
-                    
+                        
                         if (peerAddress == null)
                         {
                             semaphore.Release();
                             continue;
                         }
-                    
+                        
                         var dialTask = DialPeerWithThrottling(peerAddress, semaphore, token);
-                        dialingTasks.Add(dialTask); 
+                        dialingTasks.Add(dialTask);
                     }
 
                     if (dialingTasks.Count <= 0) 
                         continue;
-                
-                    await Task.WhenAll(dialingTasks);
                     
+                    await Task.WhenAll(dialingTasks);
                     _logger.LogInformation("Finished dialing all peers");
+
+                    while (!pendingPeersToDial.IsEmpty && !_peersToDial.IsEmpty)
+                    {
+                        pendingPeersToDial.TryDequeue(out var peerAddress);
+                        
+                        if (peerAddress != null)
+                        {
+                            _peersToDial.Enqueue(peerAddress);
+                        }
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -288,7 +305,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             if (completedTask != timeoutTask)
             {
                 _logger.LogInformation("Successfully dialed peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort, peerIdString);
-
+                
                 var remotePeerId = dialTask.Result.Address.GetPeerId();
                 var result = peerState.PeerProtocols.TryRemove(remotePeerId!, out var peerProtocols);
                 
@@ -335,6 +352,10 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
         {
             if (!syncProtocol.IsInitialised)
             {
+                _logger.LogInformation("Requesting light client bootstrap from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", 
+                    peer.Address.Get<IP4>().Value.ToString(), 
+                    peer.Address.Get<TCP>().Value.ToString(), 
+                    peer.Address.Get<P2P>().Value.ToString());
                 await peer.DialAsync<LightClientBootstrapProtocol>(token);
             }
 
