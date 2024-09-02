@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -24,5 +24,14 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Lantern.Beacon.Sync\Lantern.Beacon.Sync.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <AdditionalFiles Include="Networking\Libp2pProtocols\CustomPubsub\Dto\Rpc.proto">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </AdditionalFiles>
+      <AdditionalFiles Include="Networking\Libp2pProtocols\CustomPubsub\Dto\TopicDescriptor.proto">
+        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      </AdditionalFiles>
     </ItemGroup>
 </Project>

@@ -441,8 +441,14 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
             }
+
+            if (!clientOptions.GossipSubEnabled)
+            {
+                _logger.LogInformation("Requesting for light client optimistic update");
+                await peer.DialAsync<LightClientOptimisticUpdateProtocol>(token); 
+            }
             
-            await Task.Delay(1000, token);     
+            await Task.Delay(Config.SecondsPerSlot * 1000, token);
         }
     }
     

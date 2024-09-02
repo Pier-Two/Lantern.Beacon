@@ -1,17 +1,19 @@
 using IronSnappy;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Gossip.Topics;
+using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Processors;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
-using Nethermind.Libp2p.Protocols.Pubsub;
+using ITopic = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.ITopic;
+using Settings = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.Settings;
 
 namespace Lantern.Beacon.Networking.Gossip;
 
-public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncProtocolOptions syncProtocolOptions, PubsubRouter router, IBeaconClientManager beaconClientManager, ISyncProtocol syncProtocol, ILiteDbService liteDbService, ILoggerFactory loggerFactory) : IGossipSubManager
+public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncProtocolOptions syncProtocolOptions, CustomPubsubRouter router, IBeaconClientManager beaconClientManager, ISyncProtocol syncProtocol, ILiteDbService liteDbService, ILoggerFactory loggerFactory) : IGossipSubManager
 {
     private readonly ILogger<GossipSubManager> _logger = loggerFactory.CreateLogger<GossipSubManager>();
     private CancellationTokenSource? _cancellationTokenSource;
@@ -73,6 +75,8 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
     {
         try
         {
+            _logger.LogInformation("Received light client finality update from gossip");
+            
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
                 Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
             var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
@@ -81,9 +85,6 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
             var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
             var lightClientFinalityUpdate =
                 DenebLightClientFinalityUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
-
-            _logger.LogInformation("Received light client finality update from gossip for slot {Slot}",
-                lightClientFinalityUpdate.SignatureSlot);
 
             if (denebFinalizedPeriod + 1 < denebCurrentPeriod)
                 return;
@@ -122,14 +123,14 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
     {
         try
         {
+            _logger.LogInformation("Received light client optimistic update from gossip");
+            
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
             var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
             var decompressedData = Snappy.Decode(update);
             var currentSlot = Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime);
             var lightClientOptimisticUpdate = DenebLightClientOptimisticUpdate.Deserialize(decompressedData, syncProtocol.Options.Preset);
             
-            _logger.LogInformation("Received light client optimistic update from gossip for slot {Slot}", lightClientOptimisticUpdate.SignatureSlot);
-
             if (denebFinalizedPeriod + 1 < denebCurrentPeriod) 
                 return;
             

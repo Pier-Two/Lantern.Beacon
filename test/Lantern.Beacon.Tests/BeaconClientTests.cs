@@ -1,4 +1,5 @@
 ﻿using Lantern.Beacon.Networking;
+using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
@@ -9,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 using Moq;
 using Nethermind.Libp2p.Core;
-using Nethermind.Libp2p.Protocols.Pubsub;
 
 namespace Lantern.Beacon.Tests;
 
@@ -49,7 +49,7 @@ namespace Lantern.Beacon.Tests;
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
         _mockGossipSubManager.Setup(x => x.LightClientFinalityUpdate).Returns(new Mock<ITopic>().Object);
         _mockGossipSubManager.Setup(x => x.LightClientOptimisticUpdate).Returns(new Mock<ITopic>().Object);
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         await _beaconClient.InitAsync();
         
@@ -74,7 +74,7 @@ namespace Lantern.Beacon.Tests;
         _mockGossipSubManager.Setup(x => x.LightClientFinalityUpdate).Returns(new Mock<ITopic>().Object);
         _mockGossipSubManager.Setup(x => x.LightClientOptimisticUpdate).Returns(new Mock<ITopic>().Object);
         _mockGossipSubManager.Setup(x => x.Init()).Throws(new Exception());
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         Assert.ThrowsAsync<Exception>(async () => await _beaconClient.InitAsync());
         
@@ -96,7 +96,7 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Setup(bc => bc.InitAsync());
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         await _beaconClient.InitAsync();
         
@@ -118,7 +118,7 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Setup(bc => bc.InitAsync());
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         await _beaconClient.StartAsync();
 
@@ -134,7 +134,7 @@ namespace Lantern.Beacon.Tests;
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
         _mockGossipSubManager.Setup(x => x.Start(new CancellationToken())).Throws(new Exception());
 
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         Assert.ThrowsAsync<Exception>(async () => await _beaconClient.StartAsync());
 
@@ -148,7 +148,7 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Setup(bc => bc.InitAsync());
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         _beaconClient.StartAsync();
         await _beaconClient.StopAsync();
@@ -165,7 +165,7 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Setup(bc => bc.InitAsync());
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object);
         _mockServiceProvider.Setup(sp => sp.GetService(typeof(ILoggerFactory))).Returns(_mockLoggerFactory.Object);
-        _beaconClient = new BeaconClient(_mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
+        _beaconClient = new BeaconClient(new BeaconClientOptions(), _mockSyncProtocol.Object, _mockLiteDbService.Object, _mockPeerFactoryBuilder.Object, _mockPeerState.Object, _mockBeaconClientManager.Object, _mockGossipSubManager.Object, _mockServiceProvider.Object);
         
         await _beaconClient.StopAsync();
         
@@ -174,7 +174,4 @@ namespace Lantern.Beacon.Tests;
         _mockBeaconClientManager.Verify(x => x.StopAsync(), Times.Never);
         _mockLiteDbService.Verify(x => x.Dispose(), Times.Never);
     }
-    
-    
-    
 } 

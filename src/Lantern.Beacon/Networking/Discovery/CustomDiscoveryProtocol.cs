@@ -37,50 +37,75 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
     }
     
     public Task DiscoverAsync(Multiaddress localPeerAddr, CancellationToken token = default) => Task.CompletedTask;
-
+    
     public async Task GetDiscoveredNodesAsync(Multiaddress localPeerAddr, CancellationToken token = default)
     {
         _logger.LogInformation("Starting discovery with local peer address: {LocalPeerAddr}", localPeerAddr);
 
         try
         {
-            var nodes = discv5Protocol.GetAllNodes;
+            var nodes = discv5Protocol.GetAllNodes.ToArray();
             var discoveredNodes = new List<IEnr?>();
             var randomNodeId = new byte[32];
-            
+
             Random.Shared.NextBytes(randomNodeId);
-
-            foreach (var node in nodes)
-            {
-                var nodesResponse = await discv5Protocol.SendFindNodeAsync(node, randomNodeId);
-                
-                if (nodesResponse == null)
-                {
-                    continue;
-                }
-
-                discoveredNodes.AddRange(nodesResponse);
-            }
-            
             var multiaddresses = new List<Multiaddress>();
-                
-            foreach (var node in discoveredNodes)
+            
+            for (var i = 0; i < nodes.Length; i += beaconOptions.MaxParallelDials)
             {
-                if(node == null)
-                    continue;
+                if (multiaddresses.Count >= beaconOptions.TargetNodesToFind)
+                {
+                    break;
+                }
                 
-                if (!(node.HasKey(EnrEntryKey.Tcp) || node.HasKey(EnrEntryKey.Tcp6)) || !node.HasKey(EnrEntryKey.Eth2))
-                    continue;
+                _logger.LogInformation("Found {Count} peers to dial so far...", multiaddresses.Count);
+                
+                var batchNodes = nodes.Skip(i).Take(beaconOptions.MaxParallelDials).ToList();
+                var tasks = batchNodes.Select(node => discv5Protocol.SendFindNodeAsync(node, randomNodeId)).ToList();
+                var nodesResponses = await Task.WhenAll(tasks);
+                
+                foreach (var nodesResponse in nodesResponses)
+                {
+                    if (nodesResponse == null)
+                    {
+                        continue;
+                    }
 
-                if (!node.GetEntry<EntryEth2>(EnrEntryKey.Eth2).Value[..4].SequenceEqual(BeaconClientUtility.GetForkDigestBytes(syncProtocolOptions)))
-                    continue;
-                
-                var multiAddress = BeaconClientUtility.ConvertToMultiAddress(node);
+                    discoveredNodes.AddRange(nodesResponse);
                     
-                if(multiAddress == null)
-                    continue;
-                
-                multiaddresses.Add(multiAddress);  
+                    foreach (var discoveredNode in discoveredNodes)
+                    {
+                        if (discoveredNode == null)
+                            continue;
+
+                        if (!(discoveredNode.HasKey(EnrEntryKey.Tcp) || 
+                              discoveredNode.HasKey(EnrEntryKey.Tcp6)) || 
+                              !discoveredNode.HasKey(EnrEntryKey.Eth2))
+                            continue;
+
+                        if (!discoveredNode.GetEntry<EntryEth2>(EnrEntryKey.Eth2).Value[..4]
+                            .SequenceEqual(BeaconClientUtility.GetForkDigestBytes(syncProtocolOptions)))
+                            continue;
+
+                        var multiAddress = BeaconClientUtility.ConvertToMultiAddress(discoveredNode);
+                        if (multiAddress == null)
+                            continue;
+
+                        multiaddresses.Add(multiAddress);
+
+                        if (multiaddresses.Count >= beaconOptions.TargetNodesToFind)
+                        {
+                            break;
+                        }
+                    }
+                    
+                    if (multiaddresses.Count >= beaconOptions.TargetNodesToFind)
+                    {
+                        break;
+                    }
+                    
+                    discoveredNodes.Clear();
+                }
             }
 
             if (multiaddresses.Count != 0)

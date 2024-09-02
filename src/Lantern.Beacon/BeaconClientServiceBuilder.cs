@@ -1,4 +1,5 @@
 using Lantern.Beacon.Networking;
+using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Lantern.Beacon.Sync;
@@ -29,7 +30,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
     public IBeaconClientServiceBuilder AddLibp2pProtocol(Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup)
     {
         services.AddScoped(sp => factorySetup(new BeaconClientPeerFactoryBuilder(sp)))
-            .AddScoped<PubsubRouter>()
+            .AddScoped<CustomPubsubRouter>()
             .AddScoped<MultiplexerSettings>()
             .AddScoped<IdentifyProtocolSettings>(_ => new IdentifyProtocolSettings
             {
