@@ -35,7 +35,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             
             _logger?.LogInformation("Sending status request to {PeerId} with forkDigest={ForkDigest}, finalizedRoot={FinalizedRoot}, finalizedEpoch={FinalizedEpoch}, headRoot={HeadRoot}, headSlot={HeadSlot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(localStatus.ForkDigest), Convert.ToHexString(localStatus.FinalizedRoot), localStatus.FinalizedEpoch, Convert.ToHexString(localStatus.HeadRoot), localStatus.HeadSlot);
             
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
             var receivedData = new List<byte[]>();
             
             await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
@@ -129,7 +129,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
             var rawData = new ReadOnlySequence<byte>(payload);
 
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
 
             _logger?.LogInformation("Sent status response to {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
                 context.RemotePeer.Address.Get<P2P>(),

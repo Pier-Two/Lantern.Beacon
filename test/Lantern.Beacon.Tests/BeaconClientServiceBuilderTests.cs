@@ -1,3 +1,4 @@
+using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Sync;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
@@ -58,7 +59,7 @@ public class BeaconClientServiceBuilderTests
         
         _mockServicesCollection.Verify(s =>
             s.Add(It.Is<ServiceDescriptor>(descriptor =>
-                descriptor.ServiceType == typeof(PubsubRouter) &&
+                descriptor.ServiceType == typeof(CustomPubsubRouter) &&
                 descriptor.Lifetime == ServiceLifetime.Scoped
             )), Times.Once);
 

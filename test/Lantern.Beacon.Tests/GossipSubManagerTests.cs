@@ -1,6 +1,7 @@
 using System.Reflection;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Gossip;
+using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
@@ -16,7 +17,7 @@ namespace Lantern.Beacon.Tests;
 public class GossipSubManagerTests
 {
     private SyncProtocolOptions _syncProtocolOptions;
-    private PubsubRouter _router;
+    private CustomPubsubRouter _router;
     private ManualDiscoveryProtocol _discoveryProtocol;
     private Mock<IBeaconClientManager> _beaconClientManager;
     private Mock<ISyncProtocol> _syncProtocol;
@@ -28,7 +29,7 @@ public class GossipSubManagerTests
     [SetUp]
     public void Setup()
     {
-        _router = new PubsubRouter();
+        _router = new CustomPubsubRouter();
         _discoveryProtocol = new ManualDiscoveryProtocol();
         _beaconClientManager = new Mock<IBeaconClientManager>();
         _syncProtocol = new Mock<ISyncProtocol>();

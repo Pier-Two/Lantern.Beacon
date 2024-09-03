@@ -11,7 +11,7 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbService, IPeerFactoryBuilder peerFactoryBuilder, IPeerState peerState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(BeaconClientOptions options, ISyncProtocol syncProtocol, ILiteDbService liteDbService, IPeerFactoryBuilder peerFactoryBuilder, IPeerState peerState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -33,11 +33,15 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
         
             syncProtocol.Init(altairStore, capellaStore, denebStore, finalityUpdate, optimisticUpdate);
             peerState.Init(peerFactoryBuilder.AppLayerProtocols);
-            gossipSubManager.Init();
 
-            if (gossipSubManager.LightClientFinalityUpdate == null && gossipSubManager.LightClientOptimisticUpdate == null)
+            if (options.GossipSubEnabled)
             {
-                return;
+                gossipSubManager.Init();
+
+                if (gossipSubManager.LightClientFinalityUpdate == null && gossipSubManager.LightClientOptimisticUpdate == null)
+                {
+                    return;
+                }
             }
             
             await beaconClientManager.InitAsync();
@@ -55,7 +59,11 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
         { 
             CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
             
-            gossipSubManager.Start(token);
+            if(options.GossipSubEnabled)
+            {
+                gossipSubManager.Start(token);
+            }
+
             await beaconClientManager.StartAsync(token); 
         }
         catch (Exception e)
@@ -74,7 +82,12 @@ public class BeaconClient(ISyncProtocol syncProtocol, ILiteDbService liteDbServi
         }
         
         await CancellationTokenSource.CancelAsync();
-        await gossipSubManager.StopAsync();
+        
+        if(options.GossipSubEnabled)
+        {
+            await gossipSubManager.StopAsync();
+        }
+        
         await beaconClientManager.StopAsync();
         
         liteDbService.Dispose();

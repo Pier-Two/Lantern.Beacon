@@ -16,7 +16,7 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
     
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Sending goodbye to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        _logger?.LogDebug("Sending goodbye to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.RespTimeout));
         
         try
@@ -26,7 +26,7 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
             var payload = ReqRespHelpers.EncodeRequest(sszData);
             var rawData = new ReadOnlySequence<byte>(payload);
 
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
             
             var receivedData = new List<byte[]>();
 
@@ -74,7 +74,7 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
 
             var goodbyeResponse = Goodbye.Deserialize(result.Item1);
 
-            _logger?.LogInformation("Received goodbye response from {PeerId} with reason {Reason}",
+            _logger?.LogDebug("Received goodbye response from {PeerId} with reason {Reason}",
                 context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
 
             if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
@@ -97,7 +97,7 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for goodbye response from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for goodbye response from {PeerId}", context.RemotePeer.Address);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.TimeToFirstByteTimeout));
 
         try
@@ -121,7 +121,7 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
 
             var goodbyeResponse = Goodbye.Deserialize(result);
 
-            _logger?.LogInformation("Received goodbye response from {PeerId} with reason {Reason}",
+            _logger?.LogDebug("Received goodbye response from {PeerId} with reason {Reason}",
                 context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
 
             var goodbye = Goodbye.CreateFrom(goodbyeResponse.Reason);
@@ -129,9 +129,9 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
             var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
             var rawData = new ReadOnlySequence<byte>(payload);
 
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
 
-            _logger?.LogInformation("Sent goodbye response to {PeerId} with reason {Reason}",
+            _logger?.LogDebug("Sent goodbye response to {PeerId} with reason {Reason}",
                 context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
 
             if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))

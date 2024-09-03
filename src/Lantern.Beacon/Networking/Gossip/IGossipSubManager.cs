@@ -1,4 +1,5 @@
 using Nethermind.Libp2p.Protocols.Pubsub;
+using ITopic = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.ITopic;
 
 namespace Lantern.Beacon.Networking.Gossip;
 

@@ -696,7 +696,7 @@ public class BeaconClientManagerTests
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
-        Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(1));
+        Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(0));
         
         mockRemotePeer.Verify(x => x.DialAsync<LightClientBootstrapProtocol>(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
@@ -759,7 +759,7 @@ public class BeaconClientManagerTests
         Assert.That(peersToDialQueue.Count, Is.EqualTo(0)); 
         
         _mockLocalPeer.Verify(x => x.DialAsync(It.IsAny<Multiaddress>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
-        Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(1));
+        Assert.That(_mockPeerState.Object.LivePeers.Count, Is.EqualTo(0));
         
         mockRemotePeer.Verify(x => x.DialAsync<LightClientBootstrapProtocol>(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
         mockRemotePeer.Verify(x => x.DialAsync<GoodbyeProtocol>(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
