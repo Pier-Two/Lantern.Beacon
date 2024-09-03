@@ -55,6 +55,8 @@ internal static class Program
             TcpPort = 9005,
             DialTimeoutSeconds = 5,
             MaxParallelDials = 10,
+            EnableDiscovery = false,
+            Bootnodes = ["/ip4/51.79.229.29/tcp/9106/p2p/16Uiu2HAkyHDfhFkkjuq1o9ZEQCz93yVBDkTgPaKdSdwq12BiQ369"]
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAm66XKpWs6y6pkGJAiDdxmrdhZG3JYrmmma32U5mNFcStY"]
             //Bootnodes = ["/ip4/72.219.149.222/tcp/9001/p2p/16Uiu2HAmK8s25hdUhLbmdssRSdCVgwpxo8XpYjh3hwqComxTkbes"]
             //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm7oPB47QN72JyAKv92ww6t7LkZpGuoeQ4nxPzSwBcFVqf"] // Internal OVH Nimbus Client
@@ -73,7 +75,7 @@ internal static class Program
         var loggerFactory = LoggerFactory.Create(builder => 
         {
             builder
-                .SetMinimumLevel(LogLevel.Information)
+                .SetMinimumLevel(LogLevel.Debug)
                 .AddFilter("Nethermind.Libp2p.Core.ChannelFactory", LogLevel.None)
                 .AddSimpleConsole(l => 
                 {

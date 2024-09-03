@@ -17,7 +17,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
 
     public async Task DialAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Sending ping to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+        _logger?.LogDebug("Sending ping to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.RespTimeout));
 
         try
@@ -27,7 +27,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
             var payload = ReqRespHelpers.EncodeRequest(sszData);
             var rawData = new ReadOnlySequence<byte>(payload);
             
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
             var receivedData = new List<byte[]>();
 
             await foreach (var readOnlySequence in downChannel.ReadAllAsync(cts.Token))
@@ -69,7 +69,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for ping request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for ping request from {PeerId}", context.RemotePeer.Address);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.TimeToFirstByteTimeout));
 
         try
@@ -96,7 +96,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
             var payload = ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.Success);
             var rawData = new ReadOnlySequence<byte>(payload);
 
-            await downChannel.WriteAsync(rawData);
+            await downChannel.WriteAsync(rawData, cts.Token);
 
             _logger?.LogInformation("Sent pong response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         }

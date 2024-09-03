@@ -36,7 +36,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         var peerState = new PeerConnectionState();
         _peerStates[context] = peerState;
 
-        _logger?.LogInformation(isListener ? "Listen" : "Dial");
+        _logger?.LogDebug(isListener ? "Listen" : "Dial");
 
         var downChannelAwaiter = downChannel.GetAwaiter();
         context.Connected(context.RemotePeer);

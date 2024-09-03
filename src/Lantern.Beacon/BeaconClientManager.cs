@@ -366,7 +366,9 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
                     peer.Address.Get<IP4>().Value.ToString(),
                     peer.Address.Get<TCP>().Value.ToString(),
                     peer.Address.Get<P2P>().Value.ToString());
+                
                 await peer.DialAsync<GoodbyeProtocol>(token);
+                peerState.LivePeers.TryRemove(peer.Address.GetPeerId()!, out _);
             }
             else
             {
