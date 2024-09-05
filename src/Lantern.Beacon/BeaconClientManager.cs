@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
-using Google.Protobuf;
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
-using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Config;
@@ -12,14 +10,10 @@ using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Discv5.Enr;
 using Lantern.Discv5.Enr.Entries;
 using Lantern.Discv5.WireProtocol.Identity;
-using Lantern.Discv5.WireProtocol.Session;
-using Lantern.Discv5.WireProtocol.Utility;
 using Microsoft.Extensions.Logging;
-using Multiformats.Address;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Core.Dto;
-using NBitcoin.Secp256k1; 
 
 namespace Lantern.Beacon;
 
@@ -67,7 +61,7 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             }
             
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
-            
+           
             _logger.LogInformation("Beacon client manager started with address {Address}", LocalPeer.Address); 
         } 
         catch (Exception e) 
@@ -114,8 +108,9 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             try
             {
                 _logger.LogInformation(
-                    "Slot: {CurrentSlot}, Finalized Period: {FinalizedPeriod}, Optimistic Period: {OptimisticPeriod}, Current Period: {CurrentPeriod}, Head Block: 0x{HeadBlock}, Peer Count: {PeerCount}",
+                    "Slot: {CurrentSlot}, Epoch: {CurrentEpoch}, Finalized Period: {FinalizedPeriod}, Optimistic Period: {OptimisticPeriod}, Current Period: {CurrentPeriod}, Head Block: 0x{HeadBlock}, Peer Count: {PeerCount}",
                     Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime),
+                    Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)),
                     AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot)),
                     AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.OptimisticHeader.Beacon.Slot)),
                     AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime))),
@@ -410,6 +405,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     
     private async Task SyncDenebForkAsync(IRemotePeer peer, CancellationToken token = default)    
     {
+        if (!clientOptions.GossipSubEnabled) 
+        {
+            var tokenSource = new CancellationTokenSource();
+            _ = RunOptimisticUpdateLoopAsync(peer, tokenSource.Token);
+            _ = RunFinalityUpdateLoopAsync(peer, tokenSource.Token);
+        }
+        
         while (!token.IsCancellationRequested)    
         {
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
@@ -443,19 +445,20 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
 
                 await peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);        
             }
-
-            if (!clientOptions.GossipSubEnabled)
-            {
-                _logger.LogInformation("Requesting for light client optimistic update");
-                await peer.DialAsync<LightClientOptimisticUpdateProtocol>(token); 
-            }
             
-            await Task.Delay(Config.SecondsPerSlot * 1000, token);
+            await Task.Delay(1000, token);     
         }
     }
     
     private async Task SyncCapellaForkAsync(IRemotePeer peer, CancellationToken token = default)
     {
+        if (!clientOptions.GossipSubEnabled) 
+        {
+            var tokenSource = new CancellationTokenSource();
+            _ = RunOptimisticUpdateLoopAsync(peer, tokenSource.Token);
+            _ = RunFinalityUpdateLoopAsync(peer, tokenSource.Token);
+        }
+        
         while (!token.IsCancellationRequested)
         {
             var capellaFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot));
@@ -503,6 +506,13 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
     
     private async Task SyncAltairForkAsync(IRemotePeer peer, CancellationToken token = default)
     {
+        if (!clientOptions.GossipSubEnabled) 
+        {
+            var tokenSource = new CancellationTokenSource();
+            _ = RunOptimisticUpdateLoopAsync(peer, tokenSource.Token);
+            _ = RunFinalityUpdateLoopAsync(peer, tokenSource.Token);
+        }
+        
         while (!token.IsCancellationRequested)
         {
             var altairFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot));
@@ -545,6 +555,88 @@ public class BeaconClientManager(BeaconClientOptions clientOptions,
             }
 
             await Task.Delay(1000, token);     
+        }
+    }
+    
+    private async Task RunOptimisticUpdateLoopAsync(IRemotePeer peer, CancellationToken token)
+    {
+        try
+        {
+            var genesisTime = syncProtocol.Options.GenesisTime;
+            var currentSlot = Phase0Helpers.ComputeCurrentSlot(genesisTime);
+            var currentTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var nextSlotStartTime = genesisTime + ((currentSlot + 1) * (ulong)Config.SecondsPerSlot);
+            var delayUntilNextSlot = nextSlotStartTime - currentTime;
+
+            _logger.LogInformation("Delaying for {DelayUntilNextSlot} seconds until the next slot starts...", delayUntilNextSlot);
+            
+            await Task.Delay((int)delayUntilNextSlot * 1000, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return; 
+        }
+        
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                if (!syncProtocol.IsInitialised) 
+                    continue;
+
+                await Task.Run(async () => await peer.DialAsync<LightClientOptimisticUpdateProtocol>(token), token);
+                await Task.Delay(Config.SecondsPerSlot * 1000, token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while running optimistic update loop");
+            }
+        }
+    }
+
+    private async Task RunFinalityUpdateLoopAsync(IRemotePeer peer, CancellationToken token)
+    {
+        try
+        {
+            var genesisTime = syncProtocol.Options.GenesisTime;
+            var currentSlot = Phase0Helpers.ComputeCurrentSlot(genesisTime);
+            var currentEpoch = Phase0Helpers.ComputeEpochAtSlot(currentSlot);
+            var secondsPerSlot = (ulong)Config.SecondsPerSlot;
+            var nextEpochStartTime = genesisTime + (currentEpoch + 1) * 32 * secondsPerSlot;
+            var currentTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var delayUntilNextEpoch = nextEpochStartTime - currentTime;
+
+            _logger.LogInformation($"Delaying for {delayUntilNextEpoch} seconds until the next epoch starts...");
+
+            await Task.Delay((int)delayUntilNextEpoch * 1000, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        while (!token.IsCancellationRequested)
+        {
+            try
+            {
+                if (!syncProtocol.IsInitialised)
+                    continue;
+
+                await Task.Run(async () => await peer.DialAsync<LightClientFinalityUpdateProtocol>(token), token);
+                await Task.Delay(Config.SecondsPerSlot * 32 * 1000, token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while running finality update loop");
+            }
         }
     }
 }
