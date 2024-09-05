@@ -147,7 +147,7 @@ public static class Phase0Helpers
         var currentTime = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var secondsPerSlot = (ulong)Config.Config.SecondsPerSlot;
         
-        return ((currentTime - genesisTime) / secondsPerSlot);
+        return (currentTime - genesisTime) / secondsPerSlot;
     }
     
     public static byte[] ComputeDomain(uint domainType, byte[]? forkVersion, SyncProtocolOptions options)

@@ -98,7 +98,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
 
             await downChannel.WriteAsync(rawData, cts.Token);
 
-            _logger?.LogInformation("Sent pong response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
+            _logger?.LogDebug("Sent pong response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         }
         catch (OperationCanceledException)
         {

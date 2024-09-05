@@ -42,7 +42,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
                 _ => PubsubProtocol.Gossipsub,
             };
             TokenSource = new CancellationTokenSource();
-            Backoff = [];
+            Backoff = new Dictionary<string, DateTime>();
             SendRpcQueue = new ConcurrentQueue<Rpc>();
         }
 
@@ -56,6 +56,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
         public void Send(Rpc rpc)
         {
             SendRpcQueue.Enqueue(rpc);
+            
             if (SendRpc is not null)
             {
                 lock (SendRpcQueue)
@@ -67,31 +68,40 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
                 }
             }
         }
+
         public Dictionary<string, DateTime> Backoff { get; internal set; }
         public ConcurrentQueue<Rpc> SendRpcQueue { get; }
+
         private Action<Rpc>? _sendRpc;
         public Action<Rpc>? SendRpc
         {
-            get => _sendRpc; set
+            get => _sendRpc;
+            
+            set
             {
-                _sendRpc = value;
-                if (_sendRpc is not null)
-                    lock (SendRpcQueue)
+                if (_sendRpc != value)
+                {
+                    _sendRpc = value;
+
+                    if (_sendRpc is not null)
                     {
-                        while (SendRpcQueue.TryDequeue(out Rpc? rpcToSend))
+                        lock (SendRpcQueue)
                         {
-                            _sendRpc.Invoke(rpcToSend);
+                            while (SendRpcQueue.TryDequeue(out Rpc? rpcToSend))
+                            {
+                                _sendRpc.Invoke(rpcToSend);
+                            }
                         }
                     }
+                }
             }
         }
+
         public CancellationTokenSource TokenSource { get; init; }
         public PeerId PeerId { get; set; }
-
         private PubsubProtocol Protocol { get; set; }
         public bool IsGossipSub => Protocol == PubsubProtocol.Gossipsub;
         public bool IsFloodSub => Protocol == PubsubProtocol.Floodsub;
-
         public ConnectionInitiation InititatedBy { get; internal set; }
         public Multiaddress Address { get; internal set; }
     }
@@ -446,53 +456,37 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
             }
         }
     }
-
+    
     internal CancellationToken OutboundConnection(Multiaddress addr, string protocolId, Task dialTask, Action<Rpc> sendRpc)
     {
-        PubsubPeer peer;
         PeerId? peerId = addr.GetPeerId();
-
         if (peerId is null)
         {
             return Canceled;
         }
 
-        peer = new PubsubPeer(peerId, protocolId) { Address = addr, SendRpc = sendRpc, InititatedBy = ConnectionInitiation.Local };
+        // Get or add a new PubsubPeer, and always use the one from the dictionary
+        var peer = peerState.GetOrAdd(peerId, _ => new PubsubPeer(peerId, protocolId) { Address = addr });
 
-        if (!peerState.TryAdd(peerId, peer))
+        // Ensure SendRpc is set if it's not already
+        if (peer.SendRpc == null)
         {
-            if (peerState[peerId].SendRpc is null)
-            {
-                peer.SendRpc = sendRpc;
-            }
-            else
-            {
-                return Canceled;
-            }
+            peer.SendRpc = sendRpc;
         }
 
         dialTask.ContinueWith(t =>
         {
             peerState.GetValueOrDefault(peerId)?.TokenSource.Cancel();
             peerState.TryRemove(peerId, out _);
-            foreach (var topicPeers in fPeers)
-            {
-                topicPeers.Value.Remove(peerId);
-            }
-            foreach (var topicPeers in gPeers)
-            {
-                topicPeers.Value.Remove(peerId);
-            }
-            foreach (var topicPeers in fanout)
-            {
-                topicPeers.Value.Remove(peerId);
-            }
-            foreach (var topicPeers in mesh)
-            {
-                topicPeers.Value.Remove(peerId);
-            }
+            
+            foreach (var topicPeers in fPeers) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in gPeers) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in fanout) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in mesh) { topicPeers.Value.Remove(peerId); }
+
             reconnections.Add(new Reconnection([addr], settings.ReconnectionAttempts));
         });
+
         Rpc helloMessage = new Rpc().WithTopics(topicState.Keys.ToList(), Enumerable.Empty<string>());
         peer.Send(helloMessage);
         logger?.LogDebug("Outbound {peerId}", peerId);
@@ -501,49 +495,33 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
 
     internal CancellationToken InboundConnection(Multiaddress addr, string protocolId, Task listTask, Task dialTask, Func<Task> subDial)
     {
-        PubsubPeer? remotePeer;
         PeerId? peerId = addr.GetPeerId();
-
         if (peerId is null)
         {
             return Canceled;
         }
-
-        remotePeer = new PubsubPeer(peerId, protocolId) { Address = addr, InititatedBy = ConnectionInitiation.Remote };
+        
         logger?.LogDebug("Inbound {peerId}", peerId);
-        if (peerState.TryAdd(peerId, remotePeer))
-        {
-            logger?.LogDebug("Inbound, lets dial {peerId} via remotely initiated connection", peerId);
-            listTask.ContinueWith(t =>
-            {
-                peerState.GetValueOrDefault(peerId)?.TokenSource.Cancel();
-                peerState.TryRemove(peerId, out _);
-                foreach (var topicPeers in fPeers)
-                {
-                    topicPeers.Value.Remove(peerId);
-                }
-                foreach (var topicPeers in gPeers)
-                {
-                    topicPeers.Value.Remove(peerId);
-                }
-                foreach (var topicPeers in fanout)
-                {
-                    topicPeers.Value.Remove(peerId);
-                }
-                foreach (var topicPeers in mesh)
-                {
-                    topicPeers.Value.Remove(peerId);
-                }
-                reconnections.Add(new Reconnection([addr], settings.ReconnectionAttempts));
-            });
 
-            subDial();
-            return remotePeer.TokenSource.Token;
-        }
-        else
+        // Get or add a new PubsubPeer, and always use the one from the dictionary
+        var peer = peerState.GetOrAdd(peerId, _ => new PubsubPeer(peerId, protocolId) { Address = addr });
+
+        listTask.ContinueWith(t =>
         {
-            return peerState[peerId].TokenSource.Token;
-        }
+            peerState.GetValueOrDefault(peerId)?.TokenSource.Cancel();
+            peerState.TryRemove(peerId, out _);
+
+            foreach (var topicPeers in fPeers) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in gPeers) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in fanout) { topicPeers.Value.Remove(peerId); }
+            foreach (var topicPeers in mesh) { topicPeers.Value.Remove(peerId); }
+
+            reconnections.Add(new Reconnection([addr], settings.ReconnectionAttempts));
+        });
+
+        subDial();
+
+        return peer.TokenSource.Token;
     }
 
     internal async Task OnRpc(PeerId peerId, Rpc rpc)
@@ -556,8 +534,6 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
 
                 if (rpc.Subscriptions.Any())
                 {
-                    logger.LogDebug("Subscriptions received: {subscriptions}", rpc.Subscriptions.Count);
-                    
                     foreach (Rpc.Types.SubOpts? sub in rpc.Subscriptions)
                     {
                         var state = peerState.GetValueOrDefault(peerId);
@@ -602,7 +578,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
                 {
                     if (rpc.Publish.Any())
                     {
-                        logger?.LogDebug($"Messages received: {rpc.Publish.Select(settings.GetMessageId).Count(messageId => limboMessageCache.Contains(messageId) || messageCache!.Contains(messageId))}/{rpc.Publish.Count}: {rpc.Publish.Count}");
+                        logger?.LogTrace($"Messages received: {rpc.Publish.Select(settings.GetMessageId).Count(messageId => limboMessageCache.Contains(messageId) || messageCache!.Contains(messageId))}/{rpc.Publish.Count}: {rpc.Publish.Count}");
                     }
 
                     foreach (Message? message in rpc.Publish)
@@ -716,6 +692,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
                             ControlIWant ciw = new();
                             foreach (MessageId mId in messageIds)
                             {
+                                logger?.LogDebug($"Requesting message with ID: {Convert.ToBase64String(mId.Bytes)}");
                                 ciw.MessageIDs.Add(ByteString.CopyFrom(mId.Bytes));
                             }
                             peerMessages.GetOrAdd(peerId, _ => new Rpc())
@@ -754,7 +731,11 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
             }
             foreach (KeyValuePair<PeerId, Rpc> peerMessage in peerMessages)
             {
-                peerState.GetValueOrDefault(peerMessage.Key)?.Send(peerMessage.Value);
+                if(peerState.GetValueOrDefault(peerMessage.Key) is not null)
+                { 
+                    logger?.LogDebug($"Sending message to {peerMessage.Key}");
+                    peerState.GetValueOrDefault(peerMessage.Key)?.Send(peerMessage.Value);
+                }
             }
         }
         catch (Exception ex)

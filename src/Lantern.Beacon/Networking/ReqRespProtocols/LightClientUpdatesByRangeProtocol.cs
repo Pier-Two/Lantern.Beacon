@@ -18,7 +18,7 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon.Networking.ReqRespProtocols;
 
-public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILiteDbService liteDbService, ILoggerFactory? loggerFactory = null) : IProtocol
+public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeerState peerState, ILiteDbService liteDbService, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<LightClientUpdatesByRangeProtocol>();
     public string Id => "/eth2/beacon_chain/req/light_client_updates_by_range/1/ssz_snappy";
@@ -48,7 +48,15 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
             {
                 _logger?.LogDebug("Received an empty or null response from {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
+                
+                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                {
+                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+                }
+                
                 await downChannel.CloseAsync();
+                
                 return;
             }
 
@@ -60,6 +68,13 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                 _logger?.LogInformation(
                     "Failed to handle light client update response from {PeerId} due to reason {Reason}",
                     context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)receivedData[0][0]);
+                
+                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                {
+                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+                }
+                
                 await downChannel.CloseAsync();
                 return;
             }
@@ -192,11 +207,24 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
         {
             _logger?.LogDebug("Timeout occured while listening for light client update response from {PeerId}",
                 context.RemotePeer.Address.Get<P2P>());
+            
+            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            {
+                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+            }
+            
             await downChannel.CloseAsync();
         }
         catch (Exception ex)
         {
             _logger?.LogDebug("Error occured while listening for light client update response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
+            
+            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            {
+                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+            }
             await downChannel.CloseAsync();
         }
     }
@@ -222,6 +250,12 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
             {
                 _logger?.LogDebug("Failed to decode light client update request from {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
+                
+                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                {
+                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+                }
                 await downChannel.CloseAsync();
                 return;
             }
@@ -248,7 +282,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                         ReqRespHelpers.EncodeResponse(sszData, ResponseCodes.ResourceUnavailable);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
-                    await downChannel.WriteAsync(rawData);
+                    await downChannel.WriteAsync(rawData, cts.Token);
                 }
                 else
                 {
@@ -256,7 +290,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
                     var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                     var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
-                    await downChannel.WriteAsync(rawData);
+                    await downChannel.WriteAsync(rawData, cts.Token);
                     _logger?.LogInformation(
                         "Sent light client update response to {PeerId} for sync period {startPeriod}",
                         context.RemotePeer.Address.Get<P2P>(), request.StartPeriod);
@@ -267,11 +301,23 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, ILite
         {
             _logger?.LogDebug("Timeout occured while listening for light client update request from {PeerId}",
                 context.RemotePeer.Address.Get<P2P>());
+            
+            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            {
+                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+            }
             await downChannel.CloseAsync();
         }
         catch (Exception ex)
         {
             _logger?.LogDebug("Error occured while listening for light client update request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
+            
+            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            {
+                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
+            }
             await downChannel.CloseAsync();
         }
     }
