@@ -51,10 +51,13 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
                 await HandleMessageAsync(message, downChannel, channelFactory, context, peerState);
             }
         }
+        catch (ChannelClosedException ex)
+        {
+            _logger?.LogDebug("Closed due to transport disconnection: {exception}", ex.Message);
+        }
         catch (Exception ex)
         {
             _logger?.LogDebug("Closed with exception {exception}", ex.Message);
-            Console.WriteLine(ex);
         }
 
         _logger?.LogDebug("Closing all channels");

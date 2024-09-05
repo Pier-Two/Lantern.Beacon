@@ -57,7 +57,8 @@ internal static class Program
             MaxParallelDials = 10,
             EnableDiscovery = true,
             GossipSubEnabled = true,
-            Bootnodes = ["/ip4/194.33.40.70/tcp/9002/p2p/16Uiu2HAmFytwaDJqRrXM4rNc7AKWeJjxWSjdtYRWTsfwZ7FzRA3m"]
+            //Bootnodes = ["/ip4/94.16.205.215/tcp/9000/p2p/16Uiu2HAm9UL4C273yG9iBQS6RWavcxZDi5rGfSZXLvgd5vnDszCN"]
+            //Bootnodes = ["/ip4/194.33.40.70/tcp/9002/p2p/16Uiu2HAmFytwaDJqRrXM4rNc7AKWeJjxWSjdtYRWTsfwZ7FzRA3m"]
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAm66XKpWs6y6pkGJAiDdxmrdhZG3JYrmmma32U5mNFcStY"]
             //Bootnodes = ["/ip4/72.219.149.222/tcp/9001/p2p/16Uiu2HAmK8s25hdUhLbmdssRSdCVgwpxo8XpYjh3hwqComxTkbes"]
             //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm7oPB47QN72JyAKv92ww6t7LkZpGuoeQ4nxPzSwBcFVqf"] // Internal OVH Nimbus Client
