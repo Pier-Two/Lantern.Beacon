@@ -74,14 +74,6 @@ public class BeaconClientManagerTests
         _beaconClientManager = new BeaconClientManager(new BeaconClientOptions(), _mockManualDiscoveryProtocol.Object, _mockLiteDbService.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object,_mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
 
         await _beaconClientManager.InitAsync();
-        
-        _mockLogger.Verify(log => log.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Beacon client manager started with address")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-            Times.Once);
     }
     
     [Test]

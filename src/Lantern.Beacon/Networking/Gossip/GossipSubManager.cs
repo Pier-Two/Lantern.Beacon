@@ -57,7 +57,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         };
         
         _ = Task.Run(() => router.RunAsync(beaconClientManager.LocalPeer, discoveryProtocol, settings, token), token);
-        _logger.LogInformation("Running GossipSub protocol");
+        _logger.LogDebug("Running GossipSub protocol");
     }
     
     public async Task StopAsync()
@@ -185,7 +185,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
 
         if (!foundLivePeer)
         {
-            _logger?.LogInformation("Adding peer {PeerId} to 'GossipPeers'", peerId);
+            _logger?.LogInformation("Adding peer {PeerId} to GossipPeers", peerId);
             peerState.GossipPeers.TryAdd(peerId, true);
         }
     }

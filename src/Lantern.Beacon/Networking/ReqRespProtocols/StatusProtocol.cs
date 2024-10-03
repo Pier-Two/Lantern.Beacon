@@ -133,7 +133,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             await downChannel.WriteAsync(rawData, cts.Token);
             await downChannel.CloseAsync();
 
-            _logger?.LogInformation("Sent status response to {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
+            _logger?.LogDebug("Sent status response to {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
                 context.RemotePeer.Address.Get<P2P>(),
                 Convert.ToHexString(forkDigest), 
                 Convert.ToHexString(finalisedRoot),

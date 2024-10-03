@@ -87,7 +87,7 @@ public class BeaconClientManager(
 
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
 
-            _logger.LogInformation("Beacon client manager started with address {Address}", LocalPeer.Address);
+            _logger.LogInformation("Client started with address {Address}", LocalPeer.Address);
         }
         catch (Exception e)
         {
@@ -165,7 +165,7 @@ public class BeaconClientManager(
 
     private async Task ProcessPeerDiscoveryAsync(CancellationToken token)
     {
-        _logger.LogInformation("Running peer discovery...");
+        _logger.LogDebug("Running peer discovery...");
         var semaphore = new SemaphoreSlim(clientOptions.MaxParallelDials);
 
         while (!token.IsCancellationRequested)
@@ -310,7 +310,7 @@ public class BeaconClientManager(
 
             if (completedTask != timeoutTask)
             {
-                _logger.LogInformation("Successfully dialed peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort,
+                _logger.LogDebug("Successfully dialed peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4, tcpPort,
                     peerIdString);
 
                 var remotePeerId = dialTask.Result.Address.GetPeerId();
@@ -318,7 +318,7 @@ public class BeaconClientManager(
 
                 if (!result)
                 {
-                    _logger.LogInformation("No protocols found for peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4,
+                    _logger.LogDebug("No protocols found for peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}", ip4,
                         tcpPort, peerIdString);
                     await dialTask.Result.DisconnectAsync();
                     return;
@@ -330,7 +330,7 @@ public class BeaconClientManager(
                 if (supportsLightClientProtocols)
                 {
                     _logger.LogInformation(
-                        "Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} supports all light client protocols", ip4, tcpPort,
+                        "Found peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} that supports all light client protocols", ip4, tcpPort,
                         peerIdString);
 
                     discoveryProtocol.OnAddPeer?.Invoke([peer]);
@@ -352,7 +352,7 @@ public class BeaconClientManager(
                 }
                 else
                 {
-                    _logger.LogInformation(
+                    _logger.LogDebug(
                         "Peer /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} does not support all light client protocols. Disconnecting...",
                         ip4, tcpPort, peerIdString);
                     await dialTask.Result.DisconnectAsync();

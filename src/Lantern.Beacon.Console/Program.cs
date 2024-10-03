@@ -40,7 +40,6 @@ internal static class Program
             .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
             .WithEntry(EnrEntryKey.Secp256K1, new EntrySecp256K1(sessionOptions.Signer.PublicKey));
         var discv5LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.None));
-
         // Beacon client options
         var syncProtocolOptions = new SyncProtocolOptions
         {
