@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -28,11 +29,11 @@ public class MplexProtocolTests
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object); 
     }
-
+    
     [Test]
     public void ConnectAsync_ShouldThrowWhenContextIsNull()
     {
-        _mplexProtocol = new MplexProtocol(null, _mockLoggerFactory.Object);
+        _mplexProtocol = new MplexProtocol( null,null, _mockLoggerFactory.Object);
         
         var connectAsyncMethod = _mplexProtocol.GetType()
             .GetMethod("ConnectAsync", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -43,7 +44,7 @@ public class MplexProtocolTests
     [Test]
     public void ConnectAsync_ShouldThrowWhenChannelFactoryIsNull()
     {
-        _mplexProtocol = new MplexProtocol(null, _mockLoggerFactory.Object);
+        _mplexProtocol = new MplexProtocol( null,null, _mockLoggerFactory.Object);
         
         var connectAsyncMethod = _mplexProtocol.GetType()
             .GetMethod("ConnectAsync", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -54,7 +55,7 @@ public class MplexProtocolTests
     [Test]
     public void ConnectAsync_ShouldNotThrowWhenAllArgumentsProvided()
     {
-        _mplexProtocol = new MplexProtocol(null, _mockLoggerFactory.Object);
+        _mplexProtocol = new MplexProtocol( null,null, _mockLoggerFactory.Object);
         _mockDownChannel.Setup(x => x.GetAwaiter()).Returns(new TaskAwaiter());
         
         var connectAsyncMethod = _mplexProtocol.GetType()
@@ -65,11 +66,4 @@ public class MplexProtocolTests
         _mockDownChannel.Verify(x => x.GetAwaiter(), Times.Once);
         _mockPeerContext.Verify(x => x.Connected(It.IsAny<IPeer>()), Times.Once);
     }
-    
-   
-    
-    
-    
-    
-    
 }

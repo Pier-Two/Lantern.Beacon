@@ -9,11 +9,17 @@ public class PeerState : IPeerState
 {
      public ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; } = new();
      
-     public ConcurrentDictionary<PeerId, IRemotePeer> LivePeers { get; } = new();
+     public ConcurrentDictionary<PeerId, IRemotePeer> BootstrapPeers { get; } = new();
+     
+     public ConcurrentDictionary<PeerId, bool> GossipPeers { get; } = new();
 
      public IEnumerable<IProtocol> AppLayerProtocols { get; private set; } 
 
      public MetaData MetaData { get; private set; } = MetaData.CreateDefault();
+     
+     public int ConnectedPeersCount { get; set; }
+     
+     public int DisconnectedPeersCount { get; set; }
      
      public void Init(IEnumerable<IProtocol> appLayerProtocols)
      {

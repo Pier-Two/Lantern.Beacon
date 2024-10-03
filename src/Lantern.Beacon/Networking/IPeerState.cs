@@ -9,11 +9,17 @@ public interface IPeerState
 {
     ConcurrentDictionary<PeerId, RepeatedField<string>> PeerProtocols { get; }
     
-    ConcurrentDictionary<PeerId, IRemotePeer> LivePeers { get; }
+    ConcurrentDictionary<PeerId, IRemotePeer> BootstrapPeers { get; }
+    
+    ConcurrentDictionary<PeerId, bool> GossipPeers { get; } 
     
     IEnumerable<IProtocol> AppLayerProtocols { get; }
     
     MetaData MetaData { get; }
     
     void Init(IEnumerable<IProtocol> appLayerProtocols);
+    
+    int ConnectedPeersCount { get; set; }
+    
+    int DisconnectedPeersCount { get; set; }
 }

@@ -1,6 +1,5 @@
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Presets;
-using Nethermind.Libp2p.Protocols.Pubsub;
 using Settings = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.Settings;
 
 namespace Lantern.Beacon.Networking.Gossip;

@@ -47,7 +47,7 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
             var nodes = discv5Protocol.GetAllNodes.ToArray();
             var discoveredNodes = new List<IEnr?>();
             var randomNodeId = new byte[32];
-
+            
             Random.Shared.NextBytes(randomNodeId);
             var multiaddresses = new List<Multiaddress>();
             
@@ -70,29 +70,29 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                     {
                         continue;
                     }
-
+            
                     discoveredNodes.AddRange(nodesResponse);
                     
                     foreach (var discoveredNode in discoveredNodes)
                     {
                         if (discoveredNode == null)
                             continue;
-
+            
                         if (!(discoveredNode.HasKey(EnrEntryKey.Tcp) || 
                               discoveredNode.HasKey(EnrEntryKey.Tcp6)) || 
                               !discoveredNode.HasKey(EnrEntryKey.Eth2))
                             continue;
-
+            
                         if (!discoveredNode.GetEntry<EntryEth2>(EnrEntryKey.Eth2).Value[..4]
                             .SequenceEqual(BeaconClientUtility.GetForkDigestBytes(syncProtocolOptions)))
                             continue;
-
+            
                         var multiAddress = BeaconClientUtility.ConvertToMultiAddress(discoveredNode);
                         if (multiAddress == null)
                             continue;
-
+            
                         multiaddresses.Add(multiAddress);
-
+            
                         if (multiaddresses.Count >= beaconOptions.TargetNodesToFind)
                         {
                             break;
@@ -107,6 +107,28 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
                     discoveredNodes.Clear();
                 }
             }
+            
+            // var multiaddresses = new List<Multiaddress>();
+            // var bootNodes = new[]
+            // {
+            //     "/ip4/162.55.138.93/tcp/9000/p2p/16Uiu2HAmTUhE91q42JaTWBSHAu8zoPcFiZdnvLD9ujc6dPNBWcoy",
+            //     "/ip4/198.244.165.204/tcp/9000/p2p/16Uiu2HAmEP83jeVdeSiwrgqSaUX8SQgEqUAhe4tTZKm1w7y7vUeL",
+            //     "/ip4/102.218.213.140/tcp/32000/p2p/16Uiu2HAmDdPDsuxkewTeNNqq1rL9A5PdKFD486P6BvqyyVppY89w",
+            //     "/ip4/185.177.124.120/tcp/9000/p2p/16Uiu2HAmF59QpFcwjTPeU7iXMpkBqwUALy5rNW5j8i6AQVi8nG7e",
+            //     "/ip4/140.228.71.48/tcp/9000/p2p/16Uiu2HAmP4jwhWtYRgR7Lkp4H75S7vXDV8NBN9gdZH6k2di124PB",
+            //     "/ip4/121.134.209.218/tcp/9000/p2p/16Uiu2HAmMM3xTjNbYipQLjWXC7zHB6ygtDVMZJpQ6EeSG6jDiYSR",
+            // };
+            //
+            // foreach (var bootNode in bootNodes)
+            // {
+            //     var multiaddress = Multiaddress.Decode(bootNode);
+            //     if (multiaddress == null)
+            //     {
+            //         continue;
+            //     }
+            //     
+            //     multiaddresses.Add(multiaddress);
+            // }
 
             if (multiaddresses.Count != 0)
             {

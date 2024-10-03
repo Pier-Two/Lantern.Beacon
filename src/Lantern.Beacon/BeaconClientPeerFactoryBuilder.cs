@@ -2,9 +2,11 @@ using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 using Lantern.Beacon.Networking.Libp2pProtocols.Identify;
 using Lantern.Beacon.Networking.Libp2pProtocols.Mplex;
 using Lantern.Beacon.Networking.Libp2pProtocols.Secp256k1Noise;
+using Lantern.Beacon.Networking.Libp2pProtocols.TcpProtocol;
 using Lantern.Beacon.Networking.ReqRespProtocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols;
+using PingProtocol = Lantern.Beacon.Networking.ReqRespProtocols.PingProtocol;
 
 namespace Lantern.Beacon;
 
@@ -26,7 +28,7 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
     protected override ProtocolStack BuildStack()
     {
         ProtocolStack tcpStack =
-            Over<IpTcpProtocol>()
+            Over<TcpProtocol>()
                 .Over<MultistreamProtocol>()
                 .Over<Secp256K1NoiseProtocol>()
                 .Over<MultistreamProtocol>()

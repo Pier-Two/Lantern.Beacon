@@ -33,7 +33,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             var payload = ReqRespHelpers.EncodeRequest(sszData);
             var rawData = new ReadOnlySequence<byte>(payload);
             
-            _logger?.LogInformation("Sending status request to {PeerId} with forkDigest={ForkDigest}, finalizedRoot={FinalizedRoot}, finalizedEpoch={FinalizedEpoch}, headRoot={HeadRoot}, headSlot={HeadSlot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(localStatus.ForkDigest), Convert.ToHexString(localStatus.FinalizedRoot), localStatus.FinalizedEpoch, Convert.ToHexString(localStatus.HeadRoot), localStatus.HeadSlot);
+            _logger?.LogDebug("Sending status request to {PeerId} with forkDigest={ForkDigest}, finalizedRoot={FinalizedRoot}, finalizedEpoch={FinalizedEpoch}, headRoot={HeadRoot}, headSlot={HeadSlot}", context.RemotePeer.Address.Get<P2P>(), Convert.ToHexString(localStatus.ForkDigest), Convert.ToHexString(localStatus.FinalizedRoot), localStatus.FinalizedEpoch, Convert.ToHexString(localStatus.HeadRoot), localStatus.HeadSlot);
             
             await downChannel.WriteAsync(rawData, cts.Token);
             var receivedData = new List<byte[]>();
@@ -54,7 +54,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             
             if (flatData[0] == (byte)ResponseCodes.ResourceUnavailable || flatData[0] == (byte)ResponseCodes.InvalidRequest || flatData[0] == (byte)ResponseCodes.ServerError)
             {
-                _logger?.LogInformation("Failed to handle status response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
+                _logger?.LogDebug("Failed to handle status response from {PeerId} due to reason {Reason}", context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)flatData[0]);
                 await downChannel.CloseAsync();
                 return;
             }
@@ -69,8 +69,9 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             }
 
             var statusResponse = Status.Deserialize(result.Item1);
+            await downChannel.CloseAsync();
             
-            _logger?.LogInformation("Received status response from {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}", context.RemotePeer.Address.Get<P2P>(), 
+            _logger?.LogDebug("Received status response from {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}", context.RemotePeer.Address.Get<P2P>(), 
                 Convert.ToHexString(statusResponse.ForkDigest), Convert.ToHexString(statusResponse.FinalizedRoot), statusResponse.FinalizedEpoch, Convert.ToHexString(statusResponse.HeadRoot), statusResponse.HeadSlot);
         }
         catch (OperationCanceledException)
@@ -87,7 +88,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
 
     public async Task ListenAsync(IChannel downChannel, IChannelFactory? upChannelFactory, IPeerContext context)
     {
-        _logger?.LogInformation("Listening for status request from {PeerId}", context.RemotePeer.Address);
+        _logger?.LogDebug("Listening for status request from {PeerId}", context.RemotePeer.Address);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(Config.TimeToFirstByteTimeout));
 
         try
@@ -130,6 +131,7 @@ public class StatusProtocol(ISyncProtocol syncProtocol, ILoggerFactory? loggerFa
             var rawData = new ReadOnlySequence<byte>(payload);
 
             await downChannel.WriteAsync(rawData, cts.Token);
+            await downChannel.CloseAsync();
 
             _logger?.LogInformation("Sent status response to {PeerId} with forkDigest={forkDigest}, finalizedRoot={finalizedRoot}, finalizedEpoch={finalizedEpoch}, headRoot={headRoot}, headSlot={headSlot}",
                 context.RemotePeer.Address.Get<P2P>(),

@@ -20,6 +20,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Nethermind.Libp2p.Core" Version="1.0.0-preview.33" />
+      <PackageReference Include="Nethermind.Libp2p.Protocols.Multistream" Version="1.0.0-preview.33" />
       <PackageReference Include="PierTwo.Lantern.Discv5.Enr" Version="1.0.0-preview.4" />
       <PackageReference Include="PierTwo.Lantern.Discv5.Rlp" Version="1.0.0-preview.4" />
       <PackageReference Include="PierTwo.Lantern.Discv5.WireProtocol" Version="1.0.0-preview.4" />

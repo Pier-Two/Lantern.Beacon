@@ -70,7 +70,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
 
                     if (denebResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                        liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
                         _logger?.LogInformation("Processed light client finality update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
@@ -79,7 +79,8 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                         _logger?.LogError("Failed to process light client finality update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
-
+                    
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Capella:
                     var capellaLightClientFinalityUpdate =
@@ -90,7 +91,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
 
                     if (capellaResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                        liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
                         _logger?.LogInformation("Processed light client finality update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
@@ -100,6 +101,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientFinalityUpdate =
@@ -110,7 +112,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
 
                     if (bellatrixResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                        liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
                         _logger?.LogInformation("Processed light client finality update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
@@ -120,6 +122,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Altair:
                     var altairLightClientFinalityUpdate =
@@ -130,7 +133,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
 
                     if (altairResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                        liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
                         _logger?.LogInformation("Processed light client finality update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
@@ -140,6 +143,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client finality response with unexpected fork type from {PeerId}",
@@ -178,6 +182,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
                 await downChannel.WriteAsync(rawData);
+                await downChannel.CloseAsync();
             }
             else
             {
@@ -186,6 +191,7 @@ public class LightClientFinalityUpdateProtocol(ISyncProtocol syncProtocol, ILite
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);
+                await downChannel.CloseAsync();
                 _logger?.LogInformation("Sent light client finality update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
             }
         }

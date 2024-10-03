@@ -1,10 +1,12 @@
 using Cortex.Containers;
+using Nethermind.Crypto;
 
 namespace Lantern.Beacon.Sync.Tests;
 
 public static class TestUtility
 {
-    public static byte[] HexToByteArray(string hexString) {
+    public static byte[] HexToByteArray(string hexString)
+    {
         return Convert.FromHexString(hexString.Remove(0, 2));
     }
     

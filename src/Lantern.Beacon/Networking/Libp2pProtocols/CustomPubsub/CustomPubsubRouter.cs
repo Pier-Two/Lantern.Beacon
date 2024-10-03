@@ -120,7 +120,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
 
     public PeerId? LocalPeerId { get; private set; }
 
-    public event Action<string, byte[]>? OnMessage;
+    public event Action<PeerId, string, byte[]>? OnMessage;
     public Func<Message, MessageValidity>? VerifyMessage = null;
 
     private Settings settings;
@@ -609,7 +609,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
                         messageCache.Add(messageId, message);
 
                         PeerId author = new(message.From.ToArray());
-                        OnMessage?.Invoke(message.Topic, message.Data.ToByteArray());
+                        OnMessage?.Invoke(peerId,message.Topic, message.Data.ToByteArray());
 
                         if (fPeers.TryGetValue(message.Topic, out HashSet<PeerId>? topicPeers))
                         {

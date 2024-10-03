@@ -8,12 +8,13 @@ using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Processors;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Microsoft.Extensions.Logging;
+using Nethermind.Libp2p.Core;
 using ITopic = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.ITopic;
 using Settings = Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.Settings;
 
 namespace Lantern.Beacon.Networking.Gossip;
 
-public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncProtocolOptions syncProtocolOptions, CustomPubsubRouter router, IBeaconClientManager beaconClientManager, ISyncProtocol syncProtocol, ILiteDbService liteDbService, ILoggerFactory loggerFactory) : IGossipSubManager
+public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncProtocolOptions syncProtocolOptions, CustomPubsubRouter router, IPeerState peerState, IBeaconClientManager beaconClientManager, ISyncProtocol syncProtocol, ILiteDbService liteDbService, ILoggerFactory loggerFactory) : IGossipSubManager
 {
     private readonly ILogger<GossipSubManager> _logger = loggerFactory.CreateLogger<GossipSubManager>();
     private CancellationTokenSource? _cancellationTokenSource;
@@ -71,10 +72,12 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         _cancellationTokenSource = null;
     }
     
-    private void HandleLightClientFinalityUpdate(byte[] update)
+    private void HandleLightClientFinalityUpdate(PeerId peerId, byte[] update)
     {
         try
         {
+            CheckIfPeerExistsInGossip(peerId);
+            
             _logger.LogInformation("Received light client finality update from gossip");
             
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
@@ -106,7 +109,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
 
                 syncProtocol.CurrentLightClientFinalityUpdate = lightClientFinalityUpdate;
                 liteDbService.Store(nameof(DenebLightClientFinalityUpdate), lightClientFinalityUpdate);
-                liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
             }
             else
             {
@@ -119,10 +122,12 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         }
     }
     
-    private void HandleLightClientOptimisticUpdate(byte[] update)
+    private void HandleLightClientOptimisticUpdate(PeerId peerId, byte[] update)
     {
         try
         {
+            CheckIfPeerExistsInGossip(peerId);
+            
             _logger.LogInformation("Received light client optimistic update from gossip");
             
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
@@ -149,7 +154,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
                     
                 syncProtocol.CurrentLightClientOptimisticUpdate = lightClientOptimisticUpdate;
                 liteDbService.Store(nameof(DenebLightClientOptimisticUpdate), lightClientOptimisticUpdate); 
-                liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
             }
             else
             {
@@ -159,6 +164,29 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to process light client optimistic update from gossip");
+        }
+    }
+    
+    private void CheckIfPeerExistsInGossip(PeerId peerId)
+    {
+        var foundLivePeer = false;
+                
+        foreach (var gossipPeer in peerState.GossipPeers.Keys)
+        {
+            _logger?.LogDebug("Checking if peer {PeerId} matches ID {Id}", gossipPeer, peerId);
+                
+            if (!gossipPeer.Bytes.SequenceEqual(peerId.Bytes))
+                continue;
+                
+            _logger?.LogDebug("Peer {PeerId} alredy exists in 'GossipPeers'", gossipPeer);
+            foundLivePeer = true;
+            break; 
+        }
+
+        if (!foundLivePeer)
+        {
+            _logger?.LogInformation("Adding peer {PeerId} to 'GossipPeers'", peerId);
+            peerState.GossipPeers.TryAdd(peerId, true);
         }
     }
 }

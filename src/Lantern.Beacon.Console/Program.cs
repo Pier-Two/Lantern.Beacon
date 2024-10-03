@@ -47,19 +47,29 @@ internal static class Program
             Preset = SizePreset.MainnetPreset,
             GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
             GenesisTime = 1606824023,
-            TrustedBlockRoot = Convert.FromHexString("0aa4d679aa288c81b6513491b9bc1ad6c1faab3c727ebb4887458179df418616"),
+            TrustedBlockRoot = Convert.FromHexString("b170fd52257200a0bc86f896ee9b688e9022f93e70810aa90e779a7bc1683a7f"),
             Network = NetworkType.Mainnet
         };
         var beaconClientOptions = new BeaconClientOptions
         {
             TcpPort = 9005,
-            DialTimeoutSeconds = 20,
+            DialTimeoutSeconds = 10,
             MaxParallelDials = 10,
             EnableDiscovery = true,
             GossipSubEnabled = true,
+            Bootnodes = [
+                //"/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"
+                //"/ip4/116.202.215.20/tcp/9000/p2p/16Uiu2HAmB8gmsy3QGaLcL8gQHF5TUAn6fhQNzNT522xArY2tMhKr"
+                //"/ip4/88.99.208.221/tcp/9105/p2p/16Uiu2HAkvSit4sbSkr6AdiEzUcHFv7KQrssV1y4QVsDt4EVpVTYU"
+            ]
+            //Bootnodes = ["/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"] // Good peer
+            //Bootnodes = ["/ip4/194.33.40.78/tcp/9001/p2p/16Uiu2HAky7NHnmvJcE2Kq459qNrgczXvfqjdFtsAJ6HyAoZpP4zw"]
+            //Bootnodes = ["/ip4/145.239.161.11/tcp/15401/p2p/16Uiu2HAkvcYHu3rHkJqs7VQyyHsdFq5fFyjKNR9VJnLDrFs93sb6"]
+            //Bootnodes = ["/ip4/135.148.27.79/tcp/54873/p2p/16Uiu2HAmT4ah5oDAriP7sbjb834QEUm7NQdg4t4mTDfiyddF5vjo"]
             //Bootnodes = ["/ip4/94.16.205.215/tcp/9000/p2p/16Uiu2HAm9UL4C273yG9iBQS6RWavcxZDi5rGfSZXLvgd5vnDszCN"]
             //Bootnodes = ["/ip4/194.33.40.70/tcp/9002/p2p/16Uiu2HAmFytwaDJqRrXM4rNc7AKWeJjxWSjdtYRWTsfwZ7FzRA3m"]
             //Bootnodes = ["/ip4/0.0.0.0/tcp/9012/p2p/16Uiu2HAm66XKpWs6y6pkGJAiDdxmrdhZG3JYrmmma32U5mNFcStY"]
+            //Bootnodes = ["/ip4/62.195.159.165/tcp/9105/p2p/16Uiu2HAmCCqYTbo4nyemcFvNmuTTHYUDCUbmMShW5UsxAbf3TiUa"] Teku
             //Bootnodes = ["/ip4/72.219.149.222/tcp/9001/p2p/16Uiu2HAmK8s25hdUhLbmdssRSdCVgwpxo8XpYjh3hwqComxTkbes"]
             //Bootnodes = ["/ip4/135.148.103.80/tcp/9000/p2p/16Uiu2HAm7oPB47QN72JyAKv92ww6t7LkZpGuoeQ4nxPzSwBcFVqf"] // Internal OVH Nimbus Client
             //Bootnodes = ["/ip4/65.109.107.102/tcp/10001/p2p/16Uiu2HAkx9x6q9artkr11wXzvJ55Sv74c6SamAQmjmFDyd1hvYyu"] //Discovered Nimbus Client (Not synced)

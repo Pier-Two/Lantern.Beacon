@@ -20,7 +20,7 @@ public class Secp256K1NoiseProtocol(MultiplexerSettings? multiplexerSettings = n
             HashFunction.Sha256
         );
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<Secp256K1NoiseProtocol>();
-    private readonly NoiseExtensions _extensions = new NoiseExtensions()
+    private readonly NoiseExtensions _extensions = new()
     {
         StreamMuxers =
         {
