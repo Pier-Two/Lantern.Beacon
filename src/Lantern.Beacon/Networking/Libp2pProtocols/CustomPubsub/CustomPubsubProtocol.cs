@@ -17,15 +17,11 @@ public abstract class CustomPubsubProtocol : IProtocol
 {
     private readonly ILogger? _logger;
     private readonly CustomPubsubRouter router;
-    private readonly IPeerState _peerState;
-    private readonly SyncProtocolOptions _syncProtocolOptions;
 
     public string Id { get; }
 
-    public CustomPubsubProtocol(SyncProtocolOptions syncProtocolOptions, IPeerState peerState, string protocolId, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null)
+    public CustomPubsubProtocol(string protocolId, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null)
     {
-        _syncProtocolOptions = syncProtocolOptions;
-        _peerState = peerState;
         _logger = loggerFactory?.CreateLogger(GetType());
         Id = protocolId;
         this.router = router;
@@ -98,10 +94,10 @@ public abstract class CustomPubsubProtocol : IProtocol
     }
 }
 
-public class FloodsubProtocol(SyncProtocolOptions syncProtocolOptions, IPeerState peerState, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(syncProtocolOptions, peerState, CustomPubsubRouter.FloodsubProtocolVersion, router, loggerFactory);
+public class FloodsubProtocol(CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(CustomPubsubRouter.FloodsubProtocolVersion, router, loggerFactory);
 
-public class GossipsubProtocol(SyncProtocolOptions syncProtocolOptions, IPeerState peerState, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(syncProtocolOptions, peerState, CustomPubsubRouter.GossipsubProtocolVersionV10, router, loggerFactory);
+public class GossipsubProtocol(CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(CustomPubsubRouter.GossipsubProtocolVersionV10, router, loggerFactory);
 
-public class GossipsubProtocolV11(SyncProtocolOptions syncProtocolOptions, IPeerState peerState, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(syncProtocolOptions, peerState, CustomPubsubRouter.GossipsubProtocolVersionV11, router, loggerFactory);
+public class GossipsubProtocolV11(CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(CustomPubsubRouter.GossipsubProtocolVersionV11, router, loggerFactory);
 
-public class GossipsubProtocolV12(SyncProtocolOptions syncProtocolOptions, IPeerState peerState, CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(syncProtocolOptions, peerState, CustomPubsubRouter.GossipsubProtocolVersionV12, router, loggerFactory);
+public class GossipsubProtocolV12(CustomPubsubRouter router, ILoggerFactory? loggerFactory = null) : CustomPubsubProtocol(CustomPubsubRouter.GossipsubProtocolVersionV12, router, loggerFactory);

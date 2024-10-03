@@ -177,9 +177,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
 
         _ = localPeer.ListenAsync(localPeer.Address, token);
         _ = StartDiscoveryAsync(discoveryProtocol, token);
-        logger?.LogInformation("Started");
-
-        // reconnection if needed
+        
         _ = Task.Run(async () =>
         {
             while (!token.IsCancellationRequested)

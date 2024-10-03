@@ -163,7 +163,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         peerState.InitiatorChannels.Clear();
         peerState.ReceiverChannels.Clear();
         
-        _logger?.LogInformation("Connection with peer {PeerId} has been closed", context.RemotePeer.Address.GetPeerId()!.ToString());
+        _logger?.LogDebug("Connection with peer {PeerId} has been closed", context.RemotePeer.Address.GetPeerId()!.ToString());
     }
 
     private void HandleSubDialRequests(IPeerContext context, IChannelFactory channelFactory, bool isListener, IChannel downChannel, PeerConnectionState peerState)
