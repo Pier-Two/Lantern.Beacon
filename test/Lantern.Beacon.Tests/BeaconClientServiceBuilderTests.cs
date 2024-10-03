@@ -12,7 +12,6 @@ using Microsoft.Extensions.Logging.Console;
 using Moq;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Protocols;
-using Nethermind.Libp2p.Protocols.Pubsub;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.Tests;

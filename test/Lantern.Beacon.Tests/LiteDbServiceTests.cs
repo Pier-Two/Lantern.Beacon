@@ -1,8 +1,11 @@
+using Lantern.Beacon.Networking;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
+using Multiformats.Address;
+using Nethermind.Libp2p.Core;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.Tests;
@@ -33,6 +36,35 @@ public class LiteDbServiceTests
 
         _loggerFactory = new LoggerFactory();
         _liteDbService = new LiteDbService(_beaconClientOptions, _loggerFactory);
+    }
+    
+    [Test]
+    public void Test()
+    {
+        // _liteDbService.Init();
+        //
+        // var one = new MultiAddressStore(Multiaddress.Decode("/ip4/45.139.159.163/tcp/9010/p2p/16Uiu2HAmDUkkJabcfDgZiz4keDN9nJMETJSWhhanLLawQ3gyYre9").ToString());
+        // var two = new MultiAddressStore(Multiaddress.Decode("/ip4/0.0.0.0/tcp/9005/p2p/16Uiu2HAmHLWaGqjTvSbunNkS9jry4jvFJ8AwiyXPK87JJu3V3Adb").ToString());
+        //
+        //  _liteDbService.Store(nameof(MultiAddressStore), one);
+        //  _liteDbService.Store(nameof(MultiAddressStore), two);
+        //
+        //  var storedMultiAddresses = _liteDbService.FetchAll<MultiAddressStore>(nameof(MultiAddressStore));
+        //  
+        //  foreach (var address in storedMultiAddresses)
+        //  {
+        //      Console.WriteLine(address.MultiAddress);
+        //  }
+        //  
+        //  _liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(two.MultiAddress));
+        //  
+        //  Console.WriteLine("\nAfter removal");
+        //  var storedMultiAddressesAfterRemoval = _liteDbService.FetchAll<MultiAddressStore>(nameof(MultiAddressStore));
+        //  
+        //  foreach (var address in storedMultiAddressesAfterRemoval)
+        //  {
+        //      Console.WriteLine(address.MultiAddress);
+        //  }
     }
     
     [Test]
@@ -86,7 +118,7 @@ public class LiteDbServiceTests
         Assert.That(storedUpdate, Is.Not.Null);
         Assert.That(storedUpdate, Is.EqualTo(update));
         
-        _liteDbService.StoreOrUpdate(nameof(AltairLightClientHeader), newUpdate);
+        _liteDbService.ReplaceAllWithItem(nameof(AltairLightClientHeader), newUpdate);
         
         storedUpdate = _liteDbService.Fetch<AltairLightClientHeader>(nameof(AltairLightClientHeader));
         
@@ -100,7 +132,7 @@ public class LiteDbServiceTests
     public void StoreOrUpdate_ShouldThrowIfNotInitialized()
     {
         var update = AltairLightClientHeader.CreateDefault();
-        Assert.Throws<InvalidOperationException>(() => _liteDbService.StoreOrUpdate(nameof(AltairLightClientHeader), update));
+        Assert.Throws<InvalidOperationException>(() => _liteDbService.ReplaceAllWithItem(nameof(AltairLightClientHeader), update));
     }
     
     [Test]

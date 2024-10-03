@@ -53,7 +53,9 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
             }
         
             var pingResponse = Ping.Deserialize(result.Item1);
-            _logger?.LogInformation("Received pong response from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
+            await downChannel.CloseAsync();
+            
+            _logger?.LogDebug("Received pong response from {PeerId} with seq number {SeqNumber}", context.RemotePeer.Address.Get<P2P>(), pingResponse.SeqNumber);
         }
         catch (OperationCanceledException)
         {
@@ -97,6 +99,7 @@ public class PingProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = 
             var rawData = new ReadOnlySequence<byte>(payload);
 
             await downChannel.WriteAsync(rawData, cts.Token);
+            await downChannel.CloseAsync();
 
             _logger?.LogDebug("Sent pong response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
         }

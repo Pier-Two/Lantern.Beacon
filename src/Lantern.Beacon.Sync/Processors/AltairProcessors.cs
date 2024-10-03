@@ -2,9 +2,8 @@ using Cortex.Containers;
 using Lantern.Beacon.Sync.Helpers;
 using Lantern.Beacon.Sync.Presets;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
-using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Microsoft.Extensions.Logging;
-using Planetarium.Cryptography.BLS12_381;
+using Nethermind.Crypto;
 
 namespace Lantern.Beacon.Sync.Processors;
 
@@ -170,20 +169,19 @@ public static class AltairProcessors
         var forkVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(forkVersionSlot));
         var domain = Phase0Helpers.ComputeDomain(DomainTypes.DomainSyncCommittee, forkVersion, options);
         var signingRoot = Phase0Helpers.ComputeSigningRoot(update.AttestedHeader.Beacon, domain, options.Preset);
-        var blsPublicKeys = new PublicKey[syncCommitteePubKeys.Length];
-        var message = new Msg();
-        message.Set(signingRoot);
+        var aggregatedPublicKey = new Bls.P1(new Bls.P1Affine(syncCommitteePubKeys[0]));
+        var signature = new Bls.P2Affine(syncAggregate.SyncCommitteeSignature);
         
-        for(var i = 0; i < syncCommitteePubKeys.Length; i++)
+        for (var i = 1; i < syncCommitteePubKeys.Length; i++)
         {
-            blsPublicKeys[i].Deserialize(syncCommitteePubKeys[i]);
+            var publicKeyAffine = new Bls.P1Affine(syncCommitteePubKeys[i]);
+            aggregatedPublicKey.Add(publicKeyAffine);
         }
+
+        var pairing = new Bls.Pairing(false);
+        var result = pairing.Aggregate(aggregatedPublicKey.ToAffine(), signature, signingRoot); 
         
-        var signature = new Signature();
-        signature.Deserialize(syncAggregate.SyncCommitteeSignature);
-        var result = signature.FastAggregateVerify(blsPublicKeys, message);
-        
-        if (!result)
+        if (result != Bls.ERROR.SUCCESS)
         {
             logger.LogWarning("Invalid sync committee signature in update");
             return false;

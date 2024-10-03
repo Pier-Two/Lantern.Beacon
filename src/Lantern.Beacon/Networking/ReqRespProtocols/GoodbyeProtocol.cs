@@ -1,6 +1,7 @@
 using System.Buffers;
 using Lantern.Beacon.Networking.Codes;
 using Lantern.Beacon.Networking.Encoding;
+using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync.Config;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using Microsoft.Extensions.Logging;
@@ -9,7 +10,7 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon.Networking.ReqRespProtocols;
 
-public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory = null) : IProtocol
+public class GoodbyeProtocol(IPeerState peerState, ILiteDbService liteDbService, ILoggerFactory? loggerFactory = null) : IProtocol
 {
     private readonly ILogger? _logger = loggerFactory?.CreateLogger<GoodbyeProtocol>();
     public string Id => "/eth2/beacon_chain/req/goodbye/1/ssz_snappy";
@@ -73,15 +74,10 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
             }
 
             var goodbyeResponse = Goodbye.Deserialize(result.Item1);
+            await downChannel.CloseAsync();
 
             _logger?.LogDebug("Received goodbye response from {PeerId} with reason {Reason}",
                 context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
-
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
-            {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
-                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
-            }
         }
         catch (OperationCanceledException)
         {
@@ -130,15 +126,10 @@ public class GoodbyeProtocol(IPeerState peerState, ILoggerFactory? loggerFactory
             var rawData = new ReadOnlySequence<byte>(payload);
 
             await downChannel.WriteAsync(rawData, cts.Token);
-
+            
+            // Throw an exception to close the connection
             _logger?.LogDebug("Sent goodbye response to {PeerId} with reason {Reason}",
                 context.RemotePeer.Address.Get<P2P>(), (GoodbyeReasonCodes)goodbyeResponse.Reason);
-
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
-            {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out var peer);
-                _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
-            }
         }
         catch (OperationCanceledException)
         {

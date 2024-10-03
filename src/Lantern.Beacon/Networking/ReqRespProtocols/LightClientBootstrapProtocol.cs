@@ -78,6 +78,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     {
                         _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     }
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Capella:
                     var capellaLightClientBootstrap = CapellaLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
@@ -93,6 +94,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     {
                         _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     }
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
@@ -108,6 +110,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     {
                         _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     }
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Altair:
                     var altairLightClientBootstrap = AltairLightClientBootstrap.Deserialize(result.Item3, syncProtocol.Options.Preset);
@@ -123,6 +126,7 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                     {
                         _logger?.LogError("Failed to process light client bootstrap from {PeerId} for fork {ForkType}", context.RemotePeer.Address.Get<P2P>(), forkType);
                     }
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError("Received light client bootstrap response with unexpected fork type from {PeerId}", context.RemotePeer.Address.Get<P2P>());
@@ -190,7 +194,8 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 _logger.LogDebug("Sending response with data: {0}", Convert.ToHexString(encodedResponse.ToArray()));
 
-                await downChannel.WriteAsync(rawData);
+                await downChannel.WriteAsync(rawData, cts.Token);
+                await downChannel.CloseAsync();
             }
             else
             {
@@ -198,7 +203,8 @@ public class LightClientBootstrapProtocol(ISyncProtocol syncProtocol, ILiteDbSer
                 var encodedResponse = ReqRespHelpers.EncodeResponse(sszData, forkDigest, ResponseCodes.Success);
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
-                await downChannel.WriteAsync(rawData);
+                await downChannel.WriteAsync(rawData, cts.Token);
+                await downChannel.CloseAsync();
                 _logger?.LogDebug("Sent light client bootstrap response to {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
             }

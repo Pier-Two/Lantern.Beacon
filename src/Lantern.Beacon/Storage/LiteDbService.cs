@@ -44,8 +44,45 @@ public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory lo
             collection.Insert(item);
         }
     }
+    
+    public void RemoveByPredicate<T>(string collectionName, Expression<Func<T, bool>> predicate)
+    {
+        lock (_lock)
+        {
+            if (_liteDatabase == null)
+            {
+                throw new InvalidOperationException("LiteDbService not initialized");
+            }
 
-    public void StoreOrUpdate<T>(string collectionName, T item) where T : class, IEquatable<T>, new()
+            var collection = _liteDatabase.GetCollection<T>(collectionName);
+            collection.DeleteMany(predicate);
+        }
+    }
+    
+    public void ReplaceByPredicate<T>(string collectionName, Expression<Func<T, bool>> predicate, T item)
+    {
+        lock (_lock)
+        {
+            if (_liteDatabase == null)
+            {
+                throw new InvalidOperationException("LiteDbService not initialized");
+            }
+
+            var collection = _liteDatabase.GetCollection<T>(collectionName);
+            var existingItem = collection.FindOne(predicate);
+            
+            if (existingItem != null)
+            {
+                collection.Update(existingItem);
+            }
+            else
+            {
+                collection.Insert(item);
+            }
+        }
+    }
+
+    public void ReplaceAllWithItem<T>(string collectionName, T item) where T : class, IEquatable<T>, new()
     {
         lock (_lock)
         {
@@ -77,6 +114,20 @@ public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory lo
 
             var collection = _liteDatabase.GetCollection<T>(collectionName);
             return collection.FindAll().FirstOrDefault();
+        }
+    }
+    
+    public IEnumerable<T?> FetchAll<T>(string collectionName)
+    {
+        lock (_lock)
+        {
+            if (_liteDatabase == null)
+            {
+                throw new InvalidOperationException("LiteDbService not initialized");
+            }
+
+            var collection = _liteDatabase.GetCollection<T>(collectionName);
+            return collection.FindAll();
         }
     }
 

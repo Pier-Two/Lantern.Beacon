@@ -1,4 +1,5 @@
 using System.Reflection;
+using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Discovery;
 using Lantern.Beacon.Networking.Gossip;
 using Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
@@ -9,7 +10,6 @@ using Lantern.Beacon.Sync.Presets;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Nethermind.Libp2p.Core;
-using Nethermind.Libp2p.Protocols.Pubsub;
 using NUnit.Framework;
 
 namespace Lantern.Beacon.Tests;
@@ -23,6 +23,7 @@ public class GossipSubManagerTests
     private Mock<ISyncProtocol> _syncProtocol;
     private Mock<ILiteDbService> _liteDbService;
     private Mock<ILogger<GossipSubManager>> _mockLogger;
+    private Mock<IPeerState> _peerState;
     private Mock<ILoggerFactory> _loggerFactory;
     private GossipSubManager? _gossipSubManager;
 
@@ -34,6 +35,7 @@ public class GossipSubManagerTests
         _beaconClientManager = new Mock<IBeaconClientManager>();
         _syncProtocol = new Mock<ISyncProtocol>();
         _liteDbService = new Mock<ILiteDbService>();
+        _peerState = new Mock<IPeerState>();
         _loggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<GossipSubManager>>();
         _loggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>())).Returns(_mockLogger.Object); 
@@ -51,7 +53,7 @@ public class GossipSubManagerTests
         Phase0Preset.InitializeWithMainnet();
         AltairPreset.InitializeWithMainnet();
         
-        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router, _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
+        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router, _peerState.Object, _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
         
         Assert.DoesNotThrow(() => _gossipSubManager.Init());
         Assert.That(_gossipSubManager.LightClientFinalityUpdate, Is.Not.Null);
@@ -72,7 +74,7 @@ public class GossipSubManagerTests
         AltairPreset.InitializeWithMainnet();
 
         _beaconClientManager.Setup(x => x.LocalPeer).Returns(() => null);
-        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
+        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router, _peerState.Object,
             _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
 
         Assert.Throws<Exception>(() => _gossipSubManager.Start());
@@ -92,7 +94,7 @@ public class GossipSubManagerTests
         AltairPreset.InitializeWithMainnet();
 
         _beaconClientManager.Setup(x => x.LocalPeer).Returns(new Mock<ILocalPeer>().Object);
-        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
+        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router, _peerState.Object,
             _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
 
         Assert.DoesNotThrow(() => _gossipSubManager.Start());
@@ -112,7 +114,7 @@ public class GossipSubManagerTests
         AltairPreset.InitializeWithMainnet();
 
         _beaconClientManager.Setup(x => x.LocalPeer).Returns(new Mock<ILocalPeer>().Object);
-        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router,
+        _gossipSubManager = new GossipSubManager(_discoveryProtocol, _syncProtocolOptions, _router, _peerState.Object,
             _beaconClientManager.Object, _syncProtocol.Object, _liteDbService.Object, _loggerFactory.Object);
 
         Assert.DoesNotThrow(() => _gossipSubManager.Start());

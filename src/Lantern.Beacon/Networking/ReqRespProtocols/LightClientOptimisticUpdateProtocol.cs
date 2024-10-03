@@ -71,7 +71,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
 
                     if (denebResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
+                        liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore), syncProtocol.DenebLightClientStore);
                         _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
                     }
@@ -81,6 +81,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Capella:
                     var capellaLightClientOptimisticUpdate =
@@ -91,7 +92,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
 
                     if (capellaResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore),
+                        liteDbService.ReplaceAllWithItem(nameof(CapellaLightClientStore),
                             syncProtocol.CapellaLightClientStore);
                         _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
@@ -102,6 +103,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Bellatrix:
                     var bellatrixLightClientOptimisticUpdate =
@@ -112,7 +114,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
 
                     if (bellatrixResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                        liteDbService.ReplaceAllWithItem(nameof(AltairLightClientStore),
                             syncProtocol.AltairLightClientStore);
                         _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
@@ -123,6 +125,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Altair:
                     var altairLightClientOptimisticUpdate =
@@ -133,7 +136,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
 
                     if (altairResult)
                     {
-                        liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                        liteDbService.ReplaceAllWithItem(nameof(AltairLightClientStore),
                             syncProtocol.AltairLightClientStore);
                         _logger?.LogInformation("Processed light client optimistic update from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
@@ -144,6 +147,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                             context.RemotePeer.Address.Get<P2P>());
                     }
 
+                    await downChannel.CloseAsync();
                     break;
                 case ForkType.Phase0:
                     _logger?.LogError(
@@ -182,6 +186,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
                 
                 await downChannel.WriteAsync(rawData);
+                await downChannel.CloseAsync();
             }
             else
             {
@@ -190,6 +195,7 @@ public class LightClientOptimisticUpdateProtocol(ISyncProtocol syncProtocol, ILi
                 var rawData = new ReadOnlySequence<byte>(encodedResponse);
 
                 await downChannel.WriteAsync(rawData);
+                await downChannel.CloseAsync();
                 
                 _logger?.LogInformation("Sent light client optimistic update response to {PeerId}", context.RemotePeer.Address.Get<P2P>());
             }

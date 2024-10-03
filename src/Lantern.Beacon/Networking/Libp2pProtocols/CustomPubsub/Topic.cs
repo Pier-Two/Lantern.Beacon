@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2023 Demerzel Solutions Limited
 // SPDX-License-Identifier: MIT
 
+using Nethermind.Libp2p.Core;
+
 namespace Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub;
 
 class Topic : ITopic
@@ -12,18 +14,18 @@ class Topic : ITopic
     {
         this.router = router;
         this.topicName = topicName;
-        router.OnMessage += (topicName, message) =>
+        router.OnMessage += (peerId, topicName, message) =>
         {
             if (OnMessage is not null && this.topicName == topicName)
             {
-                OnMessage(message);
+                OnMessage(peerId, message);
             }
         };
     }
 
     public DateTime LastPublished { get; set; }
 
-    public event Action<byte[]>? OnMessage;
+    public event Action<PeerId, byte[]>? OnMessage;
 
     public void Publish(byte[] value)
     {

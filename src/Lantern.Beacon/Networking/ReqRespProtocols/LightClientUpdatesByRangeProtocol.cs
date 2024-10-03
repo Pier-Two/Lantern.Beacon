@@ -49,9 +49,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                 _logger?.LogDebug("Received an empty or null response from {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
                 
-                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
                 {
-                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                     _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
                 }
                 
@@ -69,9 +70,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                     "Failed to handle light client update response from {PeerId} due to reason {Reason}",
                     context.RemotePeer.Address.Get<P2P>(), (ResponseCodes)receivedData[0][0]);
                 
-                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
                 {
-                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                     _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
                 }
                 
@@ -116,7 +118,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                         if (denebResult)
                         {
                             liteDbService.Store(nameof(DenebLightClientUpdate), denebLightClientUpdate);
-                            liteDbService.StoreOrUpdate(nameof(DenebLightClientStore),
+                            liteDbService.ReplaceAllWithItem(nameof(DenebLightClientStore),
                                 syncProtocol.DenebLightClientStore);
 
                             _logger?.LogInformation("Processed light client update response from {PeerId}",
@@ -128,6 +130,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                                 context.RemotePeer.Address.Get<P2P>());
                         }
 
+                        await downChannel.CloseAsync();
                         break;
                     case ForkType.Capella:
                         var capellaLightClientUpdate =
@@ -139,7 +142,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                         if (capellaResult)
                         {
                             liteDbService.Store(nameof(CapellaLightClientUpdate), capellaLightClientUpdate);
-                            liteDbService.StoreOrUpdate(nameof(CapellaLightClientStore),
+                            liteDbService.ReplaceAllWithItem(nameof(CapellaLightClientStore),
                                 syncProtocol.CapellaLightClientStore);
                             _logger?.LogInformation("Processed light client update response from {PeerId}",
                                 context.RemotePeer.Address.Get<P2P>());
@@ -149,7 +152,8 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                             _logger?.LogError("Failed to process light client update response from {PeerId}",
                                 context.RemotePeer.Address.Get<P2P>());
                         }
-
+                        
+                        await downChannel.CloseAsync();
                         break;
                     case ForkType.Bellatrix:
                         var bellatrixLightClientUpdate =
@@ -161,7 +165,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                         if (bellatrixResult)
                         {
                             liteDbService.Store(nameof(AltairLightClientUpdate), bellatrixLightClientUpdate);
-                            liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                            liteDbService.ReplaceAllWithItem(nameof(AltairLightClientStore),
                                 syncProtocol.AltairLightClientStore);
                             _logger?.LogInformation("Processed light client update response from {PeerId}",
                                 context.RemotePeer.Address.Get<P2P>());
@@ -172,6 +176,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                                 context.RemotePeer.Address.Get<P2P>());
                         }
 
+                        await downChannel.CloseAsync();
                         break;
                     case ForkType.Altair:
                         var altairLightClientUpdate =
@@ -183,7 +188,7 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                         if (altairResult)
                         {
                             liteDbService.Store(nameof(AltairLightClientUpdate), altairLightClientUpdate);
-                            liteDbService.StoreOrUpdate(nameof(AltairLightClientStore),
+                            liteDbService.ReplaceAllWithItem(nameof(AltairLightClientStore),
                                 syncProtocol.AltairLightClientStore);
                             _logger?.LogInformation("Processed light client update response from {PeerId}",
                                 context.RemotePeer.Address.Get<P2P>());
@@ -194,11 +199,13 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                                 context.RemotePeer.Address.Get<P2P>());
                         }
 
+                        await downChannel.CloseAsync();
                         break;
                     case ForkType.Phase0:
-                        _logger?.LogError(
+                        _logger?.LogWarning(
                             "Received light client update response with unexpected fork type from {PeerId}",
                             context.RemotePeer.Address.Get<P2P>());
+                        await downChannel.CloseAsync();
                         break;
                 }
             }
@@ -208,9 +215,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
             _logger?.LogDebug("Timeout occured while listening for light client update response from {PeerId}",
                 context.RemotePeer.Address.Get<P2P>());
             
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
             {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                 _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
             }
             
@@ -220,9 +228,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
         {
             _logger?.LogDebug("Error occured while listening for light client update response from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
             
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
             {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                 _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
             }
             await downChannel.CloseAsync();
@@ -251,9 +260,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                 _logger?.LogDebug("Failed to decode light client update request from {PeerId}",
                     context.RemotePeer.Address.Get<P2P>());
                 
-                if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+                if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
                 {
-                    peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                    liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                     _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
                 }
                 await downChannel.CloseAsync();
@@ -296,15 +306,18 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
                         context.RemotePeer.Address.Get<P2P>(), request.StartPeriod);
                 }
             }
+            
+            await downChannel.CloseAsync();
         }
         catch (OperationCanceledException)
         {
             _logger?.LogDebug("Timeout occured while listening for light client update request from {PeerId}",
                 context.RemotePeer.Address.Get<P2P>());
             
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
             {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                 _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
             }
             await downChannel.CloseAsync();
@@ -313,9 +326,10 @@ public class LightClientUpdatesByRangeProtocol(ISyncProtocol syncProtocol, IPeer
         {
             _logger?.LogDebug("Error occured while listening for light client update request from {PeerId}. Exception: {Message}", context.RemotePeer.Address.Get<P2P>(), ex);
             
-            if (peerState.LivePeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
+            if (peerState.BootstrapPeers.ContainsKey(context.RemotePeer.Address.GetPeerId()!))
             {
-                peerState.LivePeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                peerState.BootstrapPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
+                liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(context.RemotePeer.Address.ToString()));
                 _logger?.LogDebug("Removed peer {PeerId} from live peers", context.RemotePeer.Address.Get<P2P>());
             }
             await downChannel.CloseAsync();

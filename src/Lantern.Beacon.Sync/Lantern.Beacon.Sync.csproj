@@ -14,8 +14,10 @@
     <ItemGroup>
       <PackageReference Include="LiteDB" Version="5.0.21" />
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+      <PackageReference Include="Nethermind.Crypto.Bls" Version="1.0.2" />
+      <PackageReference Include="Nethermind.Libp2p.Core" Version="1.0.0-preview.33" />
+      <PackageReference Include="Nethermind.Libp2p.Protocols.Multistream" Version="1.0.0-preview.33" />
       <PackageReference Include="Nethermind.Numerics.Int256" Version="1.2.0" />
-      <PackageReference Include="Planetarium.Cryptography.BLS12_381" Version="0.1.10.1" />
     </ItemGroup>
 
 </Project>
