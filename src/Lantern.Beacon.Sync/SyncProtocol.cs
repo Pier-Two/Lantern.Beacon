@@ -71,21 +71,21 @@ public class SyncProtocol(SyncProtocolOptions options, ILoggerFactory loggerFact
             AltairLightClientStore = altairStore;
             IsInitialised = true;
             SetActiveFork(ForkType.Altair);
-            Logger?.LogInformation("Light client store initialised");
+            Logger?.LogInformation("Initialised light client from local storage");
         }
         else if(capellaStore != null)
         {
             CapellaLightClientStore = capellaStore;
             IsInitialised = true;
             SetActiveFork(ForkType.Capella);
-            Logger?.LogInformation("Light client store initialised");
+            Logger?.LogInformation("Initialised light client from local storage");
         }
         else if(denebStore != null)
         {
             DenebLightClientStore = denebStore;
             IsInitialised = true;
             SetActiveFork(ForkType.Deneb);
-            Logger?.LogInformation("Light client store initialised");
+            Logger?.LogInformation("Initialised light client from local storage");
         }
         
         if(finalityUpdate != null)

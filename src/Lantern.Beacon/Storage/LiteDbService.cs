@@ -1,10 +1,11 @@
 using LiteDB;
 using System.Linq.Expressions;
+using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
 
 namespace Lantern.Beacon.Storage;
 
-public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory loggerFactory) : ILiteDbService, IDisposable
+public sealed class LiteDbService(BeaconClientOptions beaconClientOptions, SyncProtocolOptions syncProtocolOptions, ILoggerFactory loggerFactory) : ILiteDbService, IDisposable
 {
     private LiteDatabase? _liteDatabase;
     private readonly object _lock = new();
@@ -19,15 +20,24 @@ public sealed class LiteDbService(BeaconClientOptions options, ILoggerFactory lo
                 throw new InvalidOperationException("LiteDbService already initialized");
             }
 
-            var directoryPath = Path.GetDirectoryName(options.DataDirectoryPath);
+            if(beaconClientOptions.DataDirectoryPath == null)
+            {
+                throw new ArgumentNullException(nameof(beaconClientOptions.DataDirectoryPath));
+            }
+            
+            var directoryPath = Path.Combine(
+                Path.GetDirectoryName(beaconClientOptions.DataDirectoryPath)!, 
+                syncProtocolOptions.Network.ToString(), 
+                Path.GetFileName(beaconClientOptions.DataDirectoryPath)
+            );
 
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
 
-            _liteDatabase = new LiteDatabase(options.DataDirectoryPath);
-            _logger.LogInformation("Data directory initialized with path: {Path}", options.DataDirectoryPath);
+            _liteDatabase = new LiteDatabase(beaconClientOptions.DataDirectoryPath);
+            _logger.LogInformation("Using data directory with path: {Path}", directoryPath);
         }
     }
 

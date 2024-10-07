@@ -33,8 +33,8 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
             .AddScoped<MultiplexerSettings>()
             .AddScoped<IdentifyProtocolSettings>(_ => new IdentifyProtocolSettings
             {
-                AgentVersion = LanternIdentifyProtocolSettings.AgentVersion,
-                ProtocolVersion = LanternIdentifyProtocolSettings.ProtocolVersion
+                AgentVersion = LanternIdentitySettings.AgentVersion,
+                ProtocolVersion = LanternIdentitySettings.ProtocolVersion
             })
             .AddScoped(sp => sp.GetService<IPeerFactoryBuilder>()!.Build());
         

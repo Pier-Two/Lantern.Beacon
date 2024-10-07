@@ -195,8 +195,7 @@ public class CustomPubsubRouter(ILoggerFactory? loggerFactory = default) : IRout
     private async Task StartDiscoveryAsync(IDiscoveryProtocol discoveryProtocol, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(localPeer);
-
-        ObservableCollection<Multiaddress> col = [];
+        
         discoveryProtocol.OnAddPeer = (addrs) =>
         {
             _ = Task.Run(async () =>
