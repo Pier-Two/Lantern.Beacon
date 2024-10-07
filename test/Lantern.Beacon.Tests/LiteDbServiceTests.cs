@@ -1,5 +1,7 @@
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Storage;
+using Lantern.Beacon.Sync;
+using Lantern.Beacon.Sync.Types;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Deneb;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
@@ -14,6 +16,7 @@ public class LiteDbServiceTests
 {
     private LiteDbService _liteDbService;
     private BeaconClientOptions _beaconClientOptions;
+    private SyncProtocolOptions _syncProtocolOptions;
     private LoggerFactory _loggerFactory;
     private string _testDirectoryPath;
     
@@ -33,38 +36,13 @@ public class LiteDbServiceTests
         {
             DataDirectoryPath = Path.Combine(_testDirectoryPath, "test.db")
         };
+        _syncProtocolOptions = new SyncProtocolOptions
+        {
+            Network = NetworkType.Mainnet
+        };
 
         _loggerFactory = new LoggerFactory();
-        _liteDbService = new LiteDbService(_beaconClientOptions, _loggerFactory);
-    }
-    
-    [Test]
-    public void Test()
-    {
-        // _liteDbService.Init();
-        //
-        // var one = new MultiAddressStore(Multiaddress.Decode("/ip4/45.139.159.163/tcp/9010/p2p/16Uiu2HAmDUkkJabcfDgZiz4keDN9nJMETJSWhhanLLawQ3gyYre9").ToString());
-        // var two = new MultiAddressStore(Multiaddress.Decode("/ip4/0.0.0.0/tcp/9005/p2p/16Uiu2HAmHLWaGqjTvSbunNkS9jry4jvFJ8AwiyXPK87JJu3V3Adb").ToString());
-        //
-        //  _liteDbService.Store(nameof(MultiAddressStore), one);
-        //  _liteDbService.Store(nameof(MultiAddressStore), two);
-        //
-        //  var storedMultiAddresses = _liteDbService.FetchAll<MultiAddressStore>(nameof(MultiAddressStore));
-        //  
-        //  foreach (var address in storedMultiAddresses)
-        //  {
-        //      Console.WriteLine(address.MultiAddress);
-        //  }
-        //  
-        //  _liteDbService.RemoveByPredicate<MultiAddressStore>(nameof(MultiAddressStore), x => x.MultiAddress.Equals(two.MultiAddress));
-        //  
-        //  Console.WriteLine("\nAfter removal");
-        //  var storedMultiAddressesAfterRemoval = _liteDbService.FetchAll<MultiAddressStore>(nameof(MultiAddressStore));
-        //  
-        //  foreach (var address in storedMultiAddressesAfterRemoval)
-        //  {
-        //      Console.WriteLine(address.MultiAddress);
-        //  }
+        _liteDbService = new LiteDbService(_beaconClientOptions, _syncProtocolOptions, _loggerFactory);
     }
     
     [Test]

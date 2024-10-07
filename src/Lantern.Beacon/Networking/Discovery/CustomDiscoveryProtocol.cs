@@ -31,7 +31,7 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
         
         identityManager.Record.UpdateEntry(new EntryEth2(enrForkId));
 
-        _logger.LogInformation("Self ENR updated => {Enr}", identityManager.Record);
+        _logger.LogInformation("Local ENR => {Enr}", identityManager.Record);
         
         return true;
     }

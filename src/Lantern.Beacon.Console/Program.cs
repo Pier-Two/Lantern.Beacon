@@ -138,16 +138,3 @@ internal static class Program
         }
     }
 }
-
-// var libp2p2LoggerFactory = LoggerFactory.Create(builder =>
-// {
-//     builder
-//         .SetMinimumLevel(LogLevel.Information)
-//         .AddProvider(new CustomConsoleLoggerProvider(
-//             config => config.EventId == 0, 
-//             new CustomConsoleLogger.CustomConsoleLoggerConfiguration
-//             {
-//                 EventId = 0,
-//                 TimestampPrefix = "[HH:mm:ss]"
-//             }));
-// });

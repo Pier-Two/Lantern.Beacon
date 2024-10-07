@@ -82,12 +82,12 @@ public class BeaconClientManager(
 
             if (peers > 0)
             {
-                _logger.LogInformation("Added {Count} stored peers for dialing", peers);
+                _logger.LogInformation("Added {Count} peers for dialing from local storage", peers);
             }
 
             customDiscoveryProtocol.OnAddPeer = HandleDiscoveredPeer;
 
-            _logger.LogInformation("Client started with address {Address}", LocalPeer.Address);
+            _logger.LogInformation("Client started with Libp2p address {Address}", LocalPeer.Address);
         }
         catch (Exception e)
         {
@@ -99,7 +99,7 @@ public class BeaconClientManager(
     {
         if (LocalPeer == null)
         {
-            throw new Exception("Local peer is not initialized. Cannot start peer manager");
+            throw new Exception("Local peer is not initialised. Cannot start peer manager");
         }
 
         CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
