@@ -4,3 +4,6 @@
 [submodule "lib/SszSharp"]
 	path = lib/SszSharp
 	url = https://github.com/Pier-Two/SszSharp.git
+[submodule "lib/blst-bindings"]
+	path = lib/blst-bindings
+	url = https://github.com/Pier-Two/blst-bindings.git
