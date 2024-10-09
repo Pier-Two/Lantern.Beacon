@@ -12,11 +12,11 @@ namespace Lantern.Beacon;
 
 public static class BeaconClientServiceConfiguration
 {
-    internal static IServiceCollection AddBeaconClient(this IServiceCollection services, IDiscv5Protocol discv5, BeaconClientOptions beaconClientOptions, SyncProtocolOptions syncProtocolOptions, ILoggerFactory loggerFactory)
+    internal static IServiceCollection AddBeaconClient(this IServiceCollection services, IDiscv5Protocol discv5, BeaconClientOptions beaconClientOptions, ILoggerFactory loggerFactory)
     {
         services.AddSingleton(discv5);
         services.AddSingleton(beaconClientOptions);
-        services.AddSingleton(syncProtocolOptions);
+        services.AddSingleton(beaconClientOptions.SyncProtocolOptions);
         services.AddSingleton(loggerFactory);
         services.AddSingleton<ManualDiscoveryProtocol>();
         services.AddSingleton<ICustomDiscoveryProtocol, CustomDiscoveryProtocol>();

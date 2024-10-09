@@ -41,14 +41,6 @@ internal static class Program
             .WithEntry(EnrEntryKey.Secp256K1, new EntrySecp256K1(sessionOptions.Signer.PublicKey));
         var discv5LoggerFactory = LoggerFactory.Create(builder => builder.SetMinimumLevel(LogLevel.None));
         // Beacon client options
-        var syncProtocolOptions = new SyncProtocolOptions
-        {
-            Preset = SizePreset.MainnetPreset,
-            GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
-            GenesisTime = 1606824023,
-            TrustedBlockRoot = Convert.FromHexString("b170fd52257200a0bc86f896ee9b688e9022f93e70810aa90e779a7bc1683a7f"),
-            Network = NetworkType.Mainnet
-        };
         var beaconClientOptions = new BeaconClientOptions
         {
             TcpPort = 9005,
@@ -60,7 +52,16 @@ internal static class Program
                 //"/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"
                 //"/ip4/116.202.215.20/tcp/9000/p2p/16Uiu2HAmB8gmsy3QGaLcL8gQHF5TUAn6fhQNzNT522xArY2tMhKr"
                 //"/ip4/88.99.208.221/tcp/9105/p2p/16Uiu2HAkvSit4sbSkr6AdiEzUcHFv7KQrssV1y4QVsDt4EVpVTYU"
-            ]
+            ],
+            SyncProtocolOptions = new SyncProtocolOptions
+            {
+                Preset = SizePreset.MainnetPreset,
+                GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
+                GenesisTime = 1606824023,
+                TrustedBlockRoot = Convert.FromHexString("b170fd52257200a0bc86f896ee9b688e9022f93e70810aa90e779a7bc1683a7f"),
+                Network = NetworkType.Mainnet
+            }
+
             //Bootnodes = ["/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"] // Good peer
             //Bootnodes = ["/ip4/194.33.40.78/tcp/9001/p2p/16Uiu2HAky7NHnmvJcE2Kq459qNrgczXvfqjdFtsAJ6HyAoZpP4zw"]
             //Bootnodes = ["/ip4/145.239.161.11/tcp/15401/p2p/16Uiu2HAkvcYHu3rHkJqs7VQyyHsdFq5fFyjKNR9VJnLDrFs93sb6"]
@@ -112,7 +113,6 @@ internal static class Program
             });
 
             beaconClientBuilder.WithBeaconClientOptions(beaconClientOptions);
-            beaconClientBuilder.WithSyncProtocolOptions(syncProtocolOptions);
             beaconClientBuilder.AddLibp2pProtocol(libp2PBuilder => libp2PBuilder);
             beaconClientBuilder.WithLoggerFactory(loggerFactory);
         });

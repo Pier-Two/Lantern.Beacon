@@ -7,6 +7,8 @@ namespace Lantern.Beacon.Storage;
 
 public sealed class LiteDbService(BeaconClientOptions beaconClientOptions, SyncProtocolOptions syncProtocolOptions, ILoggerFactory loggerFactory) : ILiteDbService, IDisposable
 {
+    private readonly string _dbName = "lantern.db";
+    private readonly string _baseDirectory = "lantern";
     private LiteDatabase? _liteDatabase;
     private readonly object _lock = new();
     private readonly ILogger<LiteDbService> _logger = loggerFactory.CreateLogger<LiteDbService>();
@@ -26,18 +28,20 @@ public sealed class LiteDbService(BeaconClientOptions beaconClientOptions, SyncP
             }
             
             var directoryPath = Path.Combine(
-                Path.GetDirectoryName(beaconClientOptions.DataDirectoryPath)!, 
-                syncProtocolOptions.Network.ToString(), 
-                Path.GetFileName(beaconClientOptions.DataDirectoryPath)
+                beaconClientOptions.DataDirectoryPath, 
+                _baseDirectory,
+                syncProtocolOptions.Network.ToString()
             );
 
             if (!Directory.Exists(directoryPath))
             {
                 Directory.CreateDirectory(directoryPath);
             }
-
-            _liteDatabase = new LiteDatabase(beaconClientOptions.DataDirectoryPath);
-            _logger.LogInformation("Using data directory with path: {Path}", directoryPath);
+            
+            var databaseFilePath = Path.Combine(directoryPath, _dbName);
+            
+            _liteDatabase = new LiteDatabase(databaseFilePath);
+            _logger.LogInformation("Using data directory with path: {Path}", databaseFilePath);
         }
     }
 

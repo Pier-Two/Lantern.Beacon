@@ -13,10 +13,6 @@ public interface IBeaconClientServiceBuilder
     IBeaconClientServiceBuilder AddLibp2pProtocol(
         Func<ILibp2pPeerFactoryBuilder, IPeerFactoryBuilder> factorySetup);
     
-    IBeaconClientServiceBuilder WithSyncProtocolOptions(Action<SyncProtocolOptions> configure);
-    
-    IBeaconClientServiceBuilder WithSyncProtocolOptions(SyncProtocolOptions options);
-    
     IBeaconClientServiceBuilder WithBeaconClientOptions(Action<BeaconClientOptions> configure);
     
     IBeaconClientServiceBuilder WithBeaconClientOptions(BeaconClientOptions options);
