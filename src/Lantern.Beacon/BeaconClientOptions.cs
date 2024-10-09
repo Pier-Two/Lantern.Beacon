@@ -9,9 +9,9 @@ public class BeaconClientOptions
     
     public int TargetNodesToFind { get; set; } = 100;
     
-    public int MaxParallelDials { get; set; } = 1;
+    public int MaxParallelDials { get; set; } = 10;
     
-    public int DialTimeoutSeconds { get; set; } = 5;
+    public int DialTimeoutSeconds { get; set; } = 10;
     
     public int TcpPort { get; set; } = 9001;
     
@@ -51,7 +51,29 @@ public class BeaconClientOptions
                         throw new ArgumentException("Missing value for --network");
                     }
                     break;
-
+                
+                case "--genesis-time":
+                    if (i + 1 < argsList.Count && ulong.TryParse(argsList[++i], out var genesisTime))
+                    {
+                        options.SyncProtocolOptions.GenesisTime = genesisTime;
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Invalid or missing value for --genesis-time");
+                    }
+                    break;
+                
+                case "--genesis-validators-root":
+                    if (i + 1 < argsList.Count)
+                    {
+                        options.SyncProtocolOptions.GenesisValidatorsRoot = GetTrustedBlockRootBytes(argsList[++i]);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Missing value for --genesis-validators-root");
+                    }
+                    break;
+                
                 case "--block-root":
                     if (i + 1 < argsList.Count)
                     {
@@ -148,6 +170,7 @@ public class BeaconClientOptions
                         options.Bootnodes.Add(argsList[++i]);
                     }
                     break;
+                
                 case "--enable-discovery":
                     if (i + 1 < argsList.Count && bool.TryParse(argsList[++i], out var enableDiscovery))
                     {
@@ -172,7 +195,6 @@ public class BeaconClientOptions
         return network.ToLower() switch
         {
             "mainnet" => NetworkType.Mainnet,
-            "holesky" => NetworkType.Holesky,
             _ => throw new ArgumentException($"Unsupported network type: {network}")
         };
     }
