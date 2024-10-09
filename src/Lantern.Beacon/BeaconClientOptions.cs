@@ -176,7 +176,6 @@ public class BeaconClientOptions
                     break;
 
                 case "--bootnodes":
-                    // Collect all bootnodes until the next argument starting with --
                     while (i + 1 < argsList.Count && !argsList[i + 1].StartsWith("--"))
                     {
                         options.Bootnodes.Add(argsList[++i]);
@@ -207,6 +206,7 @@ public class BeaconClientOptions
         return preset.ToLower() switch
         {
             "mainnet" => SizePreset.MainnetPreset,
+            "holesky" => SizePreset.MainnetPreset,
             _ => throw new ArgumentException($"Unsupported preset: {preset}")
         };
     }
@@ -216,6 +216,7 @@ public class BeaconClientOptions
         return network.ToLower() switch
         {
             "mainnet" => NetworkType.Mainnet,
+            "holesky" => NetworkType.Holesky,
             _ => throw new ArgumentException($"Unsupported network type: {network}")
         };
     }
