@@ -14,7 +14,6 @@ namespace Lantern.Beacon;
 
 public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconClientServiceBuilder
 {
-    private SyncProtocolOptions _syncProtocolOptions = new();
     private BeaconClientOptions _beaconClientOptions = new();
     private IDiscv5ProtocolBuilder _discv5ProtocolBuilder = new Discv5ProtocolBuilder(services);
     private IServiceProvider? _serviceProvider;
@@ -41,18 +40,6 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
         return this;
     }
     
-    public IBeaconClientServiceBuilder WithSyncProtocolOptions(Action<SyncProtocolOptions> configure)
-    {
-        configure(_syncProtocolOptions);
-        return this;
-    }
-    
-    public IBeaconClientServiceBuilder WithSyncProtocolOptions(SyncProtocolOptions options)
-    {
-        _syncProtocolOptions = options ?? throw new ArgumentNullException(nameof(options));
-        return this;
-    }
-    
     public IBeaconClientServiceBuilder WithBeaconClientOptions(Action<BeaconClientOptions> configure)
     {
         configure(_beaconClientOptions);
@@ -73,7 +60,7 @@ public class BeaconClientServiceBuilder(IServiceCollection services) : IBeaconCl
     
     public IBeaconClient Build()
     {
-        services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions, _syncProtocolOptions, _loggerFactory);
+        services.AddBeaconClient(_discv5ProtocolBuilder.Build(), _beaconClientOptions, _loggerFactory);
         _serviceProvider = services.BuildServiceProvider();
         
         return _serviceProvider.GetRequiredService<IBeaconClient>();

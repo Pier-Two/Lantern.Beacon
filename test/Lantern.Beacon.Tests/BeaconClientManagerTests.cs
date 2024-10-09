@@ -80,7 +80,7 @@ public class BeaconClientManagerTests
     public async Task InitAsync_ShouldAddBootnodesToQueue_WhenBootnodesProvided()
     {
         var bootnodes = new[] { "/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww", "/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ" };
-        var clientOptions = new BeaconClientOptions { Bootnodes = bootnodes };
+        var clientOptions = new BeaconClientOptions { Bootnodes = bootnodes.ToList() };
         var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
         
         _beaconClientManager = new BeaconClientManager(clientOptions, _mockManualDiscoveryProtocol.Object, _mockLiteDbService.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
@@ -172,7 +172,7 @@ public class BeaconClientManagerTests
     public async Task DisplaySyncStatus_ShouldLogInformation()
     {
         var bootnodes = new[] { "/ip4/69.175.102.62/tcp/31018/p2p/16Uiu2HAm2FWXMoKEsshxjXNsXmFwxPAm4eaWmcffFTGgNs3gi4Ww", "/ip4/73.186.232.187/tcp/9105/p2p/16Uiu2HAm37UA7fk8r2AnYtGLbddwkS2WEeSPTsjNDGh3gDW7VUBQ" };
-        var clientOptions = new BeaconClientOptions { Bootnodes = bootnodes };
+        var clientOptions = new BeaconClientOptions { Bootnodes = bootnodes.ToList() };
         var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
         
         _beaconClientManager = new BeaconClientManager(clientOptions, _mockManualDiscoveryProtocol.Object, _mockLiteDbService.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);

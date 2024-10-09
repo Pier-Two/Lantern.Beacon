@@ -86,25 +86,6 @@ public class BeaconClientServiceBuilderTests
     }
     
     [Test]
-    public void WithSyncProtocolOptions_WhenCalled_ShouldConfigureSyncProtocolOptions()
-    {
-        var syncProtocolOptions = new SyncProtocolOptions
-        {
-            GenesisTime = 200
-        };
-
-        _builder.WithSyncProtocolOptions(syncProtocolOptions);
-        
-        var actualOptions = typeof(BeaconClientServiceBuilder)
-            .GetField("_syncProtocolOptions", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-            ?.GetValue(_builder) as SyncProtocolOptions;
-        
-        Assert.That(actualOptions, Is.Not.Null);
-        Assert.That(actualOptions, Is.EqualTo(syncProtocolOptions));
-        Assert.That(actualOptions!.GenesisTime, Is.EqualTo(200));
-    }
-    
-    [Test]
     public void WithBeaconClientOptions_WhenCalled_ShouldConfigureBeaconClientOptions()
     {
         var beaconClientOptions = new BeaconClientOptions
