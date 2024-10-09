@@ -1,5 +1,6 @@
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Types;
+using SszSharp;
 
 namespace Lantern.Beacon;
 
@@ -71,6 +72,17 @@ public class BeaconClientOptions
                     else
                     {
                         throw new ArgumentException("Missing value for --genesis-validators-root");
+                    }
+                    break;
+                
+                case "--preset":
+                    if (i + 1 < argsList.Count)
+                    {
+                        options.SyncProtocolOptions.Preset = GetPreset(argsList[++i]);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Missing value for --preset");
                     }
                     break;
                 
@@ -188,6 +200,15 @@ public class BeaconClientOptions
         }
 
         return options;
+    }
+    
+    private static SizePreset GetPreset(string preset)
+    {
+        return preset.ToLower() switch
+        {
+            "mainnet" => SizePreset.MainnetPreset,
+            _ => throw new ArgumentException($"Unsupported preset: {preset}")
+        };
     }
     
     private static NetworkType GetNetworkType(string network)
