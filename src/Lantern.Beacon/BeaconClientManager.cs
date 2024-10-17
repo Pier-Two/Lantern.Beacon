@@ -403,7 +403,7 @@ public class BeaconClientManager(
                             peer.Address.Get<IP4>().Value.ToString(),
                             peer.Address.Get<TCP>().Value.ToString(),
                             peer.Address.Get<P2P>().Value.ToString());
-
+                        
                         peerState.BootstrapPeers.TryRemove(peer.Address.GetPeerId()!, out _);
                         await DialPeerWithProtocol<GoodbyeProtocol>(peer, token);
                     }
