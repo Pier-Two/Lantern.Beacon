@@ -17,10 +17,6 @@ public class PeerState : IPeerState
 
      public MetaData MetaData { get; private set; } = MetaData.CreateDefault();
      
-     public int ConnectedPeersCount { get; set; }
-     
-     public int DisconnectedPeersCount { get; set; }
-     
      public void Init(IEnumerable<IProtocol> appLayerProtocols)
      {
           AppLayerProtocols = appLayerProtocols;
