@@ -18,8 +18,4 @@ public interface IPeerState
     MetaData MetaData { get; }
     
     void Init(IEnumerable<IProtocol> appLayerProtocols);
-    
-    int ConnectedPeersCount { get; set; }
-    
-    int DisconnectedPeersCount { get; set; }
 }

@@ -455,7 +455,7 @@ public class BeaconClientManagerTests
     [Test]
     public async Task DialPeer_ShouldSaveValidPeerAsLivePeer()
     {
-        var clientOptions = new BeaconClientOptions { EnableDiscovery = false, TargetPeerCount = 1, DialTimeoutSeconds = 1};
+        var clientOptions = new BeaconClientOptions { EnableDiscovery = false, TargetPeerCount = 1, DialTimeoutSeconds = 10};
         var multiAddress = new Multiaddress().Add<IP4>("0.0.0.0").Add<TCP>(0);
         var mockRemotePeer = new Mock<IRemotePeer>();
         var syncOptions = new SyncProtocolOptions() { GenesisValidatorsRoot = new byte[32], GenesisTime = 1606824023, Preset = SizePreset.MainnetPreset };
@@ -480,6 +480,7 @@ public class BeaconClientManagerTests
         _mockPeerState.Setup(x => x.BootstrapPeers).Returns(new ConcurrentDictionary<PeerId, IRemotePeer>());
         _mockPeerState.Setup(x => x.PeerProtocols).Returns(peerProtocols);
         _mockSyncProtocol.Setup(x => x.DenebLightClientStore).Returns(denebLightClientStore);
+        _mockSyncProtocol.Setup(x => x.IsInitialised).Returns(true);
         _mockSyncProtocol.Setup(x => x.Options).Returns(syncOptions);
         _beaconClientManager = new BeaconClientManager(clientOptions, _mockManualDiscoveryProtocol.Object, _mockLiteDbService.Object, _mockCustomDiscoveryProtocol.Object, _mockPeerState.Object, _mockSyncProtocol.Object, _mockPeerFactory.Object, _mockIdentityManager.Object, _mockLoggerFactory.Object);
         

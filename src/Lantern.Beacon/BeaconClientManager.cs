@@ -324,8 +324,7 @@ public class BeaconClientManager(
                     return;
                 }
 
-                var supportsLightClientProtocols =
-                    LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
+                var supportsLightClientProtocols = LightClientProtocols.All.All(protocol => peerProtocols!.Contains(protocol));
 
                 if (supportsLightClientProtocols)
                 {
@@ -384,8 +383,7 @@ public class BeaconClientManager(
             {
                 if (!peerState.BootstrapPeers.IsEmpty)
                 {
-                    var peer = peerState.BootstrapPeers.Values.ElementAt(
-                        new Random().Next(peerState.BootstrapPeers.Count));
+                    var peer = peerState.BootstrapPeers.Values.ElementAt(new Random().Next(peerState.BootstrapPeers.Count));
 
                     if (!syncProtocol.IsInitialised)
                     {
@@ -395,26 +393,19 @@ public class BeaconClientManager(
                             peer.Address.Get<TCP>().Value.ToString(),
                             peer.Address.Get<P2P>().Value.ToString());
 
-                        var dialTask = peer.DialAsync<LightClientBootstrapProtocol>(token);
-                        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-                        
-                        await Task.WhenAny(dialTask, timeoutTask);
+                        await DialPeerWithProtocol<LightClientBootstrapProtocol>(peer, token);
                     }
 
                     if (!syncProtocol.IsInitialised)
                     {
                         _logger.LogWarning(
-                            "Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId} Disconnecting...",
+                            "Failed to initialize light client from peer: /ip4/{Ip4}/tcp/{TcpPort}/p2p/{PeerId}. Disconnecting...",
                             peer.Address.Get<IP4>().Value.ToString(),
                             peer.Address.Get<TCP>().Value.ToString(),
                             peer.Address.Get<P2P>().Value.ToString());
-
-                        peerState.BootstrapPeers.TryRemove(peer.Address.GetPeerId()!, out _);
-
-                        var goodbyeTask = peer.DialAsync<GoodbyeProtocol>(token);
-                        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
                         
-                        await Task.WhenAny(goodbyeTask, timeoutTask);
+                        peerState.BootstrapPeers.TryRemove(peer.Address.GetPeerId()!, out _);
+                        await DialPeerWithProtocol<GoodbyeProtocol>(peer, token);
                     }
                     else
                     {
@@ -482,10 +473,7 @@ public class BeaconClientManager(
                 denebOptimisticPeriod
             );
 
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-            
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
         }
 
         if (denebFinalizedPeriod + 1 < denebCurrentPeriod)
@@ -501,10 +489,7 @@ public class BeaconClientManager(
                 count
             );
 
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-            
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
         }
     }
     
@@ -542,10 +527,7 @@ public class BeaconClientManager(
                 capellaOptimisticPeriod
             );
 
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-            
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
         }
 
         if (capellaFinalizedPeriod + 1 < capellaCurrentPeriod)
@@ -562,10 +544,7 @@ public class BeaconClientManager(
                 count
             );
 
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-            
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
         }
     }
 
@@ -603,10 +582,7 @@ public class BeaconClientManager(
                 altairOptimisticPeriod
             );
 
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-            
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
         }
 
         if (altairFinalizedPeriod + 1 < altairCurrentPeriod)
@@ -622,11 +598,26 @@ public class BeaconClientManager(
                 startPeriod,
                 count
             );
-
-            var dialTask = peer.DialAsync<LightClientUpdatesByRangeProtocol>(token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
             
-            await Task.WhenAny(dialTask, timeoutTask);
+            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+        }
+    }
+    
+    private async Task<bool> DialPeerWithProtocol<T>(IRemotePeer peer, CancellationToken token = default) where T : IProtocol
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds));
+    
+        var dialTask = peer.DialAsync<T>(timeoutCts.Token);
+    
+        try
+        {
+            await dialTask;
+            return true; 
+        }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested)
+        {
+            return false; 
         }
     }
 
@@ -668,11 +659,9 @@ public class BeaconClientManager(
 
                 _logger.LogInformation("Requesting optimistic update...");
 
-                var dialTask = peer.DialAsync<LightClientOptimisticUpdateProtocol>(token);
-                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-                var completedTask = await Task.WhenAny(dialTask, timeoutTask);
-
-                if (completedTask == timeoutTask)
+                var result = await DialPeerWithProtocol<LightClientOptimisticUpdateProtocol>(peer, token);
+                
+                if (!result)
                 {
                     break;
                 }
@@ -727,12 +716,10 @@ public class BeaconClientManager(
                     continue;
 
                 _logger.LogInformation("Requesting finality update...");
-
-                var dialTask = peer.DialAsync<LightClientFinalityUpdateProtocol>(token);
-                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
-                var completedTask = await Task.WhenAny(dialTask, timeoutTask);
-
-                if (completedTask == timeoutTask)
+                
+                var result = await DialPeerWithProtocol<LightClientFinalityUpdateProtocol>(peer, token);
+                
+                if (!result)
                 {
                     break;
                 }

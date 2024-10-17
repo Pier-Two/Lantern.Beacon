@@ -48,10 +48,12 @@ internal static class Program
             MaxParallelDials = 10,
             EnableDiscovery = true,
             GossipSubEnabled = true,
+            TargetPeerCount = 3,
             Bootnodes = [
                 //"/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"
                 //"/ip4/116.202.215.20/tcp/9000/p2p/16Uiu2HAmB8gmsy3QGaLcL8gQHF5TUAn6fhQNzNT522xArY2tMhKr"
                 //"/ip4/88.99.208.221/tcp/9105/p2p/16Uiu2HAkvSit4sbSkr6AdiEzUcHFv7KQrssV1y4QVsDt4EVpVTYU"
+                "/ip4/15.235.118.102/tcp/9000/p2p/16Uiu2HAmP1BbR9tgtLVbpjy7k46uEar2wResbuWaA3ibJNrzYmkv"
             ],
             SyncProtocolOptions = new SyncProtocolOptions
             {

@@ -1,7 +1,5 @@
 ﻿using System.Buffers;
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
-using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
 using Nethermind.Libp2p.Core.Exceptions;
 
@@ -45,53 +43,10 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         context.Connected(context.RemotePeer);
 
         _ = Task.Run(() => HandleSubDialRequests(context, channelFactory, isListener, downChannel, peerState));
-
-        var isChannelClosed = false;
-        
-        _ = Task.Run(async () =>
-        {
-            while (!isChannelClosed && !downChannelAwaiter.IsCompleted)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                var foundLivePeer = false;
-                
-                foreach (var gossipPeer in _peerState.GossipPeers.Keys)
-                {
-                    _logger?.LogDebug("Checking if peer {PeerId} matches ID {Id}", gossipPeer,
-                        context.RemotePeer.Address.GetPeerId());
-                
-                    if (!gossipPeer.Bytes.SequenceEqual(context.RemotePeer.Address.GetPeerId()!.Bytes))
-                        continue;
-                
-                    _logger?.LogDebug("Peer {PeerId} was found in 'GossipPeers'", gossipPeer);
-                    foundLivePeer = true;
-                    break; 
-                }
-                
-                foreach (var livePeer in _peerState.BootstrapPeers.Keys)
-                {
-                    _logger?.LogDebug("Checking if peer {PeerId} matches ID {Id}", livePeer,
-                        context.RemotePeer.Address.GetPeerId());
-                
-                    if (!livePeer.Bytes.SequenceEqual(context.RemotePeer.Address.GetPeerId()!.Bytes))
-                        continue;
-                
-                    _logger?.LogDebug("Peer {PeerId} is still in 'LivePeers'", livePeer);
-                    foundLivePeer = true;
-                    break; 
-                }
-                
-                if (foundLivePeer) 
-                    continue;
-                
-                _logger?.LogDebug("Removing peer {PeerId} from 'GossipPeers'", context.RemotePeer.Address.GetPeerId());
-                isChannelClosed = true;
-            }
-        });
         
         try
         {
-            while (!isChannelClosed && !downChannelAwaiter.IsCompleted)
+            while (!downChannelAwaiter.IsCompleted)
             {
                 var message = await ReadMessageAsync(downChannel);
                 await HandleMessageAsync(message, downChannel, channelFactory, context, peerState);
@@ -100,46 +55,10 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         catch (ChannelClosedException ex)
         {
             _logger?.LogDebug("Closed due to transport disconnection: {Exception}", ex.Message);
-            isChannelClosed = true;
-            
-            var foundPeer = false;
-            foreach (var gossipPeer in _peerState.GossipPeers.Keys)
-            {
-                _logger?.LogDebug("Checking if peer {PeerId} matches ID {Id}", gossipPeer,
-                    context.RemotePeer.Address.GetPeerId());
-                
-                if (!gossipPeer.Bytes.SequenceEqual(context.RemotePeer.Address.GetPeerId()!.Bytes))
-                    continue;
-                
-                _logger?.LogDebug("Peer {PeerId} was found in 'GossipPeers'", gossipPeer);
-                foundPeer = true;
-                break; 
-            }
-            
-            if(foundPeer)
-                _peerState.GossipPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
         }
         catch (Exception ex)
         {
             _logger?.LogDebug("Closed with exception {Exception}", ex.Message);
-            isChannelClosed = true;
-            
-            var foundPeer = false;
-            foreach (var gossipPeer in _peerState.GossipPeers.Keys)
-            {
-                _logger?.LogDebug("Checking if peer {PeerId} matches ID {Id}", gossipPeer,
-                    context.RemotePeer.Address.GetPeerId());
-                
-                if (!gossipPeer.Bytes.SequenceEqual(context.RemotePeer.Address.GetPeerId()!.Bytes))
-                    continue;
-                
-                _logger?.LogDebug("Peer {PeerId} was found in 'GossipPeers'", gossipPeer);
-                foundPeer = true;
-                break; 
-            }
-            
-            if(foundPeer)
-                _peerState.GossipPeers.TryRemove(context.RemotePeer.Address.GetPeerId()!, out _);
         }
 
         _logger?.LogDebug("Closing all channels");
@@ -207,8 +126,7 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
         {
             tcs?.SetResult();
         });
-
-        // Initiate background processing of the channel
+        
         _ = Task.Run(() => ProcessChannelAsync(downChannel, streamId, upChannel, isListener, channelState));
 
         return channelState;
@@ -499,7 +417,6 @@ public class MplexProtocol : SymmetricProtocol, IProtocol
     {
         try
         {
-            // Calculate sizes first to avoid multiple allocations
             var header = (ulong)(message.StreamId << 3) | (ulong)message.Flag;
             var headerSize = VarInt.GetSizeInBytes(header);
             var lengthSize = VarInt.GetSizeInBytes((ulong)message.Data.Length);
