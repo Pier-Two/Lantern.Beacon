@@ -1,5 +1,6 @@
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Types;
+using Microsoft.Extensions.Logging;
 using SszSharp;
 
 namespace Lantern.Beacon;
@@ -17,6 +18,8 @@ public class BeaconClientOptions
     public int TcpPort { get; set; } = 9001;
     
     public bool GossipSubEnabled { get; set; } = true;
+    
+    public LogLevel LogLevel { get; set; } = LogLevel.Information; 
     
     public string DataDirectoryPath { get; set; } = 
         Path.Combine(
@@ -52,7 +55,24 @@ public class BeaconClientOptions
                         throw new ArgumentException("Missing value for --network");
                     }
                     break;
-                
+                case "--log-level":
+                    if (i + 1 < args.Length)
+                    {
+                        var levelString = args[++i];
+                        if (Enum.TryParse<LogLevel>(levelString, true, out var logLevel))
+                        {
+                            options.LogLevel = logLevel;
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"Invalid log level: {levelString}");
+                        }
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Missing value for --log-level");
+                    }
+                    break;
                 case "--genesis-time":
                     if (i + 1 < argsList.Count && ulong.TryParse(argsList[++i], out var genesisTime))
                     {
