@@ -169,6 +169,12 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
     
     private void CheckIfPeerExistsInGossip(PeerId peerId)
     {
+        if (!syncProtocol.IsInitialised)
+        {
+            _logger.LogDebug("Sync protocol is not initialized. Ignore gossip message");
+            return;
+        }
+        
         var foundLivePeer = false;
                 
         foreach (var gossipPeer in peerState.GossipPeers.Keys)
