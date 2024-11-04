@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Lantern.Beacon.Sync.Presets.Mainnet;
 using SszSharp;
 
@@ -5,9 +6,17 @@ namespace Lantern.Beacon.Sync.Types.Ssz.Altair;
 
 public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
 {
+    [JsonPropertyName("sync_committee_bits")]
+    public string SyncCommitteeBitsJson => ConvertBitsToHexString(SyncCommitteeBits);
+    
+    [JsonPropertyName("sync_committee_signature")]
+    public string SyncCommitteeSignatureJson => $"0x{BitConverter.ToString(SyncCommitteeSignature).Replace("-", "").ToLower()}";
+    
+    [JsonIgnore] 
     [SszElement(0, "Bitvector[SYNC_COMMITTEE_SIZE]")]
     public List<bool> SyncCommitteeBits { get; protected init; }
     
+    [JsonIgnore] 
     [SszElement(1, "Vector[uint8, 96]")]
     public byte[] SyncCommitteeSignature { get; protected init; } 
     
@@ -77,5 +86,23 @@ public class AltairSyncAggregate : IEquatable<AltairSyncAggregate>
     {
         var result = SszContainer.Deserialize<AltairSyncAggregate>(data, preset);
         return result.Item1;
+    }
+    
+    private static string ConvertBitsToHexString(List<bool> bits)
+    {
+        var byteCount = (bits.Count + 7) / 8; 
+        var bytes = new byte[byteCount];
+
+        for (var i = 0; i < bits.Count; i++)
+        {
+            if (bits[i])
+            {
+                bytes[i / 8] |= (byte)(1 << (i % 8));
+            }
+        }
+        
+        Array.Reverse(bytes);
+
+        return $"0x{BitConverter.ToString(bytes).Replace("-", "").ToLower()}";
     }
 }

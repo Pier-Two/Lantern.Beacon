@@ -1,53 +1,110 @@
 using System.Numerics;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Types.Ssz.Bellatrix;
 
 public class BellatrixExecutionPayloadHeader : IEquatable<BellatrixExecutionPayloadHeader>
 {
+    [JsonPropertyName("parent_hash")]
+    public string ParentHashString => $"0x{Convert.ToHexString(ParentHash).ToLower()}";
+    
+    [JsonPropertyName("fee_recipient")]
+    public string FeeRecipientAddressString => $"0x{Convert.ToHexString(FeeRecipientAddress).ToLower()}";
+    
+    [JsonPropertyName("state_root")]
+    public string StateRootString => $"0x{Convert.ToHexString(StateRoot).ToLower()}";
+    
+    [JsonPropertyName("receipts_root")]
+    public string ReceiptsRootString => $"0x{Convert.ToHexString(ReceiptsRoot).ToLower()}";
+    
+    [JsonPropertyName("logs_bloom")]
+    public string LogsBloomString => $"0x{Convert.ToHexString(LogsBloom).ToLower()}";
+    
+    [JsonPropertyName("prev_randao")]
+    public string PrevRandaoString => $"0x{Convert.ToHexString(PrevRandoa).ToLower()}";
+    
+    [JsonPropertyName("block_number")]
+    public string BlockNumberString => BlockNumber.ToString();
+    
+    [JsonPropertyName("gas_limit")]
+    public string GasLimitString => GasLimit.ToString();
+    
+    [JsonPropertyName("gas_used")]
+    public string GasUsedString => GasUsed.ToString();
+    
+    [JsonPropertyName("timestamp")]
+    public string TimestampString => Timestamp.ToString();
+    
+    [JsonPropertyName("extra_data")]
+    public string ExtraDataString => $"0x{Convert.ToHexString(ExtraData).ToLower()}";
+
+    [JsonPropertyName("base_fee_per_gas")]
+    public string BaseFeePerGasString => BaseFeePerGas.ToString();
+    
+    [JsonPropertyName("block_hash")]
+    public string BlockHashString => $"0x{Convert.ToHexString(BlockHash).ToLower()}";
+    
+    [JsonPropertyName("transactions_root")]
+    public string TransactionsRootString => $"0x{Convert.ToHexString(TransactionsRoot).ToLower()}";
+    
+    [JsonIgnore] 
     [SszElement(0, "Vector[uint8, 32]")]
     public byte[] ParentHash { get; protected init; }
 
+    [JsonIgnore] 
     [SszElement(1, "Vector[uint8, 20]")]
     public byte[] FeeRecipientAddress { get; protected init; }
 
+    [JsonIgnore] 
     [SszElement(2, "Vector[uint8, 32]")]
     public byte[] StateRoot { get; protected init; } 
 
+    [JsonIgnore] 
     [SszElement(3, "Vector[uint8, 32]")]
     public byte[] ReceiptsRoot { get; protected init; } 
 
+    [JsonIgnore] 
     [SszElement(4, "Vector[uint8, BYTES_PER_LOGS_BLOOM]")]
     public byte[] LogsBloom { get; protected init; } 
     
+    [JsonIgnore] 
     [SszElement(5, "Vector[uint8, 32]")]
     public byte[] PrevRandoa { get; protected init; } 
 
+    [JsonIgnore] 
     [SszElement(6, "uint64")]
     public ulong BlockNumber { get; protected init; }
 
+    [JsonIgnore] 
     [SszElement(7, "uint64")]
     public ulong GasLimit { get; protected init; } 
 
+    [JsonIgnore] 
     [SszElement(8, "uint64")]
     public ulong GasUsed { get; protected init; } 
 
+    [JsonIgnore] 
     [SszElement(9, "uint64")]
     public ulong Timestamp { get; protected init; } 
-
+    
+    [JsonIgnore]
     [SszElement(10, "List[uint8, MAX_EXTRA_DATA_BYTES]")]
     public byte[] ExtraData { get; protected init; } 
 
+    [JsonIgnore]
     [SszElement(11, "uint256")]
     public BigInteger BaseFeePerGas { get; protected init; } 
     
+    [JsonIgnore]
     [SszElement(12, "Vector[uint8, 32]")]
     public byte[] BlockHash { get; protected init; }
 
+    [JsonIgnore]
     [SszElement(13, "Vector[uint8, 32]")]
     public byte[] TransactionsRoot { get; protected init; } 
-    
-    public virtual string CollectionName { get; } = nameof(BellatrixExecutionPayloadHeader);
 
     public bool Equals(BellatrixExecutionPayloadHeader? other)
     {
@@ -159,4 +216,10 @@ public class BellatrixExecutionPayloadHeader : IEquatable<BellatrixExecutionPayl
         var result = SszContainer.Deserialize<BellatrixExecutionPayloadHeader>(data, preset);
         return result.Item1;
     } 
+    
+    public static byte[] ConvertToJsonBytes(BellatrixExecutionPayloadHeader header)
+    {
+        var jsonString = JsonSerializer.Serialize(header);
+        return Encoding.UTF8.GetBytes(jsonString);
+    }
 }

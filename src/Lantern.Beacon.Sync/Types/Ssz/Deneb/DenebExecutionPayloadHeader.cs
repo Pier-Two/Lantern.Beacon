@@ -1,4 +1,7 @@
 using System.Numerics;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using SszSharp;
 
@@ -6,12 +9,20 @@ namespace Lantern.Beacon.Sync.Types.Ssz.Deneb;
 
 public class DenebExecutionPayloadHeader : CapellaExecutionPayloadHeader
 {
+    [JsonPropertyName("blob_gas_used")]
+    public string BlobGasUsedString => BlobGasUsed.ToString(); 
+    
+    [JsonPropertyName("excess_blob_gas")]
+    public string ExcessBlobGasString => ExcessBlobGas.ToString();
+    
+    [JsonIgnore]
     [SszElement(15, "uint64")]
     public ulong BlobGasUsed { get; protected init; } 
     
+    [JsonIgnore]
     [SszElement(16, "uint64")]
     public ulong ExcessBlobGas { get; protected init; } 
-    
+
     public bool Equals(DenebExecutionPayloadHeader? other)
     {
         return other != null && 

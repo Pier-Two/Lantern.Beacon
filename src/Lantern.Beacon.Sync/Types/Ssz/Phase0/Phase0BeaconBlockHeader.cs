@@ -1,24 +1,48 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using SszSharp;
 
 namespace Lantern.Beacon.Sync.Types.Ssz.Phase0;
 
 public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
 {
+    [JsonPropertyName("slot")]
+    public string SlotString => Slot.ToString(); 
+
+    [JsonPropertyName("proposer_index")]
+    public string ProposerIndexString => ProposerIndex.ToString(); 
+
+    [JsonPropertyName("parent_root")]
+    public string ParentRootHex => $"0x{Convert.ToHexString(ParentRoot).ToLower()}"; 
+
+    [JsonPropertyName("state_root")]
+    public string StateRootHex => $"0x{Convert.ToHexString(StateRoot).ToLower()}"; 
+
+    [JsonPropertyName("body_root")]
+    public string BodyRootHex => $"0x{Convert.ToHexString(BodyRoot).ToLower()}"; 
+    
+    [JsonIgnore]
     [SszElement(0, "uint64")]
     public ulong Slot { get; private init; }
     
+    [JsonIgnore]
     [SszElement(1, "uint64")]
     public ulong ProposerIndex { get; private init; } 
     
+    [JsonIgnore]
     [SszElement(2, "Vector[uint8, 32]")] 
     public byte[] ParentRoot { get; private init; } 
     
+    [JsonIgnore]
     [SszElement(3, "Vector[uint8, 32]")] 
     public byte[] StateRoot { get; private init; } 
     
+    [JsonIgnore]
     [SszElement(4, "Vector[uint8, 32]")]
     public byte[] BodyRoot { get; private init; } 
     
+    [JsonIgnore]
     public string HashTreeRootString => Convert.ToHexString(GetHashTreeRoot(SizePreset.MainnetPreset, this));
     
     public bool Equals(Phase0BeaconBlockHeader? other)
@@ -80,4 +104,10 @@ public class Phase0BeaconBlockHeader : IEquatable<Phase0BeaconBlockHeader>
         var result = SszContainer.Deserialize<Phase0BeaconBlockHeader>(data, preset);
         return result.Item1;
     } 
+    
+    public static byte[] ConvertToJsonBytes(Phase0BeaconBlockHeader header)
+    {
+        var jsonString = JsonSerializer.Serialize(header);
+        return Encoding.UTF8.GetBytes(jsonString);
+    }
 }

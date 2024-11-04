@@ -1,4 +1,7 @@
 using System.Numerics;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Lantern.Beacon.Sync.Types.Ssz.Bellatrix;
 using SszSharp;
 
@@ -6,6 +9,10 @@ namespace Lantern.Beacon.Sync.Types.Ssz.Capella;
 
 public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
 {
+    [JsonPropertyName("withdrawals_root")]
+    public string WithdrawalsRootString => $"0x{Convert.ToHexString(WithdrawalsRoot).ToLower()}"; 
+    
+    [JsonIgnore]
     [SszElement(14, "Vector[uint8, 32]")]
     public byte[] WithdrawalsRoot { get; protected init; }
 
@@ -132,4 +139,10 @@ public class CapellaExecutionPayloadHeader : BellatrixExecutionPayloadHeader
         var result = SszContainer.Deserialize<CapellaExecutionPayloadHeader>(data, preset);
         return result.Item1;
     } 
+    
+    public static byte[] ConvertToJsonBytes(CapellaExecutionPayloadHeader header)
+    {
+        var jsonString = JsonSerializer.Serialize(header);
+        return Encoding.UTF8.GetBytes(jsonString);
+    }
 }

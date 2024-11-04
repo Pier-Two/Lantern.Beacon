@@ -1,5 +1,6 @@
 using Lantern.Beacon.Networking;
 using Lantern.Beacon.Networking.Gossip;
+using Lantern.Beacon.Networking.RestApi;
 using Lantern.Beacon.Storage;
 using Lantern.Beacon.Sync;
 using Lantern.Beacon.Sync.Types.Ssz.Altair;
@@ -11,7 +12,7 @@ using Nethermind.Libp2p.Core;
 
 namespace Lantern.Beacon;
 
-public class BeaconClient(BeaconClientOptions options, ISyncProtocol syncProtocol, ILiteDbService liteDbService, IPeerFactoryBuilder peerFactoryBuilder, IPeerState peerState, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
+public class BeaconClient(BeaconClientOptions options, ISyncProtocol syncProtocol, ILiteDbService liteDbService, IPeerFactoryBuilder peerFactoryBuilder, IPeerState peerState, IHttpServer httpServer, IBeaconClientManager beaconClientManager, IGossipSubManager gossipSubManager, IServiceProvider serviceProvider) : IBeaconClient
 {
     private readonly ILogger<BeaconClient> _logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<BeaconClient>();
     
@@ -64,6 +65,7 @@ public class BeaconClient(BeaconClientOptions options, ISyncProtocol syncProtoco
                 gossipSubManager.Start(token);
             }
 
+            httpServer.Start();
             await beaconClientManager.StartAsync(token); 
         }
         catch (Exception e)
@@ -88,6 +90,7 @@ public class BeaconClient(BeaconClientOptions options, ISyncProtocol syncProtoco
             await gossipSubManager.StopAsync();
         }
         
+        httpServer.Stop();
         await beaconClientManager.StopAsync();
         
         liteDbService.Dispose();
