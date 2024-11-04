@@ -1,5 +1,7 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Cortex.Containers;
-using Lantern.Beacon.Sync.Types.Ssz.Altair;
 using Lantern.Beacon.Sync.Types.Ssz.Capella;
 using Lantern.Beacon.Sync.Types.Ssz.Phase0;
 using SszSharp;
@@ -7,13 +9,25 @@ using SszSharp;
 namespace Lantern.Beacon.Sync.Types.Ssz.Deneb;
 
 public class DenebLightClientHeader : IEquatable<DenebLightClientHeader>
-{ 
+{
+    [JsonPropertyName("beacon")] 
+    public Phase0BeaconBlockHeader BeaconJson => Beacon;
+    
+    [JsonPropertyName("execution")]
+    public DenebExecutionPayloadHeader ExecutionJson => Execution;
+    
+    [JsonPropertyName("execution_branch")]
+    public string[] ExecutionBranchJson => Array.ConvertAll(ExecutionBranch, b => $"0x{Convert.ToHexString(b).ToLower()}");
+    
+    [JsonIgnore] 
     [SszElement(0, "Container")]
     public Phase0BeaconBlockHeader Beacon { get; protected init; } 
     
+    [JsonIgnore] 
     [SszElement(1, "Container")]
     public DenebExecutionPayloadHeader Execution { get; protected init; }
     
+    [JsonIgnore] 
     [SszElement(2, "Vector[Vector[uint8, 32], 4]")]
     public byte[][] ExecutionBranch { get; protected init; } 
     
