@@ -78,7 +78,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         {
             CheckIfPeerExistsInGossip(peerId);
             
-            _logger.LogInformation("Received light client finality update from gossip");
+            _logger.LogInformation("Received light client finality update from gossip peer {PeerId}", peerId);
             
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
                 Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
@@ -98,7 +98,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
 
             if (result)
             {
-                _logger.LogInformation("Processed light client finality update from gossip");
+                _logger.LogInformation("Processed light client finality update from gossip peer {PeerId}", peerId);
                 
                 if (!DenebHelpers.ShouldForwardFinalizedLightClientUpdate(lightClientFinalityUpdate, oldFinalizedHeader,
                         syncProtocol))
@@ -128,7 +128,7 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
         {
             CheckIfPeerExistsInGossip(peerId);
             
-            _logger.LogInformation("Received light client optimistic update from gossip");
+            _logger.LogInformation("Received light client optimistic update from gossip peer {PeerId}", peerId);
             
             var denebFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(syncProtocol.DenebLightClientStore.FinalizedHeader.Beacon.Slot));
             var denebCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
@@ -144,12 +144,12 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
 
             if (result)
             {
-                _logger.LogInformation("Processed light client optimistic update from gossip");
+                _logger.LogInformation("Processed light client optimistic update from gossip peer {PeerId}", peerId);
                 
                 if (!DenebHelpers.ShouldForwardLightClientOptimisticUpdate(lightClientOptimisticUpdate, oldOptimisticHeader, syncProtocol))
                     return;
                 
-                LightClientFinalityUpdate!.Publish(update);
+                LightClientOptimisticUpdate!.Publish(update);
                 _logger.LogDebug("Forwarded light client optimistic update to gossip");
                     
                 syncProtocol.CurrentLightClientOptimisticUpdate = lightClientOptimisticUpdate;
