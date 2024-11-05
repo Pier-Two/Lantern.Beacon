@@ -473,7 +473,12 @@ public class BeaconClientManager(
                 denebOptimisticPeriod
             );
 
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
 
         if (denebFinalizedPeriod + 1 < denebCurrentPeriod)
@@ -489,7 +494,12 @@ public class BeaconClientManager(
                 count
             );
 
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
     }
     
@@ -527,7 +537,12 @@ public class BeaconClientManager(
                 capellaOptimisticPeriod
             );
 
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
 
         if (capellaFinalizedPeriod + 1 < capellaCurrentPeriod)
@@ -544,7 +559,12 @@ public class BeaconClientManager(
                 count
             );
 
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
     }
 
@@ -582,7 +602,12 @@ public class BeaconClientManager(
                 altairOptimisticPeriod
             );
 
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
 
         if (altairFinalizedPeriod + 1 < altairCurrentPeriod)
@@ -599,26 +624,29 @@ public class BeaconClientManager(
                 count
             );
             
-            await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
+            
+            if (!result)
+            {
+                await DialPeer(peer.Address, token);
+            }
         }
     }
     
     private async Task<bool> DialPeerWithProtocol<T>(IRemotePeer peer, CancellationToken token = default) where T : IProtocol
     {
-        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        timeoutCts.CancelAfter(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds));
-    
-        var dialTask = peer.DialAsync<T>(timeoutCts.Token);
-    
-        try
+        var timeoutTask = Task.Delay(TimeSpan.FromSeconds(clientOptions.DialTimeoutSeconds), token);
+        var dialTask = peer.DialAsync<T>(token);
+
+        var completedTask = await Task.WhenAny(dialTask, timeoutTask);
+
+        if (completedTask == timeoutTask)
         {
-            await dialTask;
-            return true; 
+            return false;
         }
-        catch (OperationCanceledException) when (!token.IsCancellationRequested)
-        {
-            return false; 
-        }
+        
+        await dialTask;
+        return true;
     }
 
     private async Task RunOptimisticUpdateLoopAsync(IRemotePeer peer, CancellationToken token)

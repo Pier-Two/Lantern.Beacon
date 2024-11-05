@@ -27,14 +27,17 @@ internal static class Program
         };
 
         // Discv5 options
-        var bootstrapEnrs = new[]
+        var discoveryBootnodes = new[]
         {
-            "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg",
+            "enr:-Ku4QHqVeJ8PPICcWk1vSn_XcSkjOkNiTg6Fmii5j6vUQgvzMc9L1goFnLKgXqBJspJjIsB91LTOleFmyWWrFVATGngBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpC1MD8qAAAAAP__________gmlkgnY0gmlwhAMRHkWJc2VjcDI1NmsxoQKLVXFOhp2uX6jeT0DvvDpPcU8FWMjQdR4wMuORMhpX24N1ZHCCIyg",
+            "enr:-Ku4QG-2_Md3sZIAUebGYT6g0SMskIml77l6yR-M_JXc-UdNHCmHQeOiMLbylPejyJsdAPsTHJyjJB2sYGDLe0dn8uYBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpC1MD8qAAAAAP__________gmlkgnY0gmlwhBLY-NyJc2VjcDI1NmsxoQORcM6e19T1T9gi7jxEZjk_sjVLGFscUNqAY9obgZaxbIN1ZHCCIyg",
+            "enr:-Ku4QImhMc1z8yCiNJ1TyUxdcfNucje3BGwEHzodEZUan8PherEo4sF7pPHPSIB1NNuSg5fZy7qFsjmUKs2ea1Whi0EBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpD1pf1CAAAAAP__________gmlkgnY0gmlwhBLf22SJc2VjcDI1NmsxoQOVphkDqal4QzPMksc5wnpuC3gvSC8AfbFOnZY_On34wIN1ZHCCIyg", 
+            "enr:-Ku4QEWzdnVtXc2Q0ZVigfCGggOVB2Vc1ZCPEc6j21NIFLODSJbvNaef1g4PxhPwl_3kax86YPheFUSLXPRs98vvYsoBh2F0dG5ldHOIAAAAAAAAAACEZXRoMpC1MD8qAAAAAP__________gmlkgnY0gmlwhDZBrP2Jc2VjcDI1NmsxoQM6jr8Rb1ktLEsVcKAPa08wCsKUmvoQ8khiOl_SLozf9IN1ZHCCIyg",
             "enr:-Le4QPUXJS2BTORXxyx2Ia-9ae4YqA_JWX3ssj4E_J-3z1A-HmFGrU8BpvpqhNabayXeOZ2Nq_sbeDgtzMJpLLnXFgAChGV0aDKQtTA_KgEAAAAAIgEAAAAAAIJpZIJ2NIJpcISsaa0Zg2lwNpAkAIkHAAAAAPA8kv_-awoTiXNlY3AyNTZrMaEDHAD2JKYevx89W0CcFJFiskdcEzkH_Wdv9iW42qLK79ODdWRwgiMohHVkcDaCI4I"
         };
         var connectionOptions = new ConnectionOptions();
         var sessionOptions = SessionOptions.Default;
-        var tableOptions = new TableOptions(bootstrapEnrs);
+        var tableOptions = new TableOptions(discoveryBootnodes);
         var enr = new EnrBuilder()
             .WithIdentityScheme(sessionOptions.Verifier, sessionOptions.Signer)
             .WithEntry(EnrEntryKey.Id, new EntryId("v4"))
@@ -49,18 +52,13 @@ internal static class Program
             EnableDiscovery = true,
             GossipSubEnabled = true,
             TargetPeerCount = 3,
-            Bootnodes = [
-                //"/ip4/162.19.222.38/tcp/15401/p2p/16Uiu2HAmLA7eWnZUnjFQNR7sa8uZumNGA5hPvW6wiWoW1cT2Xkgg"
-                //"/ip4/116.202.215.20/tcp/9000/p2p/16Uiu2HAmB8gmsy3QGaLcL8gQHF5TUAn6fhQNzNT522xArY2tMhKr"
-                //"/ip4/88.99.208.221/tcp/9105/p2p/16Uiu2HAkvSit4sbSkr6AdiEzUcHFv7KQrssV1y4QVsDt4EVpVTYU"
-                "/ip4/15.235.118.102/tcp/9000/p2p/16Uiu2HAmP1BbR9tgtLVbpjy7k46uEar2wResbuWaA3ibJNrzYmkv"
-            ],
+            Bootnodes = ["/ip4/107.6.91.40/tcp/25532/p2p/16Uiu2HAmGt6EUXjRXGg4gfcSAxLD3ETpC1YA3HnqNLHLZPGEAC57"],
             SyncProtocolOptions = new SyncProtocolOptions
             {
                 Preset = SizePreset.MainnetPreset,
                 GenesisValidatorsRoot = Convert.FromHexString("4b363db94e286120d76eb905340fdd4e54bfe9f06bf33ff6cf5ad27f511bfe95"),
                 GenesisTime = 1606824023,
-                TrustedBlockRoot = Convert.FromHexString("b170fd52257200a0bc86f896ee9b688e9022f93e70810aa90e779a7bc1683a7f"),
+                TrustedBlockRoot = Convert.FromHexString("3cdedee5fddbe2c0bcf912a9078f2ab85b5c10d39800cf02bd5e1589db46863b"),
                 Network = NetworkType.Mainnet
             }
 
@@ -90,6 +88,8 @@ internal static class Program
             builder
                 .SetMinimumLevel(LogLevel.Information)
                 .AddFilter("Nethermind.Libp2p.Core.ChannelFactory", LogLevel.None)
+                //.AddFilter("Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.GossipsubProtocolV11", LogLevel.Debug)
+                //.AddFilter("Lantern.Beacon.Networking.Libp2pProtocols.CustomPubsub.CustomPubsubRouter", LogLevel.Debug)
                 .AddSimpleConsole(l => 
                 {
                     l.SingleLine = true;
