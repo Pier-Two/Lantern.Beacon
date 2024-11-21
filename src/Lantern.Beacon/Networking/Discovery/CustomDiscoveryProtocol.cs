@@ -23,12 +23,11 @@ public class CustomDiscoveryProtocol(BeaconClientOptions beaconOptions, SyncProt
             return false;
         }
         
-        identityManager.Record.UpdateEntry(new EntryTcp(beaconOptions.TcpPort));
-
         var currentVersion = Phase0Helpers.ComputeForkVersion(Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocolOptions.GenesisTime)));
         var forkDigest = Phase0Helpers.ComputeForkDigest(currentVersion, syncProtocolOptions);
         var enrForkId = EnrForkId.Serialize(EnrForkId.CreateFrom(forkDigest, currentVersion, Constants.FarFutureEpoch), syncProtocolOptions.Preset);
         
+        identityManager.Record.UpdateEntry(new EntryTcp(beaconOptions.TcpPort));
         identityManager.Record.UpdateEntry(new EntryEth2(enrForkId));
 
         _logger.LogInformation("Local ENR => {Enr}", identityManager.Record);

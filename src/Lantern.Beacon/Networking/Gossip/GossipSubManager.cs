@@ -184,15 +184,15 @@ public class GossipSubManager(ManualDiscoveryProtocol discoveryProtocol, SyncPro
             if (!gossipPeer.Bytes.SequenceEqual(peerId.Bytes))
                 continue;
                 
-            _logger?.LogDebug("Peer {PeerId} alredy exists in 'GossipPeers'", gossipPeer);
+            _logger?.LogDebug("Peer {PeerId} already exists in 'GossipPeers'", gossipPeer);
             foundLivePeer = true;
             break; 
         }
 
-        if (!foundLivePeer)
-        {
-            _logger?.LogInformation("Adding peer {PeerId} to GossipPeers", peerId);
-            peerState.GossipPeers.TryAdd(peerId, true);
-        }
+        if (foundLivePeer) 
+            return;
+        
+        _logger?.LogInformation("Adding peer {PeerId} to GossipPeers", peerId);
+        peerState.GossipPeers.TryAdd(peerId, true);
     }
 }
