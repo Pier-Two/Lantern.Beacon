@@ -1,5 +1,7 @@
 using Lantern.Beacon.Sync;
 using Microsoft.Extensions.Logging;
+using Nethermind.Libp2p.Core;
+using Nethermind.Libp2p.Core.Dto;
 
 namespace Lantern.Beacon;
 
@@ -18,6 +20,8 @@ public class BeaconClientOptions
     public int HttpPort { get; set; } = 5052;
     
     public bool GossipSubEnabled { get; set; } = true;
+
+    public Identity Identity { get; init; } = new(null, KeyType.Secp256K1);
     
     public LogLevel LogLevel { get; set; } = LogLevel.Information; 
     

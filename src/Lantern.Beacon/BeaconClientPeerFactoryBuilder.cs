@@ -10,8 +10,9 @@ using PingProtocol = Lantern.Beacon.Networking.ReqRespProtocols.PingProtocol;
 
 namespace Lantern.Beacon;
 
-public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClientPeerFactoryBuilder, BeaconClientPeerFactory>,
-    ILibp2pPeerFactoryBuilder
+public class BeaconClientPeerFactoryBuilder(IServiceProvider? serviceProvider = default)
+    : PeerFactoryBuilderBase<BeaconClientPeerFactoryBuilder, BeaconClientPeerFactory>(serviceProvider),
+        ILibp2pPeerFactoryBuilder
 {
     private bool enforcePlaintext;
 
@@ -21,13 +22,9 @@ public class BeaconClientPeerFactoryBuilder : PeerFactoryBuilderBase<BeaconClien
         return this;
     }
 
-    public BeaconClientPeerFactoryBuilder(IServiceProvider? serviceProvider = default) : base(serviceProvider)
-    {
-    }
-
     protected override ProtocolStack BuildStack()
     {
-        ProtocolStack tcpStack =
+        var tcpStack =
             Over<TcpProtocol>()
                 .Over<MultistreamProtocol>()
                 .Over<Secp256K1NoiseProtocol>()

@@ -14,7 +14,6 @@ using Lantern.Discv5.WireProtocol.Identity;
 using Microsoft.Extensions.Logging;
 using Multiformats.Address.Protocols;
 using Nethermind.Libp2p.Core;
-using Nethermind.Libp2p.Core.Dto;
 
 namespace Lantern.Beacon;
 
@@ -45,18 +44,15 @@ public class BeaconClientManager(
                 _logger.LogError("Failed to start beacon client manager");
                 return;
             }
-
-            var identity = new Identity(null, KeyType.Secp256K1);
-
-            LocalPeer = peerFactory.Create(identity);
+            
+            LocalPeer = peerFactory.Create(clientOptions.Identity);
             LocalPeer.Address.ReplaceOrAdd<TCP>(identityManager.Record.GetEntry<EntryTcp>(EnrEntryKey.Tcp).Value);
             LocalPeer.Address.ReplaceOrAdd<P2P>(identityManager.Record.ToPeerId());
 
             if (clientOptions.Bootnodes.Count > 0)
             {
-                foreach (var bootnode in clientOptions.Bootnodes)
+                foreach (var peerAddress in clientOptions.Bootnodes.Select(Multiaddress.Decode))
                 {
-                    var peerAddress = Multiaddress.Decode(bootnode);
                     _peersToDial.Enqueue(peerAddress);
                 }
 
@@ -416,15 +412,6 @@ public class BeaconClientManager(
                             case ForkType.Deneb:
                                 await SyncDenebForkAsync(peer, token);
                                 break;
-                            case ForkType.Capella:
-                                await SyncCapellaForkAsync(peer, token);
-                                break;
-                            case ForkType.Bellatrix:
-                                await SyncAltairForkAsync(peer, token);
-                                break;
-                            case ForkType.Altair:
-                                await SyncAltairForkAsync(peer, token);
-                                break;
                             case ForkType.Phase0:
                                 _logger.LogWarning(
                                     "Active fork is Phase0. Must be on Altair or above to run sync protocol");
@@ -477,7 +464,7 @@ public class BeaconClientManager(
             
             if (!result)
             {
-                await DialPeer(peer.Address, token);
+                peerState.BootstrapPeers.TryRemove(peer.Address.GetPeerId()!, out _);
             }
         }
 
@@ -498,137 +485,7 @@ public class BeaconClientManager(
 
             if (!result)
             {
-                await DialPeer(peer.Address, token);
-            }
-        }
-    }
-    
-    private async Task SyncCapellaForkAsync(IRemotePeer peer, CancellationToken token = default)
-    {
-        if (!clientOptions.GossipSubEnabled)
-        {
-            var tokenSource = new CancellationTokenSource();
-            _ = RunOptimisticUpdateLoopAsync(peer, tokenSource.Token);
-            _ = RunFinalityUpdateLoopAsync(peer, tokenSource.Token);
-        }
-
-        var capellaFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(syncProtocol.CapellaLightClientStore.FinalizedHeader.Beacon.Slot));
-        var capellaOptimisticPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(syncProtocol.CapellaLightClientStore.OptimisticHeader.Beacon.Slot));
-        var capellaCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-
-        _logger.LogInformation(
-            "Finalized period: {FinalizedPeriod}, Optimistic period: {OptimisticPeriod}, Current period: {CurrentPeriod}",
-            capellaFinalizedPeriod,
-            capellaOptimisticPeriod,
-            capellaCurrentPeriod
-        );
-
-        if (capellaFinalizedPeriod == capellaOptimisticPeriod &&
-            !CapellaHelpers.IsNextSyncCommitteeKnown(syncProtocol.CapellaLightClientStore))
-        {
-            syncProtocol.LightClientUpdatesByRangeRequest =
-                LightClientUpdatesByRangeRequest.CreateFrom(capellaFinalizedPeriod, 1);
-
-            _logger.LogInformation(
-                "Requesting light client updates by range for period {Period} as the next sync committee is not known",
-                capellaOptimisticPeriod
-            );
-
-            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
-            
-            if (!result)
-            {
-                await DialPeer(peer.Address, token);
-            }
-        }
-
-        if (capellaFinalizedPeriod + 1 < capellaCurrentPeriod)
-        {
-            var startPeriod = capellaFinalizedPeriod + 1;
-            var count = capellaCurrentPeriod - capellaFinalizedPeriod - 1;
-
-            syncProtocol.LightClientUpdatesByRangeRequest =
-                LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
-
-            _logger.LogInformation(
-                "Requesting light client updates by range for period {Period} and count {Count}",
-                startPeriod,
-                count
-            );
-
-            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
-            
-            if (!result)
-            {
-                await DialPeer(peer.Address, token);
-            }
-        }
-    }
-
-    private async Task SyncAltairForkAsync(IRemotePeer peer, CancellationToken token = default)
-    {
-        if (!clientOptions.GossipSubEnabled)
-        {
-            var tokenSource = new CancellationTokenSource();
-            _ = RunOptimisticUpdateLoopAsync(peer, tokenSource.Token);
-            _ = RunFinalityUpdateLoopAsync(peer, tokenSource.Token);
-        }
-
-        var altairFinalizedPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(syncProtocol.AltairLightClientStore.FinalizedHeader.Beacon.Slot));
-        var altairOptimisticPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(syncProtocol.AltairLightClientStore.OptimisticHeader.Beacon.Slot));
-        var altairCurrentPeriod = AltairHelpers.ComputeSyncCommitteePeriod(
-            Phase0Helpers.ComputeEpochAtSlot(Phase0Helpers.ComputeCurrentSlot(syncProtocol.Options.GenesisTime)));
-
-        _logger.LogInformation(
-            "Finalized period: {FinalizedPeriod}, Optimistic period: {OptimisticPeriod}, Current period: {CurrentPeriod}",
-            altairFinalizedPeriod,
-            altairOptimisticPeriod,
-            altairCurrentPeriod
-        );
-
-        if (altairFinalizedPeriod == altairOptimisticPeriod &&
-            !AltairHelpers.IsNextSyncCommitteeKnown(syncProtocol.AltairLightClientStore))
-        {
-            syncProtocol.LightClientUpdatesByRangeRequest =
-                LightClientUpdatesByRangeRequest.CreateFrom(altairFinalizedPeriod, 1);
-
-            _logger.LogInformation(
-                "Requesting light client updates by range for period {Period} as next sync committee is not known",
-                altairOptimisticPeriod
-            );
-
-            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
-            
-            if (!result)
-            {
-                await DialPeer(peer.Address, token);
-            }
-        }
-
-        if (altairFinalizedPeriod + 1 < altairCurrentPeriod)
-        {
-            var startPeriod = altairFinalizedPeriod + 1;
-            var count = altairCurrentPeriod - altairFinalizedPeriod - 1;
-
-            syncProtocol.LightClientUpdatesByRangeRequest =
-                LightClientUpdatesByRangeRequest.CreateFrom(startPeriod, count);
-
-            _logger.LogInformation(
-                "Requesting light client updates by range for period {Period} and count {Count}",
-                startPeriod,
-                count
-            );
-            
-            var result = await DialPeerWithProtocol<LightClientUpdatesByRangeProtocol>(peer, token);
-            
-            if (!result)
-            {
-                await DialPeer(peer.Address, token);
+                peerState.BootstrapPeers.TryRemove(peer.Address.GetPeerId()!, out _);
             }
         }
     }
